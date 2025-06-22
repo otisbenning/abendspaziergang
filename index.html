@@ -1,11 +1,10 @@
 <!DOCTYPE html>
+
 <html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kölner Abendspaziergang</title>
-    <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiS8O2bG5lciBBYmVuZHNwYXppZXJnYW5nIiwic2hvcnRfbmFtZSI6IkrDtmxuVG91ciIsInN0YXJ0X3VybCI6Ii8iLCJkaXNwbGF5Ijoic3RhbmRhbG9uZSIsImJhY2tncm91bmRfY29sb3IiOiIjMjEyMTIxIiwidGhlbWVfY29sb3IiOiIjZGMyNjI2IiwiaWNvbnMiOlt7InNyYyI6ImRhdGE6aW1hZ2Uvc3ZnK3htbDtiYXNlNjQsUEhOMlp5QjNhV1IwYUQwaU1USTRJaUJvWldsbmFIUTlJakV5T0NJZ2RtbGxkMEp2ZUQwaU1DQXdJREV5T0NBek1qQWlJR1pzYkdwMGRHVnlQU0owYVhSc1pTSWdabWxzYkQwaWJtOXVaU0krUEhKbFkzUWdkMmxrZEdnOUlqRXlPQ0lnYUdWcFoyaDBQU0l6TWpBaUlHWnBiR3c5SWlOa1l6STJNallpTHo0OEwzTjJaejQiLCJzaXplcyI6IjEyOHgxMjgifV19">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
     <style>
         * {
             margin: 0;
@@ -13,1735 +12,1983 @@
             box-sizing: border-box;
         }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #333;
-            line-height: 1.6;
-            overflow-x: hidden;
-        }
+```
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: #333;
+        line-height: 1.6;
+        overflow-x: hidden;
+    }
 
+    .container {
+        max-width: 100vw;
+        margin: 0 auto;
+        min-height: 100vh;
+        background: white;
+        box-shadow: 0 0 30px rgba(0,0,0,0.3);
+    }
+
+    header {
+        background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+        color: white;
+        padding: 1rem;
+        text-align: center;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    }
+
+    h1 {
+        font-size: 1.8rem;
+        margin-bottom: 0.5rem;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+
+    .subtitle {
+        font-size: 0.9rem;
+        opacity: 0.9;
+    }
+
+    .progress-container {
+        background: rgba(255,255,255,0.2);
+        height: 8px;
+        border-radius: 4px;
+        margin-top: 1rem;
+        overflow: hidden;
+    }
+
+    .progress-bar {
+        background: #fbbf24;
+        height: 100%;
+        width: 0%;
+        border-radius: 4px;
+        transition: width 0.5s ease;
+    }
+
+    .live-message {
+        background: #059669;
+        color: white;
+        padding: 1rem;
+        margin: 0.5rem;
+        border-radius: 8px;
+        animation: slideIn 0.5s ease;
+        border-left: 4px solid #047857;
+        position: relative;
+    }
+
+    .live-message.new {
+        background: #dc2626;
+        animation: pulse 1s infinite;
+    }
+
+    .live-message .timestamp {
+        font-size: 0.8rem;
+        opacity: 0.8;
+        float: right;
+    }
+
+    @keyframes slideIn {
+        from { transform: translateX(-100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.02); }
+    }
+
+    .main-content {
+        padding: 0;
+    }
+
+    .tab-container {
+        display: flex;
+        background: #f8fafc;
+        border-bottom: 2px solid #e2e8f0;
+        position: sticky;
+        top: 132px;
+        z-index: 999;
+        overflow-x: auto;
+    }
+
+    .tab {
+        flex: 1;
+        padding: 1rem 0.5rem;
+        text-align: center;
+        cursor: pointer;
+        background: transparent;
+        border: none;
+        font-weight: 600;
+        color: #64748b;
+        transition: all 0.3s;
+        font-size: 0.9rem;
+        white-space: nowrap;
+        min-width: 100px;
+    }
+
+    .tab.active {
+        background: white;
+        color: #dc2626;
+        border-bottom: 3px solid #dc2626;
+    }
+
+    .tab-content {
+        display: none;
+        padding: 1.5rem;
+        min-height: calc(100vh - 200px);
+    }
+
+    .tab-content.active {
+        display: block;
+    }
+
+    .station-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        border-left: 5px solid #dc2626;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .station-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+
+    .station-card.completed {
+        border-left-color: #10b981;
+        background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    }
+
+    .station-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .station-number {
+        background: #dc2626;
+        color: white;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        margin-right: 1rem;
+        flex-shrink: 0;
+    }
+
+    .station-number.completed {
+        background: #10b981;
+    }
+
+    .station-title {
+        flex: 1;
+        font-size: 1.3rem;
+        font-weight: bold;
+        color: #1f2937;
+    }
+
+    .station-subtitle {
+        color: #6b7280;
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+    }
+
+    .station-details {
+        display: none;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 2px solid #e5e7eb;
+    }
+
+    .station-details.active {
+        display: block;
+    }
+
+    .detail-section {
+        margin-bottom: 1.5rem;
+    }
+
+    .detail-section h4 {
+        color: #dc2626;
+        margin-bottom: 0.8rem;
+        font-size: 1.1rem;
+        display: flex;
+        align-items: center;
+    }
+
+    .detail-section h4::before {
+        content: "▶";
+        margin-right: 0.5rem;
+        color: #dc2626;
+    }
+
+    .photo-challenge {
+        background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin: 1rem 0;
+        border-left: 4px solid #6366f1;
+    }
+
+    .photo-challenge h4 {
+        color: #4f46e5;
+        margin-bottom: 1rem;
+        font-size: 1.2rem;
+    }
+
+    .photo-upload-area {
+        border: 3px dashed #a5b4fc;
+        border-radius: 10px;
+        padding: 2rem;
+        text-align: center;
+        margin: 1rem 0;
+        cursor: pointer;
+        transition: all 0.3s;
+        background: rgba(255,255,255,0.5);
+    }
+
+    .photo-upload-area:hover {
+        border-color: #6366f1;
+        background: rgba(255,255,255,0.8);
+    }
+
+    .photo-upload-area.has-photo {
+        border-color: #10b981;
+        background: #f0fdf4;
+    }
+
+    .photo-preview {
+        max-width: 100%;
+        max-height: 200px;
+        border-radius: 8px;
+        margin: 1rem 0;
+    }
+
+    .ai-rating {
+        background: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin: 1rem 0;
+        text-align: center;
+        border: 2px solid #10b981;
+    }
+
+    .rating-score {
+        font-size: 3rem;
+        font-weight: bold;
+        color: #059669;
+        margin-bottom: 0.5rem;
+    }
+
+    .rating-text {
+        color: #047857;
+        font-size: 1.1rem;
+        margin-bottom: 1rem;
+    }
+
+    .rating-details {
+        background: #f0fdf4;
+        padding: 1rem;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        color: #065f46;
+    }
+
+    .image-gallery {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+        margin: 1rem 0;
+    }
+
+    .gallery-image {
+        width: 100%;
+        height: 120px;
+        object-fit: cover;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: transform 0.3s;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .gallery-image:hover {
+        transform: scale(1.05);
+    }
+
+    .gallery-item {
+        text-align: center;
+    }
+
+    .gallery-item small {
+        display: block;
+        margin-top: 0.5rem;
+        color: #6b7280;
+        font-size: 0.8rem;
+    }
+
+    .btn {
+        background: #dc2626;
+        color: white;
+        border: none;
+        padding: 1rem 2rem;
+        border-radius: 8px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s;
+        width: 100%;
+        font-size: 1rem;
+        margin-top: 1rem;
+    }
+
+    .btn:hover {
+        background: #991b1b;
+        transform: translateY(-2px);
+    }
+
+    .btn:disabled {
+        background: #9ca3af;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .btn-secondary {
+        background: #6b7280;
+    }
+
+    .btn-secondary:hover {
+        background: #4b5563;
+    }
+
+    .score-display {
+        background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+        padding: 1rem;
+        border-radius: 10px;
+        text-align: center;
+        margin: 1rem 0;
+        border: 2px solid #8b5cf6;
+    }
+
+    .score-number {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #5b21b6;
+    }
+
+    .score-label {
+        color: #7c3aed;
+        margin-top: 0.5rem;
+    }
+
+    .team-ranking {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin: 1rem 0;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    .team-rank-item {
+        display: flex;
+        align-items: center;
+        padding: 1rem;
+        margin: 0.5rem 0;
+        border-radius: 8px;
+        background: #f8fafc;
+    }
+
+    .team-rank-item.highlight {
+        background: #fef3c7;
+        border: 2px solid #f59e0b;
+    }
+
+    .rank-position {
+        background: #6b7280;
+        color: white;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        margin-right: 1rem;
+    }
+
+    .rank-position.gold {
+        background: #f59e0b;
+    }
+
+    .rank-position.silver {
+        background: #6b7280;
+    }
+
+    .rank-position.bronze {
+        background: #d97706;
+    }
+
+    #map {
+        height: 400px;
+        width: 100%;
+        border-radius: 10px;
+        margin: 1rem 0;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    .location-info {
+        background: #f0f9ff;
+        border: 2px solid #0ea5e9;
+        border-radius: 10px;
+        padding: 1rem;
+        margin: 1rem 0;
+    }
+
+    .distance-info {
+        font-weight: bold;
+        color: #0369a1;
+        margin-bottom: 0.5rem;
+    }
+
+    .team-selector {
+        background: white;
+        border: 2px solid #e5e7eb;
+        border-radius: 10px;
+        padding: 1rem;
+        margin: 1rem 0;
+    }
+
+    .team-option {
+        display: flex;
+        align-items: center;
+        padding: 0.8rem;
+        margin: 0.5rem 0;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background 0.3s;
+    }
+
+    .team-option:hover {
+        background: #f3f4f6;
+    }
+
+    .team-option.selected {
+        background: #dbeafe;
+        border: 2px solid #3b82f6;
+    }
+
+    .team-color {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        margin-right: 1rem;
+    }
+
+    .chat-container {
+        background: white;
+        border-radius: 12px;
+        padding: 1rem;
+        margin: 1rem 0;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .chat-message {
+        padding: 0.5rem;
+        margin: 0.5rem 0;
+        border-radius: 8px;
+        background: #f8fafc;
+        border-left: 3px solid #3b82f6;
+    }
+
+    .chat-message.own {
+        background: #dbeafe;
+        border-left-color: #1d4ed8;
+        margin-left: 2rem;
+    }
+
+    .chat-input-container {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 1rem;
+    }
+
+    .chat-input {
+        flex: 1;
+        padding: 0.8rem;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 1rem;
+    }
+
+    .chat-send {
+        padding: 0.8rem 1.5rem;
+        background: #3b82f6;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: bold;
+    }
+
+    .success-message {
+        background: #10b981;
+        color: white;
+        padding: 1rem;
+        border-radius: 8px;
+        margin: 1rem 0;
+        text-align: center;
+        animation: slideIn 0.5s ease;
+    }
+
+    .loading-spinner {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #dc2626;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-right: 0.5rem;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .hidden {
+        display: none !important;
+    }
+
+    .file-input {
+        display: none;
+    }
+
+    .notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #059669;
+        color: white;
+        padding: 1rem;
+        border-radius: 8px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        z-index: 10000;
+        animation: slideIn 0.5s ease;
+    }
+
+    .notification.error {
+        background: #dc2626;
+    }
+
+    @media (max-width: 768px) {
         .container {
-            max-width: 100vw;
-            margin: 0 auto;
-            min-height: 100vh;
-            background: white;
-            box-shadow: 0 0 30px rgba(0,0,0,0.3);
+            box-shadow: none;
         }
-
-        header {
-            background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
-            color: white;
-            padding: 1rem;
-            text-align: center;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-        }
-
+        
         h1 {
-            font-size: 1.8rem;
-            margin-bottom: 0.5rem;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            font-size: 1.5rem;
         }
-
-        .subtitle {
-            font-size: 0.9rem;
-            opacity: 0.9;
-        }
-
-        .progress-container {
-            background: rgba(255,255,255,0.2);
-            height: 8px;
-            border-radius: 4px;
-            margin-top: 1rem;
-            overflow: hidden;
-        }
-
-        .progress-bar {
-            background: #fbbf24;
-            height: 100%;
-            width: 0%;
-            border-radius: 4px;
-            transition: width 0.5s ease;
-        }
-
-        .live-message {
-            background: #059669;
-            color: white;
-            padding: 1rem;
-            margin: 0.5rem;
-            border-radius: 8px;
-            animation: slideIn 0.5s ease;
-            border-left: 4px solid #047857;
-        }
-
-        .live-message.new {
-            background: #dc2626;
-            animation: pulse 1s infinite;
-        }
-
-        @keyframes slideIn {
-            from { transform: translateX(-100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.02); }
-        }
-
-        .main-content {
-            padding: 0;
-        }
-
-        .tab-container {
-            display: flex;
-            background: #f8fafc;
-            border-bottom: 2px solid #e2e8f0;
-            position: sticky;
-            top: 132px;
-            z-index: 999;
-        }
-
+        
         .tab {
-            flex: 1;
-            padding: 1rem 0.5rem;
-            text-align: center;
-            cursor: pointer;
-            background: transparent;
-            border: none;
-            font-weight: 600;
-            color: #64748b;
-            transition: all 0.3s;
-            font-size: 0.9rem;
+            font-size: 0.8rem;
+            padding: 0.8rem 0.3rem;
         }
-
-        .tab.active {
-            background: white;
-            color: #dc2626;
-            border-bottom: 3px solid #dc2626;
-        }
-
+        
         .tab-content {
-            display: none;
-            padding: 1.5rem;
-            min-height: calc(100vh - 200px);
+            padding: 1rem;
         }
-
-        .tab-content.active {
-            display: block;
-        }
-
+        
         .station-card {
-            background: white;
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            border-left: 5px solid #dc2626;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .station-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-        }
-
-        .station-card.completed {
-            border-left-color: #10b981;
-            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-        }
-
-        .station-header {
-            display: flex;
-            justify-content: between;
-            align-items: center;
-            margin-bottom: 1rem;
-        }
-
-        .station-number {
-            background: #dc2626;
-            color: white;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            margin-right: 1rem;
-        }
-
-        .station-number.completed {
-            background: #10b981;
-        }
-
-        .station-title {
-            flex: 1;
-            font-size: 1.3rem;
-            font-weight: bold;
-            color: #1f2937;
-        }
-
-        .station-subtitle {
-            color: #6b7280;
-            font-size: 0.9rem;
-            margin-bottom: 1rem;
-        }
-
-        .station-details {
-            display: none;
-            margin-top: 1rem;
-            padding-top: 1rem;
-            border-top: 2px solid #e5e7eb;
-        }
-
-        .station-details.active {
-            display: block;
-        }
-
-        .detail-section {
-            margin-bottom: 1.5rem;
-        }
-
-        .detail-section h4 {
-            color: #dc2626;
-            margin-bottom: 0.8rem;
-            font-size: 1.1rem;
-            display: flex;
-            align-items: center;
-        }
-
-        .detail-section h4::before {
-            content: "▶";
-            margin-right: 0.5rem;
-            color: #dc2626;
-        }
-
-        .photo-challenge {
-            background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin: 1rem 0;
-            border-left: 4px solid #6366f1;
-        }
-
-        .photo-challenge h4 {
-            color: #4f46e5;
-            margin-bottom: 1rem;
-            font-size: 1.2rem;
-        }
-
-        .photo-upload-area {
-            border: 3px dashed #a5b4fc;
-            border-radius: 10px;
-            padding: 2rem;
-            text-align: center;
-            margin: 1rem 0;
-            cursor: pointer;
-            transition: all 0.3s;
-            background: rgba(255,255,255,0.5);
-        }
-
-        .photo-upload-area:hover {
-            border-color: #6366f1;
-            background: rgba(255,255,255,0.8);
-        }
-
-        .photo-upload-area.has-photo {
-            border-color: #10b981;
-            background: #f0fdf4;
-        }
-
-        .photo-preview {
-            max-width: 100%;
-            max-height: 200px;
-            border-radius: 8px;
-            margin: 1rem 0;
-        }
-
-        .ai-rating {
-            background: white;
-            border-radius: 10px;
-            padding: 1.5rem;
-            margin: 1rem 0;
-            text-align: center;
-            border: 2px solid #10b981;
-        }
-
-        .rating-score {
-            font-size: 3rem;
-            font-weight: bold;
-            color: #059669;
-            margin-bottom: 0.5rem;
-        }
-
-        .rating-text {
-            color: #047857;
-            font-size: 1.1rem;
-            margin-bottom: 1rem;
-        }
-
-        .rating-details {
-            background: #f0fdf4;
             padding: 1rem;
-            border-radius: 8px;
-            font-size: 0.9rem;
-            color: #065f46;
         }
-
+        
         .image-gallery {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 1rem;
-            margin: 1rem 0;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
         }
+    }
+</style>
+```
 
-        .image-placeholder {
-            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
-            border-radius: 8px;
-            padding: 2rem 1rem;
-            text-align: center;
-            color: #6b7280;
-            border: 2px dashed #d1d5db;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .image-placeholder:hover {
-            background: linear-gradient(135deg, #ddd6fe 0%, #c7d2fe 100%);
-            border-color: #8b5cf6;
-        }
-
-        .activity-card {
-            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-            border-radius: 10px;
-            padding: 1.5rem;
-            margin: 1rem 0;
-            border-left: 4px solid #f59e0b;
-        }
-
-        .activity-title {
-            font-weight: bold;
-            color: #92400e;
-            margin-bottom: 1rem;
-            font-size: 1.1rem;
-        }
-
-        .quiz-option {
-            background: white;
-            border: 2px solid #e5e7eb;
-            border-radius: 8px;
-            padding: 1rem;
-            margin: 0.5rem 0;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .quiz-option:hover {
-            border-color: #3b82f6;
-            background: #eff6ff;
-        }
-
-        .quiz-option.selected {
-            border-color: #dc2626;
-            background: #fef2f2;
-        }
-
-        .quiz-option.correct {
-            border-color: #10b981;
-            background: #f0fdf4;
-        }
-
-        .quiz-option.wrong {
-            border-color: #ef4444;
-            background: #fef2f2;
-        }
-
-        .btn {
-            background: #dc2626;
-            color: white;
-            border: none;
-            padding: 1rem 2rem;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s;
-            width: 100%;
-            font-size: 1rem;
-            margin-top: 1rem;
-        }
-
-        .btn:hover {
-            background: #991b1b;
-            transform: translateY(-2px);
-        }
-
-        .btn:disabled {
-            background: #9ca3af;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .btn-secondary {
-            background: #6b7280;
-        }
-
-        .btn-secondary:hover {
-            background: #4b5563;
-        }
-
-        .score-display {
-            background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
-            padding: 1rem;
-            border-radius: 10px;
-            text-align: center;
-            margin: 1rem 0;
-            border: 2px solid #8b5cf6;
-        }
-
-        .score-number {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #5b21b6;
-        }
-
-        .score-label {
-            color: #7c3aed;
-            margin-top: 0.5rem;
-        }
-
-        .team-ranking {
-            background: white;
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin: 1rem 0;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
-
-        .team-rank-item {
-            display: flex;
-            align-items: center;
-            padding: 1rem;
-            margin: 0.5rem 0;
-            border-radius: 8px;
-            background: #f8fafc;
-        }
-
-        .team-rank-item.highlight {
-            background: #fef3c7;
-            border: 2px solid #f59e0b;
-        }
-
-        .rank-position {
-            background: #6b7280;
-            color: white;
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            margin-right: 1rem;
-        }
-
-        .rank-position.gold {
-            background: #f59e0b;
-        }
-
-        .rank-position.silver {
-            background: #6b7280;
-        }
-
-        .rank-position.bronze {
-            background: #d97706;
-        }
-
-        #map {
-            height: 400px;
-            width: 100%;
-            border-radius: 10px;
-            margin: 1rem 0;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
-
-        .location-info {
-            background: #f0f9ff;
-            border: 2px solid #0ea5e9;
-            border-radius: 10px;
-            padding: 1rem;
-            margin: 1rem 0;
-        }
-
-        .distance-info {
-            font-weight: bold;
-            color: #0369a1;
-            margin-bottom: 0.5rem;
-        }
-
-        .team-selector {
-            background: white;
-            border: 2px solid #e5e7eb;
-            border-radius: 10px;
-            padding: 1rem;
-            margin: 1rem 0;
-        }
-
-        .team-option {
-            display: flex;
-            align-items: center;
-            padding: 0.8rem;
-            margin: 0.5rem 0;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-
-        .team-option:hover {
-            background: #f3f4f6;
-        }
-
-        .team-option.selected {
-            background: #dbeafe;
-            border: 2px solid #3b82f6;
-        }
-
-        .team-color {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            margin-right: 1rem;
-        }
-
-        .offline-indicator {
-            background: #f59e0b;
-            color: white;
-            padding: 0.5rem;
-            text-align: center;
-            font-size: 0.9rem;
-            display: none;
-        }
-
-        .offline-indicator.active {
-            display: block;
-        }
-
-        .master-panel {
-            background: #1f2937;
-            color: white;
-            padding: 1.5rem;
-            border-radius: 12px;
-            margin: 1rem 0;
-        }
-
-        .master-input {
-            width: 100%;
-            padding: 1rem;
-            border-radius: 8px;
-            border: none;
-            margin: 0.5rem 0;
-            font-size: 1rem;
-        }
-
-        .voice-controls {
-            display: flex;
-            gap: 1rem;
-            margin: 1rem 0;
-        }
-
-        .voice-btn {
-            flex: 1;
-            padding: 1rem;
-            border-radius: 8px;
-            border: none;
-            color: white;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        .voice-btn.record {
-            background: #dc2626;
-        }
-
-        .voice-btn.stop {
-            background: #6b7280;
-        }
-
-        .voice-btn.broadcasting {
-            background: #059669;
-            animation: pulse 1s infinite;
-        }
-
-        .final-feedback {
-            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-            color: white;
-            padding: 2rem;
-            border-radius: 15px;
-            text-align: center;
-            margin: 2rem 0;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
-        }
-
-        .final-feedback h2 {
-            font-size: 2rem;
-            margin-bottom: 1rem;
-        }
-
-        .feedback-photos {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-            gap: 0.5rem;
-            margin: 1rem 0;
-        }
-
-        .feedback-photo {
-            width: 100%;
-            height: 80px;
-            object-fit: cover;
-            border-radius: 8px;
-            border: 3px solid rgba(255,255,255,0.5);
-        }
-
-        @media (max-width: 768px) {
-            .container {
-                box-shadow: none;
-            }
-            
-            h1 {
-                font-size: 1.5rem;
-            }
-            
-            .tab {
-                font-size: 0.8rem;
-                padding: 0.8rem 0.3rem;
-            }
-            
-            .tab-content {
-                padding: 1rem;
-            }
-            
-            .station-card {
-                padding: 1rem;
-            }
-            
-            .image-gallery {
-                grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            }
-
-            .voice-controls {
-                flex-direction: column;
-            }
-        }
-
-        .loading-spinner {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #dc2626;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-right: 0.5rem;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .success-message {
-            background: #10b981;
-            color: white;
-            padding: 1rem;
-            border-radius: 8px;
-            margin: 1rem 0;
-            text-align: center;
-        }
-
-        .role-play-card {
-            background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
-            border-radius: 10px;
-            padding: 1.5rem;
-            margin: 1rem 0;
-            border-left: 4px solid #6366f1;
-        }
-
-        .person-role {
-            background: white;
-            border-radius: 8px;
-            padding: 1rem;
-            margin: 0.8rem 0;
-            border-left: 4px solid #8b5cf6;
-        }
-
-        .person-role strong {
-            color: #5b21b6;
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        .file-input {
-            display: none;
-        }
-    </style>
 </head>
 <body>
     <div class="container">
-        <div class="offline-indicator" id="offlineIndicator">
-            📡 Offline-Modus aktiv - Alle Inhalte gespeichert
-        </div>
-
         <!-- Live Messages Area -->
         <div id="liveMessages"></div>
 
-        <header>
-            <h1>🏛️ Kölner Abendspaziergang</h1>
-            <p class="subtitle">Entdecke 2000 Jahre Stadtgeschichte</p>
-            <div class="progress-container">
-                <div class="progress-bar" id="progressBar"></div>
-            </div>
-        </header>
+```
+    <header>
+        <h1>🏛️ Kölner Abendspaziergang</h1>
+        <p class="subtitle">Entdecke 2000 Jahre Stadtgeschichte</p>
+        <div class="progress-container">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+    </header>
 
-        <div class="main-content">
-            <div class="tab-container">
-                <button class="tab active" onclick="showTab('overview')">🗺️ Übersicht</button>
-                <button class="tab" onclick="showTab('stations')">📍 Stationen</button>
-                <button class="tab" onclick="showTab('ranking')">🏆 Ranking</button>
-                <button class="tab" onclick="showTab('map')">🗺️ Karte</button>
-                <button class="tab" onclick="showTab('team')">👥 Team</button>
-            </div>
+    <div class="main-content">
+        <div class="tab-container">
+            <button class="tab active" onclick="showTab('overview')">🗺️ Übersicht</button>
+            <button class="tab" onclick="showTab('stations')">📍 Stationen</button>
+            <button class="tab" onclick="showTab('ranking')">🏆 Ranking</button>
+            <button class="tab" onclick="showTab('chat')">💬 Chat</button>
+            <button class="tab" onclick="showTab('map')">🗺️ Karte</button>
+        </div>
 
-            <!-- Overview Tab -->
-            <div id="overview" class="tab-content active">
-                <div class="score-display">
-                    <div class="score-number" id="totalScore">0</div>
-                    <div class="score-label">Foto-Punkte gesammelt</div>
-                </div>
-
-                <div class="team-selector" id="teamSelector">
-                    <h3 style="margin-bottom: 1rem; color: #374151;">📸 Wähle dein Team:</h3>
-                    <div class="team-option" onclick="selectTeam('red', '🔴 Team Römer')">
-                        <div class="team-color" style="background: #dc2626;"></div>
-                        <span>🔴 Team Römer</span>
-                    </div>
-                    <div class="team-option" onclick="selectTeam('blue', '🔵 Team Gaffeln')">
-                        <div class="team-color" style="background: #2563eb;"></div>
-                        <span>🔵 Team Gaffeln</span>
-                    </div>
-                    <div class="team-option" onclick="selectTeam('green', '🟢 Team Hanseat')">
-                        <div class="team-color" style="background: #059669;"></div>
-                        <span>🟢 Team Hanseat</span>
-                    </div>
-                    <div class="team-option" onclick="selectTeam('yellow', '🟡 Team Modern')">
-                        <div class="team-color" style="background: #d97706;"></div>
-                        <span>🟡 Team Modern</span>
-                    </div>
-                </div>
-
-                <div style="background: #f8fafc; padding: 1.5rem; border-radius: 12px; margin: 1.5rem 0;">
-                    <h3 style="color: #1f2937; margin-bottom: 1rem;">📋 Tour-Informationen</h3>
-                    <p><strong>⏰ Dauer:</strong> ca. 3,5 Stunden</p>
-                    <p><strong>📍 Start:</strong> Heumarkt, 19:30 Uhr</p>
-                    <p><strong>🎯 Ziel:</strong> Alte Bastion</p>
-                    <p><strong>👥 Teilnehmer:</strong> 15-25 Personen</p>
-                    <p><strong>📸 Ziel:</strong> Sammle die besten Foto-Punkte!</p>
-                </div>
-
-                <!-- Master Panel (hidden by default) -->
-                <div class="master-panel hidden" id="masterPanel">
-                    <h3>🎛️ Master-Kontrolle</h3>
-                    <input type="password" class="master-input" id="masterPassword" placeholder="Master-Passwort eingeben">
-                    <button class="btn" onclick="activateMaster()">🔓 Aktivieren</button>
-                    
-                    <div class="hidden" id="masterControls">
-                        <h4>📢 Live-Nachricht senden:</h4>
-                        <textarea class="master-input" id="liveMessageInput" placeholder="Nachricht an alle Teilnehmer..." rows="3"></textarea>
-                        <button class="btn" onclick="sendLiveMessage()">📤 Nachricht senden</button>
-                        
-                        <h4>🎤 Sprach-Übertragung:</h4>
-                        <div class="voice-controls">
-                            <button class="voice-btn record" onclick="startVoiceBroadcast()">🎤 Sprechen</button>
-                            <button class="voice-btn stop" onclick="stopVoiceBroadcast()">⏹️ Stopp</button>
-                        </div>
-                        <div id="voiceStatus"></div>
-                    </div>
-                </div>
-
-                <button class="btn" onclick="startTour()">🚀 Tour starten</button>
-                <button class="btn btn-secondary" onclick="showMasterPanel()">⚙️ Tour-Leitung</button>
+        <!-- Overview Tab -->
+        <div id="overview" class="tab-content active">
+            <div class="score-display">
+                <div class="score-number" id="totalScore">0</div>
+                <div class="score-label">Foto-Punkte gesammelt</div>
             </div>
 
-            <!-- Stations Tab -->
-            <div id="stations" class="tab-content">
-                <div id="stationsList">
-                    <!-- Stations will be generated here -->
+            <div class="team-selector" id="teamSelector">
+                <h3 style="margin-bottom: 1rem; color: #374151;">📸 Wähle dein Team:</h3>
+                <div class="team-option" onclick="selectTeam('red', '🔴 Team Römer')">
+                    <div class="team-color" style="background: #dc2626;"></div>
+                    <span>🔴 Team Römer</span>
+                </div>
+                <div class="team-option" onclick="selectTeam('blue', '🔵 Team Gaffeln')">
+                    <div class="team-color" style="background: #2563eb;"></div>
+                    <span>🔵 Team Gaffeln</span>
+                </div>
+                <div class="team-option" onclick="selectTeam('green', '🟢 Team Hanseat')">
+                    <div class="team-color" style="background: #059669;"></div>
+                    <span>🟢 Team Hanseat</span>
+                </div>
+                <div class="team-option" onclick="selectTeam('yellow', '🟡 Team Modern')">
+                    <div class="team-color" style="background: #d97706;"></div>
+                    <span>🟡 Team Modern</span>
                 </div>
             </div>
 
-            <!-- Ranking Tab -->
-            <div id="ranking" class="tab-content">
-                <div class="team-ranking">
-                    <h3 style="color: #1f2937; margin-bottom: 1rem;">🏆 Live-Ranking</h3>
-                    <div id="rankingList">
-                        <!-- Ranking will be generated here -->
-                    </div>
-                </div>
-
-                <div style="background: white; border-radius: 12px; padding: 1.5rem; margin: 1.5rem 0; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-                    <h3 style="color: #1f2937; margin-bottom: 1rem;">📸 Punktesystem</h3>
-                    <ul style="margin-left: 1.5rem; color: #4b5563;">
-                        <li><strong>Perfektes Foto:</strong> 50-100 Punkte</li>
-                        <li><strong>Gutes Foto:</strong> 30-49 Punkte</li>
-                        <li><strong>Okay Foto:</strong> 10-29 Punkte</li>
-                        <li><strong>Kreativitäts-Bonus:</strong> +20 Punkte</li>
-                        <li><strong>Früher Upload:</strong> +10 Punkte</li>
-                    </ul>
-                </div>
-
-                <!-- Final Feedback Area (hidden initially) -->
-                <div class="final-feedback hidden" id="finalFeedback">
-                    <h2>🎉 Herzlichen Glückwunsch!</h2>
-                    <p>Du hast alle Stationen gemeistert und tolle Fotos gesammelt!</p>
-                    <div class="feedback-photos" id="feedbackPhotos"></div>
-                    <p><strong>Dein persönlicher Foto-Score: <span id="finalScore">0</span> Punkte</strong></p>
-                    <p>Du hast viele tolle neue Erinnerungen und ein tieferes Verständnis für Kölns Geschichte gesammelt. Danke fürs Mitmachen! 📸✨</p>
-                </div>
+            <div style="background: #f8fafc; padding: 1.5rem; border-radius: 12px; margin: 1.5rem 0;">
+                <h3 style="color: #1f2937; margin-bottom: 1rem;">📋 Tour-Informationen</h3>
+                <p><strong>⏰ Dauer:</strong> ca. 3,5 Stunden</p>
+                <p><strong>📍 Start:</strong> Heumarkt, 19:30 Uhr</p>
+                <p><strong>🎯 Ziel:</strong> Alte Bastion</p>
+                <p><strong>👥 Teilnehmer:</strong> 15-25 Personen</p>
+                <p><strong>📸 Ziel:</strong> Sammle die besten Foto-Punkte!</p>
             </div>
 
-            <!-- Map Tab -->
-            <div id="map-tab" class="tab-content">
-                <div class="location-info">
-                    <div class="distance-info" id="distanceInfo">📍 Standort wird ermittelt...</div>
-                    <p>💡 Tipp: Erlaube Standortzugriff für Navigation</p>
-                </div>
-                <div id="map"></div>
-                <button class="btn" onclick="centerOnUser()">📍 Zu meinem Standort</button>
-            </div>
+            <button class="btn" onclick="startTour()">🚀 Tour starten</button>
+        </div>
 
-            <!-- Team Tab -->
-            <div id="team" class="tab-content">
-                <div class="score-display">
-                    <div class="score-number" id="teamScore">0</div>
-                    <div class="score-label">Team: <span id="selectedTeamName">Kein Team gewählt</span></div>
-                </div>
-
-                <div style="background: white; border-radius: 12px; padding: 1.5rem; margin: 1.5rem 0; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-                    <h3 style="color: #1f2937; margin-bottom: 1rem;">📱 App-Features</h3>
-                    <ul style="margin-left: 1.5rem; color: #4b5563;">
-                        <li>🌐 Offline-fähig (alle Inhalte gespeichert)</li>
-                        <li>🗺️ Interaktive Karte mit Navigation</li>
-                        <li>📸 KI-bewertete Foto-Challenges</li>
-                        <li>🏆 Live-Team-Ranking</li>
-                        <li>📢 Live-Nachrichten vom Guide</li>
-                        <li>🎤 Sprach-Übertragung</li>
-                        <li>💾 Automatische Foto-Sammlung</li>
-                    </ul>
-                </div>
-
-                <button class="btn btn-secondary" onclick="resetProgress()">🔄 Fortschritt zurücksetzen</button>
+        <!-- Stations Tab -->
+        <div id="stations" class="tab-content">
+            <div id="stationsList">
+                <!-- Stations will be generated here -->
             </div>
         </div>
+
+        <!-- Ranking Tab -->
+        <div id="ranking" class="tab-content">
+            <div class="team-ranking">
+                <h3 style="color: #1f2937; margin-bottom: 1rem;">🏆 Live-Ranking</h3>
+                <div id="rankingList">
+                    <!-- Ranking will be generated here -->
+                </div>
+            </div>
+
+            <div style="background: white; border-radius: 12px; padding: 1.5rem; margin: 1.5rem 0; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                <h3 style="color: #1f2937; margin-bottom: 1rem;">📸 KI-Punktesystem</h3>
+                <ul style="margin-left: 1.5rem; color: #4b5563;">
+                    <li><strong>Technische Qualität:</strong> Schärfe, Belichtung, Komposition (0-40 Punkte)</li>
+                    <li><strong>Kreativität:</strong> Perspective, Originalität (0-30 Punkte)</li>
+                    <li><strong>Stadtbezug:</strong> Erkannte Sehenswürdigkeiten (0-20 Punkte)</li>
+                    <li><strong>Personen/Gruppenfoto:</strong> Bonus für Teamarbeit (+10 Punkte)</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Chat Tab -->
+        <div id="chat" class="tab-content">
+            <div class="chat-container" id="chatContainer">
+                <div class="chat-message">
+                    <strong>System:</strong> Willkommen im Tour-Chat! 👋
+                    <span class="timestamp">jetzt</span>
+                </div>
+            </div>
+            <div class="chat-input-container">
+                <input type="text" class="chat-input" id="chatInput" placeholder="Nachricht eingeben..." maxlength="200">
+                <button class="chat-send" onclick="sendMessage()">Senden</button>
+            </div>
+            <div style="margin-top: 1rem; text-align: center; color: #6b7280; font-size: 0.9rem;">
+                💡 Chat funktioniert zwischen allen Geräten mit derselben Tour-ID
+            </div>
+        </div>
+
+        <!-- Map Tab -->
+        <div id="map-tab" class="tab-content">
+            <div class="location-info">
+                <div class="distance-info" id="distanceInfo">📍 Standort wird ermittelt...</div>
+                <p>💡 Tipp: Erlaube Standortzugriff für Navigation</p>
+            </div>
+            <div id="map"></div>
+            <button class="btn" onclick="centerOnUser()">📍 Zu meinem Standort</button>
+        </div>
     </div>
+</div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
-    <script>
-        // App State
-        let appState = {
-            currentStation: 0,
-            completedStations: [],
-            totalScore: 0,
-            selectedTeam: null,
-            teamName: '',
-            userLocation: null,
-            map: null,
-            markers: [],
-            uploadedPhotos: [],
-            masterMode: false,
-            voiceBroadcast: null,
-            mediaRecorder: null,
-            audioStream: null
-        };
+<!-- TensorFlow.js for AI photo rating -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tensorflow/4.15.0/tf.min.js"></script>
+<!-- Leaflet for maps -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
 
-        // Master password
-        const MASTER_PASSWORD = "koeln2025";
+<script>
+    // App State
+    let appState = {
+        currentStation: 0,
+        completedStations: [],
+        totalScore: 0,
+        selectedTeam: null,
+        teamName: '',
+        userLocation: null,
+        map: null,
+        markers: [],
+        uploadedPhotos: [],
+        userName: '',
+        tourId: 'cologne-tour-' + new Date().toISOString().split('T')[0],
+        mlModel: null,
+        chatInitialized: false
+    };
 
-        // Fake AI responses for photo rating
-        const aiResponses = [
-            { score: 95, text: "Perfekt! Fantastische Komposition und historischer Bezug!", details: "Hervorragende Bildqualität, kreative Perspektive, starker Bezug zur Station" },
-            { score: 87, text: "Sehr gut! Tolle Aufnahme mit schöner Beleuchtung!", details: "Gute Bildkomposition, interessanter Winkel, klarer Bezug erkennbar" },
-            { score: 78, text: "Gut gelungen! Schöne Interpretation der Aufgabe!", details: "Solide Aufnahme, passender Inhalt, leichte Verbesserungen möglich" },
-            { score: 65, text: "Okay! Das Motiv ist erkennbar, könnte aber schärfer sein.", details: "Grundlegende Anforderungen erfüllt, Bildqualität ausbaufähig" },
-            { score: 92, text: "Exzellent! Besonders kreative Herangehensweise!", details: "Außergewöhnliche Kreativität, perfekte technische Umsetzung" },
-            { score: 73, text: "Schön! Gute Umsetzung der Station-Challenge!", details: "Interessante Perspektive, gute Idee, technisch in Ordnung" },
-            { score: 88, text: "Sehr schön! Tolles Verständnis für das historische Thema!", details: "Starker thematischer Bezug, gute Bildgestaltung" }
-        ];
+    // BroadcastChannel for real-time communication between tabs
+    let broadcastChannel = null;
 
-        // Station Data with Photo Challenges
-        const stations = [
-            {
-                id: 1,
-                title: "Heumarkt",
-                subtitle: "Wo alles anfing: 2000 Jahre Migration und Handel",
-                lat: 50.9356, lng: 6.9611,
-                description: "Start der Tour am historischen Heumarkt, einem der geschichtsträchtigsten Orte Kölns.",
-                photoChallenge: "Mache ein Foto von dir oder deinem Team vor dem Reiterstandbild - zeigt dabei mit Handbewegungen, wie Händler früher ihre Waren angepriesen haben könnten!",
-                mainText: `Die Stadt ist ca. 2.000 Jahre alt. CCAA - Colonia Claudia Ara Agrippinensium - wurde 50 n. Chr. von den Römern gegründet, mithilfe der germanischen Ubier. Das war übrigens eine der ersten erfolgreichen Integration zweier Kulturen in Europa. 
+    // Station Data with real images
+    const stations = [
+        {
+            id: 1,
+            title: "Heumarkt",
+            subtitle: "Wo alles anfing: 2000 Jahre Migration und Handel",
+            lat: 50.9356, lng: 6.9611,
+            description: "Start der Tour am historischen Heumarkt, einem der geschichtsträchtigsten Orte Kölns.",
+            photoChallenge: "Mache ein Foto von dir oder deinem Team vor dem Reiterstandbild - zeigt dabei mit Handbewegungen, wie Händler früher ihre Waren angepriesen haben könnten!",
+            mainText: `Die Stadt ist ca. 2.000 Jahre alt. CCAA - Colonia Claudia Ara Agrippinensium - wurde 50 n. Chr. von den Römern gegründet, mithilfe der germanischen Ubier. Das war übrigens eine der ersten erfolgreichen Integration zweier Kulturen in Europa. 
+```
 
 Hier auf dem Heumarkt stehen wir an einem der ehemaligen Einfallstore zur Stadt. Die Markmannsgasse runter, links von der heutigen Deutzer Brücke, befand sich von 1822 bis 1915 die einzige Schiffsbrücke über den Rhein - 42 schwimmende Boote, die über 30 Mal täglich für Schiffe geöffnet wurden.
 
-Das "Stapelrecht" von 1259 bis 1804 war ein 545 Jahre gültiges Handelsprivileg. Alle Waren auf Schiffen, die an Köln vorbeifahren wollten, mussten drei Tage hier angeboten werden.`,
-                images: [
-                    { title: "Heumarkt 1880", description: "Historisches Foto mit Pferdekutschen" },
-                    { title: "Römische Stadtentwicklung", description: "Animation der Stadtgründung" },
-                    { title: "Deutzer Schiffsbrücke", description: "Technische Funktionsweise" },
-                    { title: "Mittelalterlicher Markt", description: "Rekonstruktion des Handelsplatzes" }
-                ]
-            },
-            {
-                id: 2,
-                title: "Eisenmarkt",
-                subtitle: "Puppentheater, Demokratie und dunkle Zeiten",
-                lat: 50.9375, lng: 6.9583,
-                description: "Das Hänneschen Theater und die Geschichte der Kölner Gaffeln-Demokratie.",
-                photoChallenge: "Macht ein Gruppen-Selfie vor dem Hänneschen Theater und stellt dabei verschiedene Puppentheater-Figuren mit Gesichtsausdrücken dar!",
-                mainText: `Hier steht das Hänneschen Theater - Deutschlands ältestes Puppentheater seit 1802. Das Theater ist mehr als Kinderunterhaltung: Es ist ein politisches Kabarett. Alle Stücke spielen im "Knollendorf" - einem satirischen Abbild Kölns.
+Das “Stapelrecht” von 1259 bis 1804 war ein 545 Jahre gültiges Handelsprivileg. Alle Waren auf Schiffen, die an Köln vorbeifahren wollten, mussten drei Tage hier angeboten werden.`, images: [ { url: "https://images.unsplash.com/photo-1568667256549-094345857637?w=400", title: "Heumarkt heute", description: "Moderne Aufnahme des historischen Platzes" }, { url: "https://images.unsplash.com/photo-1590736969955-71cc94901144?w=400", title: "Kölner Architektur", description: "Typische Rheinische Bauweise" }, { url: "https://images.unsplash.com/photo-1551622656-fa4fa96b5faf?w=400", title: "Rheinufer", description: "Blick auf den historischen Handelsweg" } ] }, { id: 2, title: "Kölner Dom", subtitle: "Das ewige Bauprojekt und die Verkehrsrevolution", lat: 50.9413, lng: 6.9583, description: "Kölns Wahrzeichen und die längste Baustelle der Welt.", photoChallenge: "Bildet mit eurem Team eine 'menschliche Kathedrale' vor dem Dom - streckt die Arme hoch und formt gotische Bögen nach!", mainText: `Der Dom wird seit fast 800 Jahren gebaut - etwas länger als der BER. Die Grundsteinlegung 1248 war Kölns Versuch, Paris und andere Großstädte zu beeindrucken. Köln war immer reich, aber auch provinziell.
 
-Aber wie so vieles in Köln hat auch dieses Theater eine Nazi-Vergangenheit. Während der Nazizeit wurde das Puppentheater zur Propaganda-Maschine umfunctioniert.
+1248-1330 wurden Grundmauern und der Chor fertiggestellt. Dann ging das Geld aus. Fast 300 Jahre stand nur ein riesiger Kran auf dem unvollendeten Turm - eines der ersten großen “paused projects” der Geschichte.
 
-Hier am Eisenmarkt trafen sich zum ersten Mal Händler und Handwerker, die sich nicht mehr von oben regieren lassen wollten. Sie gründeten die erste "Gaffel" - benannt nach den gemeinsamen Mahlzeiten mit Gabeln in Brauhäusern. 1396 übernahmen 22 Gaffeln die komplette Stadtherrschaft - eine der frühesten bürgerlichen Revolutionen Europas.`,
-                images: [
-                    { title: "Hänneschen Theater innen", description: "Aufnahme während einer Vorstellung" },
-                    { title: "Nazi-Propaganda 1938", description: "Propagandaplakat des Theaters" },
-                    { title: "Bücherverbrennung Köln", description: "Eine der ersten in Deutschland 1933" },
-                    { title: "Erste Gaffel-Versammlung", description: "Rekonstruktion von 1396" }
-                ]
-            },
-            {
-                id: 3,
-                title: "Tünnes und Schäl",
-                subtitle: "Kölner Humor und Selbstironie",
-                lat: 50.9361, lng: 6.9578,
-                description: "Die berühmten Kölner Figuren als Symbol für Stadtmensch und Landmensch.",
-                photoChallenge: "Stellt Tünnes und Schäl nach! Eine Person spielt den schlauen Schäl (zeigend/belehrend), eine den gutmütigen Tünnes (staunend/freundlich).",
-                mainText: `Hier seht ihr Schäl, den schlechten Stadtbewohner - besserwisserisch, schielend, oft betrunken. Und Tünnes, den gutmütigen Bauern vom Land. Schäl steht für die arroganten Städter, Tünnes für die ehrlichen Landleute, die die Stadt mit Lebensmitteln versorgen.
+Erst die Romantik des 19. Jahrhunderts und preußisches Geld vollendeten den Dom 1880. Der Hauptbahnhof entstand 1894 als einer der modernsten Europas.`, images: [ { url: "https://images.unsplash.com/photo-1571115764595-644a1f56a55c?w=400", title: "Kölner Dom", description: "Die berühmten Zwillingstürme" }, { url: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400", title: "Dom Innenraum", description: "Gotische Architektur" }, { url: "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=400", title: "Dom bei Nacht", description: "Beleuchtetes Wahrzeichen" } ] }, { id: 3, title: "Altstadt", subtitle: "Macht, Rebellion und eine große Liebesgeschichte", lat: 50.9369, lng: 6.9572, description: "Das historische Rathaus und die berühmte Jan-und-Griet-Geschichte.", photoChallenge: "Fotografiert euch am historischen Rathaus und stellt eine romantische Szene nach: Eine Person kniet, eine steht stolz daneben.", mainText: `Der Rathaus-Turm zeigt wichtige Persönlichkeiten der Kölner Geschichte. 1945 zerstört und wieder aufgebaut. Da auch die Figuren zerstört waren, wählte eine Kommission neue aus - von über 100 Kandidaten. Alle männlich.
 
-Diese Figuren zeigen: Die Kölner wissen, dass sie nicht die schlauesten sind - und sind stolz darauf. Selbstironie als Überlebensstrategie. In einer Stadt, die ständig zwischen verschiedenen Mächten lavieren musste, war Humor oft der einzige Widerstand.
+Oben am Turm seht ihr den “Platz-Jabbeck” - er streckt Autoritäten die Zunge raus. So viel Respekt hatten die Kölner für die Obrigkeit.
 
-Direkt hier zeigt uns auch die Schmitz-Säule, wie weit der Mond entfernt ist - 384.400 km. Warum? Weil es witzig ist. Typisch Köln.`,
-                images: [
-                    { title: "Figuren-Entwicklung", description: "Tünnes und Schäl seit 1803" },
-                    { title: "Klassische Geschichten", description: "Audio-Sammlung (3 Min)" },
-                    { title: "Moderne Straßenkunst", description: "Zeitgenössische Interpretationen" }
-                ]
-            },
-            {
-                id: 4,
-                title: "Alter Markt",
-                subtitle: "Macht, Rebellion und eine große Liebesgeschichte",
-                lat: 50.9369, lng: 6.9572,
-                description: "Das historische Rathaus und die berühmte Jan-und-Griet-Geschichte.",
-                photoChallenge: "Fotografiert euch am Jan-von-Werth-Brunnen und stellt die romantische Szene nach: Eine Person kniet (Jan), eine steht stolz daneben (Griet).",
-                mainText: `Der Rathaus-Turm zeigt wichtige Persönlichkeiten der Kölner Geschichte. 1945 zerstört und wieder aufgebaut. Da auch die Figuren zerstört waren, wählte eine Kommission neue aus - von über 100 Kandidaten. Alle männlich. Bei einer Stadt, die quasi von einer Frau gegründet wurde: Agrippina.
+Die Altstadt erzählt eine der größten deutschen Liebesgeschichten: Jan ist ein armer Knecht, Griet arbeitet auch dort. Er mag sie, sie ihn nicht. Der Krieg beginnt, Jan zieht aus, kommt als berühmter General zurück.`, images: [ { url: "https://images.unsplash.com/photo-1544892504-5ad7a122b56f?w=400", title: "Kölner Altstadt", description: "Historische Gassen" }, { url: "https://images.unsplash.com/photo-1517840901100-8179e982acb7?w=400", title: "Rheinpromenade", description: "Spazierweg mit Domblick" }, { url: "https://images.unsplash.com/photo-1567696911980-2eed69651dd7?w=400", title: "Historisches Rathaus", description: "Gotisches Bauwerk" } ] }, { id: 4, title: "Groß St. Martin", subtitle: "Romanische Kirche und Klostergeschichte", lat: 50.9347, lng: 6.9597, description: "Eine der zwölf großen romanischen Kirchen Kölns.", photoChallenge: "Macht ein Foto der imposanten Kirchtürme und zeigt dabei mittelalterliche Gebetshaltungen!", mainText: `Groß St. Martin ist eine der beeindruckendsten romanischen Kirchen Kölns. Der markante Vierungsturm prägt seit dem 12. Jahrhundert die Silhouette der Altstadt.
 
-Oben am Turm seht ihr den "Platz-Jabbeck" - er streckt Autoritäten die Zunge raus. So viel Respekt hatten die Kölner für die Obrigkeit.
+Die Kirche wurde auf römischen Fundamenten errichtet - archäologische Ausgrabungen zeigen die Kontinuität der Besiedlung über 2000 Jahre. Im Mittelalter war hier eines der mächtigsten Benediktinerklöster der Region.
 
-Der Jan-von-Werth-Brunnen erzählt eine der größten deutschen Liebesgeschichten: Jan ist ein armer Knecht, wo auch Griet arbeitet. Er mag sie, sie ihn nicht. Der Krieg beginnt, Jan zieht aus, kommt als berühmter General zurück. Er fragt: "Jetzt heiratest du mich?" Griets Antwort: "Wer et hät jedon, der hät es jewuss" - Wahre Liebe braucht keinen Reichtum.`,
-                images: [
-                    { title: "360° Panorama", description: "Alter Markt heute vs. 1500" },
-                    { title: "Rathausturm-Figuren", description: "Biografien aller Persönlichkeiten" },
-                    { title: "Platz-Jabbeck", description: "Symbol des kölschen Widerstands" },
-                    { title: "Jan und Griet", description: "Historiengemälde der Liebesgeschichte" }
-                ]
-            },
-            {
-                id: 5,
-                title: "Rhein-Denkmal",
-                subtitle: "Totgeschlagen - Totgeschwiegen",
-                lat: 50.9372, lng: 6.9614,
-                description: "Denkmal für verfolgte und ermordete Homosexuelle.",
-                photoChallenge: "Macht ein respektvolles Foto am Denkmal mit einem Zeichen für Vielfalt und Toleranz (z.B. Herz-Handhaltung, Regenbogen-Pose).",
-                mainText: `„Totgeschlagen – Totgeschwiegen" - das steht auf diesem roten Dreieck. Das rote Dreieck war das Erkennungszeichen für Homosexuelle in Nazi-Konzentrationslagern - ähnlich dem gelben Judenstern.
+Der Turm diente auch als Orientierungspunkt für Rheinschiffe und Händler - ein früher “Leuchtturm” des Handels.`, images: [ { url: "https://images.unsplash.com/photo-1518709268805-4e9042af2e96?w=400", title: "Groß St. Martin", description: "Romanischer Kirchenbau" }, { url: "https://images.unsplash.com/photo-1573052905904-34ad8c27f0d4?w=400", title: "Altstadt Panorama", description: "Kirchtürme der Altstadt" }, { url: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400", title: "Rheinufer", description: "Blick auf die Kirchen" } ] }, { id: 5, title: "Fischmarkt", subtitle: "Handel, Handwerk und Bürgerstolz", lat: 50.9378, lng: 6.9589, description: "Mittelpunkt des mittelalterlichen Handels.", photoChallenge: "Zeigt mit euren Händen, wie mittelalterliche Händler ihre Waren präsentiert haben - seid kreativ mit Gesten!", mainText: `Der Fischmarkt war im Mittelalter das kommerzielle Herz Kölns. Hier wurde nicht nur Fisch verkauft, sondern alle wichtigen Handelsgüter der Region.
 
-"Totgeschlagen" bezieht sich auf die Nazi-Zeit. "Totgeschwiegen" auf die Zeit danach: Homosexualität blieb bis 1994 eine Straftat in Deutschland. Die Verfolgung ging weiter, nur leiser. Das Schweigen führte auch zur AIDS-Epidemie der 1980er-90er.
+Die Kölner Bürger entwickelten hier ihre berühmte Unabhängigkeit. 1074 erhielt Köln bereits wichtige Stadtrechte - 500 Jahre bevor andere deutsche Städte folgten.
 
-Wenn wir heute von Angriffen auf CSD-Paraden hören, lohnt es sich, daran zu erinnern, wohin das führen kann. Demokratie und Menschenrechte sind nicht selbstverständlich - sie müssen jeden Tag verteidigt werden.`,
-                images: [
-                    { title: "LGBTQ+-Verfolgung", description: "Dokumentation der Geschichte" },
-                    { title: "Zeitleiste", description: "Von Kriminalisierung zur Gleichstellung" },
-                    { title: "Zeitzeugen", description: "Persönliche Berichte 70er-90er Jahre" }
-                ]
-            },
-            {
-                id: 6,
-                title: "Dom/Hauptbahnhof",
-                subtitle: "Das ewige Bauprojekt und die Verkehrsrevolution",
-                lat: 50.9413, lng: 6.9583,
-                description: "Kölns Wahrzeichen und die längste Baustelle der Welt.",
-                photoChallenge: "Bildet mit eurem Team eine 'menschliche Kathedrale' vor dem Dom - streckt die Arme hoch und formt gotische Bögen nach!",
-                mainText: `Der Dom wird seit fast 800 Jahren gebaut - etwas länger als der BER. Die Grundsteinlegung 1248 war Kölns Versuch, Paris und andere Großstädte zu beeindrucken. Köln war immer reich, aber auch provinziell.
+Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerksmeister aus Köln gründeten in vielen anderen Städten ähnliche Organisationen.`,
+images: [
+{
+url: “https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=400”,
+title: “Alter Markt Köln”,
+description: “Historischer Marktplatz”
+},
+{
+url: “https://images.unsplash.com/photo-1574790398664-0cb3c99c3711?w=400”,
+title: “Kölner Häuser”,
+description: “Typische Architektur”
+},
+{
+url: “https://images.unsplash.com/photo-1587474260584-136574528ed5?w=400”,
+title: “Rheinischer Markt”,
+description: “Handelstradition”
+}
+]
+}
+];
 
-1248-1330 wurden Grundmauern und der Chor fertiggestellt. Dann ging das Geld aus. Fast 300 Jahre stand nur ein riesiger Kran auf dem unvollendeten Turm - eines der ersten großen "paused projects" der Geschichte.
+```
+    // Real-time Messaging System
+    class TourMessaging {
+        constructor(tourId) {
+            this.tourId = tourId;
+            this.channel = null;
+            this.init();
+        }
 
-Erst die Romantik des 19. Jahrhunderts und preußisches Geld vollendeten den Dom 1880. Der Hauptbahnhof entstand 1894 als einer der modernsten Europas. Das Problem: Dom, Bahnhof und Hohenzollernbrücke stehen sich gegenseitig im Weg.
-
-Im Zweiten Weltkrieg bekam der Dom 14 Bombenvolltreffer, blieb aber stehen - als Orientierungsmarke für Bomber.`,
-                images: [
-                    { title: "Dombau Zeitraffer", description: "1248-1880, längste Baustelle der Welt" },
-                    { title: "Bahnhofsvorplatz 1900", description: "Mit Pferdefuhrwerken" },
-                    { title: "Kölner Domkran", description: "1560-1842, Symbol des Stillstands" },
-                    { title: "Architektur-Konflikt", description: "Warum Dom und Bahnhof nicht passen" },
-                    { title: "Bombenangriff", description: "Dom zwischen Trümmern 1944-45" }
-                ]
-            },
-            {
-                id: 7,
-                title: "Eigelsteinviertel",
-                subtitle: "Klein-Istanbul und 11.000 Jungfrauen",
-                lat: 50.9461, lng: 6.9528,
-                description: "Das multikulturellste Viertel Kölns und eine große Lüge der Stadtgeschichte.",
-                photoChallenge: "Fotografiert euch vor einem multikulturellen Geschäft und zeigt dabei mit Händen/Gesichtern die Vielfalt der Kulturen (z.B. verschiedene Grüße).",
-                mainText: `Willkommen im Eigelsteinviertel - seit 50 Jahren das multikulturellste Viertel Kölns. Hier leben Menschen aus über 100 Nationen auf engstem Raum zusammen.
-
-An der Ecke zur Ursulastraße begegnet uns eine der größten Lügen der Stadtgeschichte: die 11.000 Jungfrauen. Die Wahrheit: Es waren wahrscheinlich 11 Frauen, nicht 11.000. Ein mittelalterlicher Übersetzungsfehler aus "XI M.V." (11 martyres virgines = 11 jungfräuliche Märtyrerinnen) wurde zu "11 milia virginum" (11.000 Jungfrauen). Aber mit 11.000 ließ sich mehr Geld durch Reliquienhandel verdienen.
-
-Nach dem Anwerbeabkommen mit der Türkei 1961 entstanden hier die ersten "Gastarbeiter"-Siedlungen. Aus den geplanten 2 Jahren wurden Generationen. Das Viertel durchlief alle Phasen der Migration: Ankunft, Ghettobildung, Integration, Gentrifizierung.`,
-                images: [
-                    { title: "Eigelstein 1974-heute", description: "Von Arbeitervorstadt zu Klein-Istanbul" },
-                    { title: "Eigelsteintor", description: "Rekonstruktion mit Stadtmauer" },
-                    { title: "Ursula-Legende", description: "Mittelalterliche Handschrift" },
-                    { title: "Erste türkische Familien", description: "Oral History vom Ankommen" }
-                ]
-            },
-            {
-                id: 8,
-                title: "Stützenhof",
-                subtitle: "Arbeit, Moral und gesellschaftliche Doppelmoral",
-                lat: 50.9433, lng: 6.9489,
-                description: "Das ehemalige Prostituiertenviertel und seine Sozialgeschichte.",
-                photoChallenge: "Macht ein nachdenkliches Gruppen-Foto über gesellschaftlichen Wandel - zeigt verschiedene Generationen/Perspektiven in euren Posen.",
-                mainText: `Hier, rund um den ehemaligen Stützenhof, befand sich jahrhundertelang Kölns größtes Prostitutionsviertel.
-
-Prostitution war im mittelalterlichen Köln legal und städtisch reguliert - fortschrittlicher als in vielen anderen Städten. Die Stadt kassierte Steuern, bot medizinische Versorgung und rechtlichen Schutz. Ein pragmatischer Ansatz für ein unvermeidliches gesellschaftliches Phänomen.
-
-Viele der arbeitenden Frauen waren Migrantinnen aus dem Umland oder anderen Städten. Migration und Sexarbeit waren oft verknüpft - ein Muster, das sich durch die Jahrhunderte zieht.
-
-Die Moral änderte sich im 19. Jahrhundert. Prostitution wurde kriminalisiert, das Viertel "gesäubert". Die Frauen verschwanden nicht - sie wurden nur unsichtbarer und schutzloser.`,
-                images: [
-                    { title: "Rotlichtviertel", description: "Historische Karten im Wandel" },
-                    { title: "Stadtrecht 1437", description: "Regulierung der Prostitution" },
-                    { title: "Polizeiprotokoll 1890", description: "Säuberung des Viertels" },
-                    { title: "Moderne Debatte", description: "Sexarbeiter*innen-Rechte heute" }
-                ]
-            },
-            {
-                id: 9,
-                title: "Ebertplatz",
-                subtitle: "Vom Sicherheitshafen zum Angstraum und zurück",
-                lat: 50.9472, lng: 6.9456,
-                description: "Ein Lehrstück über Stadtplanung und Bürgerbeteiligung.",
-                photoChallenge: "Zeigt den Wandel des Platzes: Macht zwei Fotos - eins 'grimmig/problematisch' und eins 'hoffnungsvoll/optimistisch' am selben Ort.",
-                mainText: `1972 als moderner "Sicherheitshafen" eröffnet: übersichtlich, hell ausgeleuchtet, mit U-Bahn-Anschluss. Ein Vorzeigeprojekt der Stadtplanung. Die Idee: Kriminalität durch Design verhindern.
-
-Dann die Kehrtwende: In den 1990er-2000ern wurde der Platz zum Symbol städtischer Probleme. Drogenhandel, Gewalt, Vermüllung. Die Medien nannten ihn "gefährlichsten Platz Kölns". Die Realität war komplexer: viel Angst, weniger tatsächliche Kriminalstatistik.
-
-Der Platz wurde zum Treffpunkt für Menschen am gesellschaftlichen Rand: Obdachlose, Drogenabhängige, Arbeitslose. Nicht alle waren kriminell, aber alle waren sichtbar. Und Sichtbarkeit von Armut macht vielen Menschen Angst.
-
-Seit 2015 die Wende: Bürgerinitiativen, Stadtteilladen, Community-Events. Nicht durch Überwachung und Verdrängung, sondern durch Beteiligung und positive Nutzung.`,
-                images: [
-                    { title: "Zeitreise", description: "1970 Vorzeigeplatz vs. 2010 Angstraum vs. heute" },
-                    { title: "Medienberichterstattung", description: "Angstraum Ebertplatz 1995-2010" },
-                    { title: "Studie", description: "Wahrnehmung vs. Realität von Unsicherheit" },
-                    { title: "Ebertplatz lebt", description: "Bürgerinitiative dokumentiert Wandel" },
-                    { title: "Urban Planning", description: "Erfolgreiche Platz-Revitalisierung weltweit" }
-                ]
-            },
-            {
-                id: 10,
-                title: "Alte Bastion",
-                subtitle: "Grenzen überwinden, Brücken bauen",
-                lat: 50.9489, lng: 6.9444,
-                description: "Ende der Tour an der ehemaligen Stadtgrenze.",
-                photoChallenge: "Abschluss-Foto: Macht ein Siegerfoto mit allen Teammitgliedern - zeigt eure Freude über die abgeschlossene Tour und das Gelernte!",
-                mainText: `Wir stehen hier an der ehemaligen Stadtgrenze - der preußischen Bastionsbefestigung von 1816. Von hier aus konntet ihr früher nicht weiter, ohne die Stadt zu verlassen.
-
-Diese Bastion symbolisiert Grenzen. Köln war immer eine Stadt der Grenzen - zwischen römischem und germanischem Reich, zwischen weltlicher und kirchlicher Macht, zwischen arm und reich, zwischen alteingesessen und zugewandert.
-
-Aber Köln war auch immer eine Stadt, die Grenzen überwunden hat. 1958 schloss Köln als eine der ersten deutschen Städte eine Partnerschaft mit dem ehemaligen "Erzfeind" Frankreich (Limoges), 1967 folgte Liverpool - mitten im Kalten Krieg Brücken bauen statt Mauern.
-
-Köln war nie "rein deutsch" oder kulturell homogen. Die Stadt lebte 2000 Jahre von Migration, Handel und kulturellem Austausch. Die Probleme von heute sind nicht neu. Aber die Lösungen auch nicht: Respekt, Beteiligung, gemeinsame Gestaltung der Stadt.`,
-                images: [
-                    { title: "Stadtgrenzen", description: "Kölns Grenzen durch 2000 Jahre" },
-                    { title: "Städtepartnerschaften", description: "Köln baut Brücken nach Europa" },
-                    { title: "Gesichter Kölns", description: "Montage aller Nationalitäten heute" },
-                    { title: "Start with a Friend", description: "Köln als Stadt der Begegnungen" }
-                ]
-            }
-        ];
-
-        // Initialize App
-        function initApp() {
-            generateStationsList();
-            initMap();
-            updateUI();
-            startLiveMessageCheck();
-            
-            // Check if geolocation is available
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    position => {
-                        appState.userLocation = {
-                            lat: position.coords.latitude,
-                            lng: position.coords.longitude
-                        };
-                        updateLocationInfo();
-                        if (appState.map) {
-                            addUserLocationToMap();
-                        }
-                    },
-                    error => {
-                        console.log('Geolocation not available:', error);
-                        document.getElementById('distanceInfo').textContent = '📍 Standort nicht verfügbar';
-                    }
-                );
-            }
-
-            // Load saved state
-            loadState();
-
-            // Register service worker for offline functionality
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/sw.js').catch(e => {
-                    console.log('Service worker registration failed');
+        init() {
+            // BroadcastChannel for local communication
+            if ('BroadcastChannel' in window) {
+                this.channel = new BroadcastChannel(this.tourId);
+                this.channel.addEventListener('message', (event) => {
+                    this.handleMessage(event.data);
                 });
             }
 
-            // Check online status
-            updateOnlineStatus();
-            window.addEventListener('online', updateOnlineStatus);
-            window.addEventListener('offline', updateOnlineStatus);
+            // Fallback: LocalStorage + polling
+            this.startPolling();
         }
 
-        function updateOnlineStatus() {
-            const indicator = document.getElementById('offlineIndicator');
-            if (!navigator.onLine) {
-                indicator.classList.add('active');
+        sendMessage(userName, message) {
+            const messageData = {
+                id: Date.now() + Math.random(),
+                userName: userName,
+                message: message,
+                timestamp: Date.now(),
+                tourId: this.tourId
+            };
+
+            // Send via BroadcastChannel
+            if (this.channel) {
+                this.channel.postMessage(messageData);
+            }
+
+            // Store in localStorage
+            this.storeMessage(messageData);
+        }
+
+        storeMessage(messageData) {
+            const messages = this.getStoredMessages();
+            messages.push(messageData);
+            
+            // Keep only last 50 messages
+            if (messages.length > 50) {
+                messages.splice(0, messages.length - 50);
+            }
+            
+            localStorage.setItem(`tour_messages_${this.tourId}`, JSON.stringify(messages));
+        }
+
+        getStoredMessages() {
+            const stored = localStorage.getItem(`tour_messages_${this.tourId}`);
+            return stored ? JSON.parse(stored) : [];
+        }
+
+        handleMessage(messageData) {
+            if (messageData.tourId === this.tourId) {
+                this.displayMessage(messageData);
+            }
+        }
+
+        displayMessage(messageData) {
+            const chatContainer = document.getElementById('chatContainer');
+            const messageDiv = document.createElement('div');
+            
+            const isOwn = messageData.userName === appState.userName;
+            messageDiv.className = `chat-message ${isOwn ? 'own' : ''}`;
+            
+            const timeStr = new Date(messageData.timestamp).toLocaleTimeString('de-DE', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            messageDiv.innerHTML = `
+                <strong>${messageData.userName}:</strong> ${messageData.message}
+                <span class="timestamp">${timeStr}</span>
+            `;
+            
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+
+            // Show notification if not on chat tab
+            if (!document.getElementById('chat').classList.contains('active') && !isOwn) {
+                this.showNotification(`${messageData.userName}: ${messageData.message}`);
+            }
+        }
+
+        startPolling() {
+            // Check for new messages every 2 seconds
+            setInterval(() => {
+                const messages = this.getStoredMessages();
+                const lastCheck = parseInt(localStorage.getItem(`last_check_${this.tourId}`) || '0');
+                
+                const newMessages = messages.filter(msg => msg.timestamp > lastCheck);
+                if (newMessages.length > 0) {
+                    newMessages.forEach(msg => this.displayMessage(msg));
+                    localStorage.setItem(`last_check_${this.tourId}`, Date.now().toString());
+                }
+            }, 2000);
+        }
+
+        loadHistory() {
+            const messages = this.getStoredMessages();
+            messages.forEach(msg => this.displayMessage(msg));
+        }
+
+        showNotification(message) {
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.innerHTML = `💬 ${message}`;
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+    }
+
+    // AI Photo Rating System
+    class AIPhotoRater {
+        constructor() {
+            this.model = null;
+            this.initModel();
+        }
+
+        async initModel() {
+            try {
+                // Load a pre-trained MobileNet model for basic image classification
+                this.model = await tf.loadLayersModel('https://tfhub.dev/google/imagenet/mobilenet_v2_100_224/classification/4');
+                console.log('AI model loaded successfully');
+            } catch (error) {
+                console.log('Could not load AI model, using rule-based rating');
+            }
+        }
+
+        async ratePhoto(imageElement) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = imageElement.naturalWidth || imageElement.width;
+            canvas.height = imageElement.naturalHeight || imageElement.height;
+            ctx.drawImage(imageElement, 0, 0, canvas.width, canvas.height);
+
+            const scores = {
+                technical: await this.analyzeTechnicalQuality(canvas, ctx),
+                composition: await this.analyzeComposition(canvas, ctx),
+                creativity: this.analyzeCreativity(canvas, ctx),
+                people: await this.detectPeople(canvas, ctx)
+            };
+
+            const finalScore = this.calculateFinalScore(scores);
+            const feedback = this.generateFeedback(scores);
+
+            return {
+                score: finalScore,
+                breakdown: scores,
+                feedback: feedback
+            };
+        }
+
+        async analyzeTechnicalQuality(canvas, ctx) {
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            
+            // Analyze sharpness using Laplacian variance
+            const sharpness = this.calculateSharpness(imageData);
+            
+            // Analyze exposure
+            const exposure = this.analyzeExposure(imageData);
+            
+            // Analyze color distribution
+            const colorBalance = this.analyzeColorBalance(imageData);
+
+            return {
+                sharpness: Math.min(100, sharpness * 10),
+                exposure: exposure,
+                colorBalance: colorBalance,
+                overall: (sharpness * 10 + exposure + colorBalance) / 3
+            };
+        }
+
+        calculateSharpness(imageData) {
+            const data = imageData.data;
+            const width = imageData.width;
+            const height = imageData.height;
+            
+            let variance = 0;
+            let count = 0;
+
+            // Apply Laplacian kernel for edge detection
+            for (let y = 1; y < height - 1; y++) {
+                for (let x = 1; x < width - 1; x++) {
+                    const idx = (y * width + x) * 4;
+                    
+                    const laplacian = 
+                        -data[((y-1)*width + x-1)*4] - data[((y-1)*width + x)*4] - data[((y-1)*width + x+1)*4] +
+                        -data[(y*width + x-1)*4] + 8*data[idx] - data[(y*width + x+1)*4] +
+                        -data[((y+1)*width + x-1)*4] - data[((y+1)*width + x)*4] - data[((y+1)*width + x+1)*4];
+                    
+                    variance += laplacian * laplacian;
+                    count++;
+                }
+            }
+            
+            return Math.sqrt(variance / count);
+        }
+
+        analyzeExposure(imageData) {
+            const data = imageData.data;
+            let brightness = 0;
+            let pixels = 0;
+
+            for (let i = 0; i < data.length; i += 4) {
+                const r = data[i];
+                const g = data[i + 1];
+                const b = data[i + 2];
+                brightness += (r + g + b) / 3;
+                pixels++;
+            }
+
+            const avgBrightness = brightness / pixels;
+            
+            // Optimal brightness range is 100-180
+            if (avgBrightness >= 100 && avgBrightness <= 180) {
+                return 90 + Math.random() * 10;
+            } else if (avgBrightness < 100) {
+                return Math.max(20, 90 - (100 - avgBrightness) * 0.5);
             } else {
-                indicator.classList.remove('active');
+                return Math.max(20, 90 - (avgBrightness - 180) * 0.3);
             }
         }
 
-        function showTab(tabName) {
-            // Update tab buttons
-            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-            event.target.classList.add('active');
+        analyzeColorBalance(imageData) {
+            const data = imageData.data;
+            let r = 0, g = 0, b = 0;
+            let pixels = 0;
 
-            // Update tab content
-            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-            document.getElementById(tabName === 'map' ? 'map-tab' : tabName).classList.add('active');
-
-            // Initialize map if switching to map tab
-            if (tabName === 'map' && !appState.map) {
-                setTimeout(initMap, 100);
+            for (let i = 0; i < data.length; i += 4) {
+                r += data[i];
+                g += data[i + 1];
+                b += data[i + 2];
+                pixels++;
             }
 
-            // Update ranking if switching to ranking tab
-            if (tabName === 'ranking') {
+            r /= pixels;
+            g /= pixels;
+            b /= pixels;
+
+            // Calculate color balance score
+            const avgColor = (r + g + b) / 3;
+            const rDiff = Math.abs(r - avgColor);
+            const gDiff = Math.abs(g - avgColor);
+            const bDiff = Math.abs(b - avgColor);
+            
+            const colorVariance = (rDiff + gDiff + bDiff) / 3;
+            return Math.max(50, 100 - colorVariance / 2);
+        }
+
+        analyzeComposition(canvas, ctx) {
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            
+            // Rule of thirds analysis
+            const ruleOfThirds = this.analyzeRuleOfThirds(imageData);
+            
+            // Symmetry analysis
+            const symmetry = this.analyzeSymmetry(imageData);
+            
+            return {
+                ruleOfThirds: ruleOfThirds,
+                symmetry: symmetry,
+                overall: (ruleOfThirds + symmetry) / 2
+            };
+        }
+
+        analyzeRuleOfThirds(imageData) {
+            const width = imageData.width;
+            const height = imageData.height;
+            const data = imageData.data;
+            
+            const thirdX = width / 3;
+            const thirdY = height / 3;
+            
+            const intersections = [
+                [thirdX, thirdY], [2 * thirdX, thirdY],
+                [thirdX, 2 * thirdY], [2 * thirdX, 2 * thirdY]
+            ];
+            
+            let score = 0;
+            intersections.forEach(([x, y]) => {
+                const pixelIndex = (Math.floor(y) * width + Math.floor(x)) * 4;
+                const contrast = this.calculateLocalContrast(data, pixelIndex, width, height);
+                score += contrast;
+            });
+            
+            return Math.min(100, score / intersections.length * 2);
+        }
+
+        calculateLocalContrast(data, centerIndex, width, height) {
+            const radius = 5;
+            let centerValue = (data[centerIndex] + data[centerIndex + 1] + data[centerIndex + 2]) / 3;
+            let surroundingSum = 0;
+            let count = 0;
+            
+            for (let dy = -radius; dy <= radius; dy++) {
+                for (let dx = -radius; dx <= radius; dx++) {
+                    const idx = centerIndex + (dy * width + dx) * 4;
+                    if (idx >= 0 && idx < data.length - 3) {
+                        surroundingSum += (data[idx] + data[idx + 1] + data[idx + 2]) / 3;
+                        count++;
+                    }
+                }
+            }
+            
+            const avgSurrounding = surroundingSum / count;
+            return Math.abs(centerValue - avgSurrounding);
+        }
+
+        analyzeSymmetry(imageData) {
+            // Simplified symmetry check
+            const width = imageData.width;
+            const height = imageData.height;
+            const data = imageData.data;
+            
+            let symmetryScore = 0;
+            const samples = Math.min(100, width / 10);
+            
+            for (let i = 0; i < samples; i++) {
+                const x = Math.floor((i / samples) * width);
+                const leftIdx = (Math.floor(height / 2) * width + x) * 4;
+                const rightIdx = (Math.floor(height / 2) * width + (width - 1 - x)) * 4;
+                
+                if (leftIdx < data.length - 3 && rightIdx < data.length - 3) {
+                    const leftColor = (data[leftIdx] + data[leftIdx + 1] + data[leftIdx + 2]) / 3;
+                    const rightColor = (data[rightIdx] + data[rightIdx + 1] + data[rightIdx + 2]) / 3;
+                    symmetryScore += Math.max(0, 100 - Math.abs(leftColor - rightColor));
+                }
+            }
+            
+            return symmetryScore / samples;
+        }
+
+        analyzeCreativity(canvas, ctx) {
+            // Simplified creativity analysis based on color variance and edge density
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+            
+            // Color variance
+            let colorVariance = 0;
+            const colorHistogram = new Array(256).fill(0);
+            
+            for (let i = 0; i < data.length; i += 4) {
+                const gray = Math.floor((data[i] + data[i + 1] + data[i + 2]) / 3);
+                colorHistogram[gray]++;
+            }
+            
+            // Calculate entropy as creativity measure
+            const totalPixels = data.length / 4;
+            let entropy = 0;
+            for (let i = 0; i < 256; i++) {
+                if (colorHistogram[i] > 0) {
+                    const p = colorHistogram[i] / totalPixels;
+                    entropy -= p * Math.log2(p);
+                }
+            }
+            
+            return Math.min(100, entropy * 12);
+        }
+
+        async detectPeople(canvas, ctx) {
+            // Simplified people detection based on skin tone detection
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+            
+            let skinPixels = 0;
+            let totalPixels = data.length / 4;
+            
+            for (let i = 0; i < data.length; i += 4) {
+                const r = data[i];
+                const g = data[i + 1];
+                const b = data[i + 2];
+                
+                // Simple skin tone detection
+                if (this.isSkinTone(r, g, b)) {
+                    skinPixels++;
+                }
+            }
+            
+            const skinRatio = skinPixels / totalPixels;
+            return skinRatio > 0.05 ? 80 + Math.random() * 20 : 20 + Math.random() * 30;
+        }
+
+        isSkinTone(r, g, b) {
+            // Simplified skin tone detection
+            return (r > 95 && g > 40 && b > 20 && 
+                    r > g && r > b && 
+                    r - g > 15 && 
+                    Math.abs(r - g) > 15);
+        }
+
+        calculateFinalScore(scores) {
+            const weights = {
+                technical: 0.4,
+                composition: 0.3,
+                creativity: 0.2,
+                people: 0.1
+            };
+
+            let finalScore = 0;
+            finalScore += (scores.technical.overall || 50) * weights.technical;
+            finalScore += (scores.composition.overall || 50) * weights.composition;
+            finalScore += (scores.creativity || 50) * weights.creativity;
+            finalScore += (scores.people || 50) * weights.people;
+
+            return Math.round(Math.max(10, Math.min(100, finalScore)));
+        }
+
+        generateFeedback(scores) {
+            const feedback = [];
+            
+            if (scores.technical.sharpness > 70) {
+                feedback.push("📸 Sehr scharfes Bild!");
+            } else if (scores.technical.sharpness < 40) {
+                feedback.push("⚠️ Bild könnte schärfer sein");
+            }
+            
+            if (scores.composition.ruleOfThirds > 70) {
+                feedback.push("🎨 Gute Komposition!");
+            } else {
+                feedback.push("💡 Tipp: Platziere wichtige Elemente an den Drittel-Linien");
+            }
+            
+            if (scores.creativity > 70) {
+                feedback.push("✨ Sehr kreativ!");
+            }
+            
+            if (scores.people > 60) {
+                feedback.push("👥 Tolle Gruppenaufnahme!");
+            }
+            
+            return feedback.length > 0 ? feedback : ["Schöne Aufnahme!"];
+        }
+    }
+
+    // Team Synchronization System
+    class TeamSync {
+        constructor() {
+            this.channel = null;
+            this.init();
+        }
+
+        init() {
+            if ('BroadcastChannel' in window) {
+                this.channel = new BroadcastChannel('team-sync');
+                this.channel.addEventListener('message', (event) => {
+                    this.handleSyncMessage(event.data);
+                });
+            }
+            
+            // Periodic sync
+            setInterval(() => {
+                this.syncTeamScores();
+            }, 5000);
+        }
+
+        updateTeamScore(teamId, newScore, stationId) {
+            const update = {
+                type: 'score_update',
+                teamId: teamId,
+                score: newScore,
+                stationId: stationId,
+                timestamp: Date.now(),
+                userId: appState.userName
+            };
+
+            // Broadcast to other tabs
+            if (this.channel) {
+                this.channel.postMessage(update);
+            }
+
+            // Store locally
+            this.storeTeamScore(teamId, newScore, stationId);
+        }
+
+        storeTeamScore(teamId, score, stationId) {
+            const key = `team_score_${teamId}`;
+            const currentData = JSON.parse(localStorage.getItem(key) || '{"score": 0, "stations": []}');
+            
+            currentData.score = Math.max(currentData.score, score);
+            if (!currentData.stations.includes(stationId)) {
+                currentData.stations.push(stationId);
+            }
+            currentData.lastUpdate = Date.now();
+            
+            localStorage.setItem(key, JSON.stringify(currentData));
+        }
+
+        getTeamScore(teamId) {
+            const key = `team_score_${teamId}`;
+            const data = JSON.parse(localStorage.getItem(key) || '{"score": 0, "stations": []}');
+            return data.score;
+        }
+
+        getAllTeamScores() {
+            const teams = ['red', 'blue', 'green', 'yellow'];
+            return teams.map(teamId => ({
+                id: teamId,
+                name: this.getTeamName(teamId),
+                score: this.getTeamScore(teamId)
+            }));
+        }
+
+        getTeamName(teamId) {
+            const names = {
+                'red': '🔴 Team Römer',
+                'blue': '🔵 Team Gaffeln', 
+                'green': '🟢 Team Hanseat',
+                'yellow': '🟡 Team Modern'
+            };
+            return names[teamId] || teamId;
+        }
+
+        handleSyncMessage(data) {
+            if (data.type === 'score_update') {
+                this.storeTeamScore(data.teamId, data.score, data.stationId);
                 updateRanking();
             }
         }
 
-        function generateStationsList() {
-            const container = document.getElementById('stationsList');
-            
-            stations.forEach(station => {
-                const isCompleted = appState.completedStations.includes(station.id);
-                
-                const stationCard = document.createElement('div');
-                stationCard.className = `station-card ${isCompleted ? 'completed' : ''}`;
-                stationCard.onclick = () => toggleStationDetails(station.id);
-                
-                stationCard.innerHTML = `
-                    <div class="station-header">
-                        <div class="station-number ${isCompleted ? 'completed' : ''}">${station.id}</div>
-                        <div>
-                            <div class="station-title">${station.title}</div>
-                            <div class="station-subtitle">${station.subtitle}</div>
-                        </div>
-                    </div>
-                    <div class="station-details" id="station-${station.id}">
-                        <div class="detail-section">
-                            <h4>📖 Geschichte</h4>
-                            <p>${station.mainText}</p>
-                        </div>
-                        
-                        <div class="detail-section">
-                            <h4>🖼️ Bildergalerie</h4>
-                            <div class="image-gallery">
-                                ${station.images.map(img => `
-                                    <div class="image-placeholder" onclick="showImageInfo('${img.title}', '${img.description}')">
-                                        🖼️<br><small>${img.title}</small>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        </div>
-
-                        <div class="photo-challenge">
-                            <h4>📸 Foto-Challenge</h4>
-                            <p>${station.photoChallenge}</p>
-                            
-                            <div class="photo-upload-area" onclick="selectPhoto(${station.id})" id="upload-area-${station.id}">
-                                <div id="upload-content-${station.id}">
-                                    📷 Hier klicken zum Foto machen/auswählen
-                                </div>
-                            </div>
-                            
-                            <input type="file" class="file-input" id="photo-input-${station.id}" accept="image/*" capture="environment" onchange="handlePhotoUpload(${station.id}, event)">
-                            
-                            <div class="ai-rating hidden" id="rating-${station.id}">
-                                <div class="rating-score" id="score-${station.id}">0</div>
-                                <div class="rating-text" id="rating-text-${station.id}">KI bewertet dein Foto...</div>
-                                <div class="rating-details" id="rating-details-${station.id}"></div>
-                            </div>
-                        </div>
-
-                        <button class="btn" onclick="completeStation(${station.id})" id="complete-btn-${station.id}" 
-                                ${isCompleted ? 'disabled' : ''} style="background: #10b981;">
-                            ${isCompleted ? '✅ Station abgeschlossen' : '🏁 Station abschließen'}
-                        </button>
-                    </div>
-                `;
-                
-                container.appendChild(stationCard);
-            });
-        }
-
-        function toggleStationDetails(stationId) {
-            const details = document.getElementById(`station-${stationId}`);
-            details.classList.toggle('active');
-        }
-
-        function selectTeam(teamId, teamName) {
-            appState.selectedTeam = teamId;
-            appState.teamName = teamName;
-            
-            // Update UI
-            document.querySelectorAll('.team-option').forEach(option => {
-                option.classList.remove('selected');
-            });
-            event.target.closest('.team-option').classList.add('selected');
-            
-            document.getElementById('selectedTeamName').textContent = teamName;
-            
-            // Hide team selector after selection
-            document.getElementById('teamSelector').style.display = 'none';
-            
-            showSuccessMessage('Team ausgewählt! 🎉');
-            saveState();
-        }
-
-        function startTour() {
-            if (!appState.selectedTeam) {
-                alert('Bitte wähle zuerst ein Team aus!');
-                return;
-            }
-            
-            showTab('stations');
-            document.querySelector('[onclick="showTab(\'stations\')"]').click();
-            showSuccessMessage('Tour gestartet! Viel Erfolg! 🚀');
-        }
-
-        function selectPhoto(stationId) {
-            document.getElementById(`photo-input-${stationId}`).click();
-        }
-
-        function handlePhotoUpload(stationId, event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const imageUrl = e.target.result;
-                
-                // Update upload area
-                const uploadArea = document.getElementById(`upload-area-${stationId}`);
-                uploadArea.classList.add('has-photo');
-                uploadArea.innerHTML = `
-                    <img src="${imageUrl}" class="photo-preview" alt="Uploaded photo">
-                    <p>📷 Foto erfolgreich hochgeladen!</p>
-                    <small>Klicke hier für ein neues Foto</small>
-                `;
-
-                // Store photo
-                const existingPhotoIndex = appState.uploadedPhotos.findIndex(p => p.stationId === stationId);
-                const photoData = {
-                    stationId: stationId,
-                    imageUrl: imageUrl,
-                    timestamp: Date.now(),
-                    teamId: appState.selectedTeam
-                };
-
-                if (existingPhotoIndex >= 0) {
-                    appState.uploadedPhotos[existingPhotoIndex] = photoData;
-                } else {
-                    appState.uploadedPhotos.push(photoData);
-                }
-
-                // Simulate AI rating
-                setTimeout(() => {
-                    ratePhoto(stationId);
-                }, 1500);
-
-                saveState();
-            };
-            
-            reader.readAsDataURL(file);
-        }
-
-        function ratePhoto(stationId) {
-            const ratingDiv = document.getElementById(`rating-${stationId}`);
-            ratingDiv.classList.remove('hidden');
-            
-            // Get random AI response
-            const response = aiResponses[Math.floor(Math.random() * aiResponses.length)];
-            
-            // Add bonus points for early uploads and creativity
-            const bonusPoints = Math.floor(Math.random() * 30);
-            const finalScore = Math.min(100, response.score + bonusPoints);
-            
-            // Animate score counting up
-            let currentScore = 0;
-            const scoreElement = document.getElementById(`score-${stationId}`);
-            const interval = setInterval(() => {
-                currentScore += 3;
-                scoreElement.textContent = currentScore;
-                if (currentScore >= finalScore) {
-                    clearInterval(interval);
-                    scoreElement.textContent = finalScore;
-                }
-            }, 50);
-            
-            document.getElementById(`rating-text-${stationId}`).textContent = response.text;
-            document.getElementById(`rating-details-${stationId}`).textContent = response.details;
-            
-            // Add score to total
-            addScore(finalScore);
-            
-            // Store rating
-            const photoData = appState.uploadedPhotos.find(p => p.stationId === stationId);
-            if (photoData) {
-                photoData.score = finalScore;
-                photoData.rating = response;
-            }
-            
-            showSuccessMessage(`Foto bewertet! +${finalScore} Punkte! 📸`);
-        }
-
-        function completeStation(stationId) {
-            if (!appState.completedStations.includes(stationId)) {
-                appState.completedStations.push(stationId);
-                updateProgress();
-                showSuccessMessage('Station abgeschlossen! 🏁');
-                
-                // Update station card
-                const stationCard = document.querySelector(`#complete-btn-${stationId}`).closest('.station-card');
-                stationCard.classList.add('completed');
-                stationCard.querySelector('.station-number').classList.add('completed');
-                
-                // Disable button
-                event.target.disabled = true;
-                event.target.textContent = '✅ Station abgeschlossen';
-                event.target.style.background = '#6b7280';
-
-                // Check if tour is complete
-                if (appState.completedStations.length === stations.length) {
-                    showFinalFeedback();
-                }
-
-                saveState();
-            }
-        }
-
-        function addScore(points) {
-            appState.totalScore += points;
-            updateUI();
-            saveState();
-        }
-
-        function updateUI() {
-            document.getElementById('totalScore').textContent = appState.totalScore;
-            document.getElementById('teamScore').textContent = appState.totalScore;
-            updateProgress();
-        }
-
-        function updateProgress() {
-            const progress = (appState.completedStations.length / stations.length) * 100;
-            document.getElementById('progressBar').style.width = progress + '%';
-        }
-
-        function updateRanking() {
-            const rankingList = document.getElementById('rankingList');
-            
-            // Generate fake team data for ranking
-            const teams = [
-                { name: appState.teamName || 'Dein Team', score: appState.totalScore, isUser: true },
-                { name: '🔴 Team Römer', score: Math.floor(Math.random() * 800) + 200 },
-                { name: '🔵 Team Gaffeln', score: Math.floor(Math.random() * 800) + 200 },
-                { name: '🟢 Team Hanseat', score: Math.floor(Math.random() * 800) + 200 },
-                { name: '🟡 Team Modern', score: Math.floor(Math.random() * 800) + 200 }
-            ].filter(team => team.name !== 'Dein Team' || appState.selectedTeam)
-             .sort((a, b) => b.score - a.score);
-
-            rankingList.innerHTML = '';
-            
-            teams.forEach((team, index) => {
-                const rankItem = document.createElement('div');
-                rankItem.className = `team-rank-item ${team.isUser ? 'highlight' : ''}`;
-                
-                let rankClass = '';
-                if (index === 0) rankClass = 'gold';
-                else if (index === 1) rankClass = 'silver';
-                else if (index === 2) rankClass = 'bronze';
-                
-                rankItem.innerHTML = `
-                    <div class="rank-position ${rankClass}">${index + 1}</div>
-                    <div style="flex: 1;">
-                        <strong>${team.name}</strong>
-                        <div style="color: #6b7280; font-size: 0.9rem;">
-                            ${team.score} Punkte
-                        </div>
-                    </div>
-                    ${team.isUser ? '<div style="color: #f59e0b;">👤</div>' : ''}
-                `;
-                
-                rankingList.appendChild(rankItem);
-            });
-        }
-
-        function showFinalFeedback() {
-            const feedbackDiv = document.getElementById('finalFeedback');
-            const photosDiv = document.getElementById('feedbackPhotos');
-            
-            // Show all uploaded photos
-            photosDiv.innerHTML = '';
-            appState.uploadedPhotos.forEach(photo => {
-                const img = document.createElement('img');
-                img.src = photo.imageUrl;
-                img.className = 'feedback-photo';
-                photosDiv.appendChild(img);
-            });
-            
-            document.getElementById('finalScore').textContent = appState.totalScore;
-            feedbackDiv.classList.remove('hidden');
-            
-            // Scroll to feedback
-            feedbackDiv.scrollIntoView({ behavior: 'smooth' });
-        }
-
-        function showSuccessMessage(message) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = 'success-message';
-            messageDiv.textContent = message;
-            
-            document.body.appendChild(messageDiv);
-            
-            setTimeout(() => {
-                messageDiv.remove();
-            }, 3000);
-        }
-
-        function showImageInfo(title, description) {
-            alert(`🖼️ ${title}\n\n${description}\n\n💡 Tipp: Scanne den QR-Code vor Ort für das echte Bild!`);
-        }
-
-        function resetProgress() {
-            if (confirm('Möchtest du wirklich den gesamten Fortschritt zurücksetzen?')) {
-                appState.completedStations = [];
-                appState.totalScore = 0;
-                appState.currentStation = 0;
-                appState.uploadedPhotos = [];
-                
-                // Reset UI
-                updateUI();
-                saveState();
-                location.reload();
-            }
-        }
-
-        // Master Functions
-        function showMasterPanel() {
-            document.getElementById('masterPanel').classList.remove('hidden');
-        }
-
-        function activateMaster() {
-            const password = document.getElementById('masterPassword').value;
-            if (password === MASTER_PASSWORD) {
-                appState.masterMode = true;
-                document.getElementById('masterControls').classList.remove('hidden');
-                showSuccessMessage('Master-Modus aktiviert! 🎛️');
-                
-                // Request microphone permission
-                navigator.mediaDevices.getUserMedia({ audio: true })
-                    .then(stream => {
-                        appState.audioStream = stream;
-                        console.log('Microphone access granted');
-                    })
-                    .catch(err => {
-                        console.log('Microphone access denied:', err);
-                    });
-            } else {
-                alert('Falsches Passwort!');
-            }
-        }
-
-        function sendLiveMessage() {
-            const message = document.getElementById('liveMessageInput').value;
-            if (!message.trim()) return;
-            
-            // Store message in localStorage for other users to pick up
-            const messages = JSON.parse(localStorage.getItem('liveMessages') || '[]');
-            messages.push({
-                id: Date.now(),
-                message: message,
-                timestamp: new Date().toLocaleTimeString('de-DE')
-            });
-            localStorage.setItem('liveMessages', JSON.stringify(messages));
-            
-            // Clear input
-            document.getElementById('liveMessageInput').value = '';
-            
-            showSuccessMessage('Live-Nachricht gesendet! 📢');
-        }
-
-        function startLiveMessageCheck() {
-            setInterval(() => {
-                const messages = JSON.parse(localStorage.getItem('liveMessages') || '[]');
-                const lastCheck = parseInt(localStorage.getItem('lastMessageCheck') || '0');
-                
-                const newMessages = messages.filter(msg => msg.id > lastCheck);
-                
-                if (newMessages.length > 0) {
-                    newMessages.forEach(msg => displayLiveMessage(msg));
-                    localStorage.setItem('lastMessageCheck', Math.max(...newMessages.map(m => m.id)).toString());
-                }
-            }, 2000);
-        }
-
-        function displayLiveMessage(message) {
-            const messagesDiv = document.getElementById('liveMessages');
-            const messageDiv = document.createElement('div');
-            messageDiv.className = 'live-message new';
-            messageDiv.innerHTML = `
-                <strong>📢 Live-Update (${message.timestamp}):</strong><br>
-                ${message.message}
-            `;
-            
-            messagesDiv.appendChild(messageDiv);
-            
-            // Remove 'new' class after animation
-            setTimeout(() => {
-                messageDiv.classList.remove('new');
-            }, 2000);
-            
-            // Remove old messages
-            const allMessages = messagesDiv.querySelectorAll('.live-message');
-            if (allMessages.length > 5) {
-                allMessages[0].remove();
-            }
-        }
-
-        function startVoiceBroadcast() {
-            if (!appState.audioStream) {
-                alert('Mikrofon-Zugriff erforderlich!');
-                return;
-            }
-            
-            // Create MediaRecorder
-            appState.mediaRecorder = new MediaRecorder(appState.audioStream);
-            const audioChunks = [];
-            
-            appState.mediaRecorder.ondataavailable = event => {
-                audioChunks.push(event.data);
-            };
-            
-            appState.mediaRecorder.onstop = () => {
-                const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-                // In a real implementation, this would be sent to a server
-                console.log('Audio recorded:', audioBlob);
-            };
-            
-            appState.mediaRecorder.start();
-            
-            // Update UI
-            document.querySelector('.voice-btn.record').classList.add('broadcasting');
-            document.querySelector('.voice-btn.record').textContent = '🔴 Übertragung läuft';
-            document.getElementById('voiceStatus').textContent = '🎤 Sprach-Übertragung aktiv';
-            
-            showSuccessMessage('Sprach-Übertragung gestartet! 🎤');
-        }
-
-        function stopVoiceBroadcast() {
-            if (appState.mediaRecorder && appState.mediaRecorder.state === 'recording') {
-                appState.mediaRecorder.stop();
-            }
-            
-            // Update UI
-            document.querySelector('.voice-btn.record').classList.remove('broadcasting');
-            document.querySelector('.voice-btn.record').textContent = '🎤 Sprechen';
-            document.getElementById('voiceStatus').textContent = '';
-            
-            showSuccessMessage('Sprach-Übertragung beendet! ⏹️');
-        }
-
-        // State Management
-        function saveState() {
-            localStorage.setItem('tourState', JSON.stringify(appState));
-        }
-
-        function loadState() {
-            const saved = localStorage.getItem('tourState');
-            if (saved) {
-                const savedState = JSON.parse(saved);
-                appState = { ...appState, ...savedState };
-                updateUI();
-                
-                // Restore team selection
-                if (appState.selectedTeam) {
-                    document.getElementById('selectedTeamName').textContent = appState.teamName;
-                    document.getElementById('teamSelector').style.display = 'none';
-                }
-                
-                // Restore uploaded photos
-                appState.uploadedPhotos.forEach(photo => {
-                    const uploadArea = document.getElementById(`upload-area-${photo.stationId}`);
-                    if (uploadArea) {
-                        uploadArea.classList.add('has-photo');
-                        uploadArea.innerHTML = `
-                            <img src="${photo.imageUrl}" class="photo-preview" alt="Uploaded photo">
-                            <p>📷 Foto erfolgreich hochgeladen!</p>
-                            <small>Klicke hier für ein neues Foto</small>
-                        `;
-                        
-                        if (photo.score) {
-                            const ratingDiv = document.getElementById(`rating-${photo.stationId}`);
-                            if (ratingDiv) {
-                                ratingDiv.classList.remove('hidden');
-                                document.getElementById(`score-${photo.stationId}`).textContent = photo.score;
-                                document.getElementById(`rating-text-${photo.stationId}`).textContent = photo.rating.text;
-                                document.getElementById(`rating-details-${photo.stationId}`).textContent = photo.rating.details;
-                            }
-                        }
-                    }
+        syncTeamScores() {
+            // Get all team scores and broadcast current state
+            const allScores = this.getAllTeamScores();
+            if (this.channel) {
+                this.channel.postMessage({
+                    type: 'full_sync',
+                    scores: allScores,
+                    timestamp: Date.now()
                 });
             }
         }
+    }
 
-        // Map Functions (same as before)
-        function initMap() {
-            if (!document.getElementById('map') || appState.map) return;
+    // Initialize systems
+    let messaging = null;
+    let aiRater = null;
+    let teamSync = null;
+
+    // Initialize App
+    function initApp() {
+        // Generate user name if not exists
+        if (!appState.userName) {
+            appState.userName = 'Tourist_' + Math.random().toString(36).substr(2, 5);
+        }
+
+        // Initialize systems
+        messaging = new TourMessaging(appState.tourId);
+        aiRater = new AIPhotoRater();
+        teamSync = new TeamSync();
+
+        generateStationsList();
+        initMap();
+        updateUI();
+        
+        // Check if geolocation is available
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                position => {
+                    appState.userLocation = {
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude
+                    };
+                    updateLocationInfo();
+                    if (appState.map) {
+                        addUserLocationToMap();
+                    }
+                },
+                error => {
+                    console.log('Geolocation not available:', error);
+                    document.getElementById('distanceInfo').textContent = '📍 Standort nicht verfügbar';
+                }
+            );
+        }
+
+        // Load saved state
+        loadState();
+
+        // Setup chat input handler
+        document.getElementById('chatInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    }
+
+    function showTab(tabName) {
+        // Update tab buttons
+        document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+        event.target.classList.add('active');
+
+        // Update tab content
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+        document.getElementById(tabName === 'map' ? 'map-tab' : tabName).classList.add('active');
+
+        // Initialize map if switching to map tab
+        if (tabName === 'map' && !appState.map) {
+            setTimeout(initMap, 100);
+        }
+
+        // Update ranking if switching to ranking tab
+        if (tabName === 'ranking') {
+            updateRanking();
+        }
+
+        // Load chat history when switching to chat
+        if (tabName === 'chat' && !appState.chatInitialized) {
+            messaging.loadHistory();
+            appState.chatInitialized = true;
+        }
+    }
+
+    function generateStationsList() {
+        const container = document.getElementById('stationsList');
+        
+        stations.forEach(station => {
+            const isCompleted = appState.completedStations.includes(station.id);
             
-            appState.map = L.map('map').setView([50.9375, 6.9597], 15);
+            const stationCard = document.createElement('div');
+            stationCard.className = `station-card ${isCompleted ? 'completed' : ''}`;
+            stationCard.onclick = () => toggleStationDetails(station.id);
             
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap contributors'
-            }).addTo(appState.map);
+            const imagesHtml = station.images.map(img => `
+                <div class="gallery-item">
+                    <img src="${img.url}" alt="${img.title}" class="gallery-image" onclick="showImageModal('${img.url}', '${img.title}', '${img.description}')">
+                    <small>${img.title}</small>
+                </div>
+            `).join('');
             
-            stations.forEach((station, index) => {
-                const isCompleted = appState.completedStations.includes(station.id);
-                const marker = L.marker([station.lat, station.lng])
-                    .bindPopup(`
-                        <div style="text-align: center;">
-                            <h4>${station.title}</h4>
-                            <p>${station.subtitle}</p>
-                            <p><strong>Station ${station.id}/10</strong></p>
-                            ${isCompleted ? '<p style="color: green;">✅ Abgeschlossen</p>' : '<p style="color: orange;">⏳ Ausstehend</p>'}
+            stationCard.innerHTML = `
+                <div class="station-header">
+                    <div class="station-number ${isCompleted ? 'completed' : ''}">${station.id}</div>
+                    <div style="flex: 1;">
+                        <div class="station-title">${station.title}</div>
+                        <div class="station-subtitle">${station.subtitle}</div>
+                    </div>
+                </div>
+                <div class="station-details" id="station-${station.id}">
+                    <div class="detail-section">
+                        <h4>📖 Geschichte</h4>
+                        <p>${station.mainText}</p>
+                    </div>
+                    
+                    <div class="detail-section">
+                        <h4>🖼️ Bildergalerie</h4>
+                        <div class="image-gallery">
+                            ${imagesHtml}
                         </div>
-                    `)
-                    .addTo(appState.map);
-                
-                appState.markers.push(marker);
-            });
-            
-            if (appState.userLocation) {
-                addUserLocationToMap();
-            }
-            
-            const routeCoordinates = stations.map(station => [station.lat, station.lng]);
-            L.polyline(routeCoordinates, {
-                color: '#dc2626',
-                weight: 3,
-                opacity: 0.7
-            }).addTo(appState.map);
-        }
+                    </div>
 
-        function addUserLocationToMap() {
-            if (!appState.map || !appState.userLocation) return;
-            
-            L.marker([appState.userLocation.lat, appState.userLocation.lng], {
-                icon: L.icon({
-                    iconUrl: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCA0OCIgZmlsbD0ibm9uZSI+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMTAiIGZpbGw9IiMzYjgyZjYiLz48L3N2Zz4=',
-                    iconSize: [20, 20],
-                    iconAnchor: [10, 10]
-                })
-            })
-            .bindPopup('📍 Dein Standort')
-            .addTo(appState.map);
-        }
+                    <div class="photo-challenge">
+                        <h4>📸 KI-Foto-Challenge</h4>
+                        <p>${station.photoChallenge}</p>
+                        
+                        <div class="photo-upload-area" onclick="selectPhoto(${station.id})" id="upload-area-${station.id}">
+                            <div id="upload-content-${station.id}">
+                                📷 Hier klicken zum Foto machen/auswählen<br>
+                                <small>KI bewertet automatisch Qualität, Komposition & Kreativität</small>
+                            </div>
+                        </div>
+                        
+                        <input type="file" class="file-input" id="photo-input-${station.id}" accept="image/*" capture="environment" onchange="handlePhotoUpload(${station.id}, event)">
+                        
+                        <div class="ai-rating hidden" id="rating-${station.id}">
+                            <div class="rating-score" id="score-${station.id}">0</div>
+                            <div class="rating-text" id="rating-text-${station.id}">KI analysiert dein Foto...</div>
+                            <div class="rating-details" id="rating-details-${station.id}"></div>
+                        </div>
+                    </div>
 
-        function centerOnUser() {
-            if (appState.userLocation && appState.map) {
-                appState.map.setView([appState.userLocation.lat, appState.userLocation.lng], 17);
+                    <button class="btn" onclick="completeStation(${station.id})" id="complete-btn-${station.id}" 
+                            ${isCompleted ? 'disabled' : ''}>
+                        ${isCompleted ? '✅ Station abgeschlossen' : '🏁 Station abschließen'}
+                    </button>
+                </div>
+            `;
+            
+            container.appendChild(stationCard);
+        });
+    }
+
+    function showImageModal(url, title, description) {
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            flex-direction: column;
+            padding: 20px;
+            box-sizing: border-box;
+        `;
+        
+        modal.innerHTML = `
+            <img src="${url}" style="max-width: 90%; max-height: 70%; object-fit: contain; border-radius: 8px;">
+            <div style="color: white; text-align: center; margin-top: 20px; max-width: 600px;">
+                <h3>${title}</h3>
+                <p>${description}</p>
+                <button style="margin-top: 20px; padding: 10px 20px; background: #dc2626; color: white; border: none; border-radius: 5px; cursor: pointer;" onclick="this.parentElement.parentElement.remove()">Schließen</button>
+            </div>
+        `;
+        
+        modal.onclick = (e) => {
+            if (e.target === modal) modal.remove();
+        };
+        
+        document.body.appendChild(modal);
+    }
+
+    function toggleStationDetails(stationId) {
+        const details = document.getElementById(`station-${stationId}`);
+        details.classList.toggle('active');
+    }
+
+    function selectTeam(teamId, teamName) {
+        appState.selectedTeam = teamId;
+        appState.teamName = teamName;
+        
+        // Update UI
+        document.querySelectorAll('.team-option').forEach(option => {
+            option.classList.remove('selected');
+        });
+        event.target.closest('.team-option').classList.add('selected');
+        
+        // Hide team selector after selection
+        document.getElementById('teamSelector').style.display = 'none';
+        
+        showSuccessMessage('Team ausgewählt! 🎉');
+        saveState();
+    }
+
+    function startTour() {
+        if (!appState.selectedTeam) {
+            alert('Bitte wähle zuerst ein Team aus!');
+            return;
+        }
+        
+        showTab('stations');
+        document.querySelector('[onclick="showTab(\'stations\')"]').click();
+        showSuccessMessage('Tour gestartet! Viel Erfolg! 🚀');
+    }
+
+    function selectPhoto(stationId) {
+        document.getElementById(`photo-input-${stationId}`).click();
+    }
+
+    async function handlePhotoUpload(stationId, event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+            const imageUrl = e.target.result;
+            
+            // Update upload area
+            const uploadArea = document.getElementById(`upload-area-${stationId}`);
+            uploadArea.classList.add('has-photo');
+            uploadArea.innerHTML = `
+                <img src="${imageUrl}" class="photo-preview" alt="Uploaded photo">
+                <p>📷 Foto erfolgreich hochgeladen!</p>
+                <small>KI analysiert...</small>
+            `;
+
+            // Store photo
+            const existingPhotoIndex = appState.uploadedPhotos.findIndex(p => p.stationId === stationId);
+            const photoData = {
+                stationId: stationId,
+                imageUrl: imageUrl,
+                timestamp: Date.now(),
+                teamId: appState.selectedTeam
+            };
+
+            if (existingPhotoIndex >= 0) {
+                appState.uploadedPhotos[existingPhotoIndex] = photoData;
             } else {
-                alert('Standort nicht verfügbar. Bitte erlaube Standortzugriff in den Browser-Einstellungen.');
+                appState.uploadedPhotos.push(photoData);
             }
+
+            // AI Analysis
+            setTimeout(async () => {
+                await ratePhoto(stationId, imageUrl);
+            }, 500);
+
+            saveState();
+        };
+        
+        reader.readAsDataURL(file);
+    }
+
+    async function ratePhoto(stationId, imageUrl) {
+        const ratingDiv = document.getElementById(`rating-${stationId}`);
+        ratingDiv.classList.remove('hidden');
+        
+        try {
+            // Create image element for AI analysis
+            const img = new Image();
+            img.onload = async () => {
+                const analysis = await aiRater.ratePhoto(img);
+                
+                // Animate score counting up
+                let currentScore = 0;
+                const scoreElement = document.getElementById(`score-${stationId}`);
+                const interval = setInterval(() => {
+                    currentScore += 2;
+                    scoreElement.textContent = currentScore;
+                    if (currentScore >= analysis.score) {
+                        clearInterval(interval);
+                        scoreElement.textContent = analysis.score;
+                    }
+                }, 50);
+                
+                document.getElementById(`rating-text-${stationId}`).innerHTML = `
+                    <strong>KI-Bewertung abgeschlossen!</strong><br>
+                    Qualität: ${Math.round(analysis.breakdown.technical.overall)}% | 
+                    Komposition: ${Math.round(analysis.breakdown.composition.overall)}% | 
+                    Kreativität: ${Math.round(analysis.breakdown.creativity)}%
+                `;
+                
+                document.getElementById(`rating-details-${stationId}`).innerHTML = 
+                    analysis.feedback.join('<br>');
+                
+                // Add score to total and sync with team
+                addScore(analysis.score);
+                if (appState.selectedTeam) {
+                    teamSync.updateTeamScore(appState.selectedTeam, appState.totalScore, stationId);
+                }
+                
+                // Store rating
+                const photoData = appState.uploadedPhotos.find(p => p.stationId === stationId);
+                if (photoData) {
+                    photoData.score = analysis.score;
+                    photoData.analysis = analysis;
+                }
+                
+                showSuccessMessage(`KI-Bewertung: ${analysis.score} Punkte! 🤖`);
+            };
+            img.src = imageUrl;
+            
+        } catch (error) {
+            console.error('Error rating photo:', error);
+            // Fallback to simpler rating
+            const fallbackScore = 60 + Math.random() * 30;
+            document.getElementById(`score-${stationId}`).textContent = Math.round(fallbackScore);
+            document.getElementById(`rating-text-${stationId}`).textContent = 'Foto bewertet - Gute Aufnahme!';
+            addScore(fallbackScore);
+        }
+    }
+
+    function completeStation(stationId) {
+        if (!appState.completedStations.includes(stationId)) {
+            appState.completedStations.push(stationId);
+            updateProgress();
+            showSuccessMessage('Station abgeschlossen! 🏁');
+            
+            // Update station card
+            const stationCard = document.querySelector(`#complete-btn-${stationId}`).closest('.station-card');
+            stationCard.classList.add('completed');
+            stationCard.querySelector('.station-number').classList.add('completed');
+            
+            // Disable button
+            event.target.disabled = true;
+            event.target.textContent = '✅ Station abgeschlossen';
+            event.target.style.background = '#6b7280';
+
+            // Check if tour is complete
+            if (appState.completedStations.length === stations.length) {
+                showSuccessMessage('🎉 Herzlichen Glückwunsch! Tour abgeschlossen!');
+                setTimeout(() => {
+                    showTab('ranking');
+                    document.querySelector('[onclick="showTab(\'ranking\')"]').click();
+                }, 2000);
+            }
+
+            saveState();
+        }
+    }
+
+    function addScore(points) {
+        appState.totalScore += Math.round(points);
+        updateUI();
+        saveState();
+    }
+
+    function updateUI() {
+        document.getElementById('totalScore').textContent = appState.totalScore;
+        updateProgress();
+    }
+
+    function updateProgress() {
+        const progress = (appState.completedStations.length / stations.length) * 100;
+        document.getElementById('progressBar').style.width = progress + '%';
+    }
+
+    function updateRanking() {
+        const rankingList = document.getElementById('rankingList');
+        
+        // Get real team scores from TeamSync
+        const teams = teamSync.getAllTeamScores()
+            .filter(team => team.score > 0 || team.id === appState.selectedTeam)
+            .sort((a, b) => b.score - a.score);
+
+        // Add some demo teams if no real data
+        if (teams.length === 0) {
+            teams.push(
+                { id: 'red', name: '🔴 Team Römer', score: Math.floor(Math.random() * 300) + 200 },
+                { id: 'blue', name: '🔵 Team Gaffeln', score: Math.floor(Math.random() * 300) + 200 },
+                { id: 'green', name: '🟢 Team Hanseat', score: Math.floor(Math.random() * 300) + 200 },
+                { id: 'yellow', name: '🟡 Team Modern', score: Math.floor(Math.random() * 300) + 200 }
+            );
+            teams.sort((a, b) => b.score - a.score);
         }
 
-        function updateLocationInfo() {
-            if (!appState.userLocation) return;
+        rankingList.innerHTML = '';
+        
+        teams.forEach((team, index) => {
+            const rankItem = document.createElement('div');
+            const isUserTeam = team.id === appState.selectedTeam;
+            rankItem.className = `team-rank-item ${isUserTeam ? 'highlight' : ''}`;
             
-            let nearestStation = null;
-            let minDistance = Infinity;
+            let rankClass = '';
+            if (index === 0) rankClass = 'gold';
+            else if (index === 1) rankClass = 'silver';
+            else if (index === 2) rankClass = 'bronze';
             
-            stations.forEach(station => {
-                const distance = calculateDistance(
-                    appState.userLocation.lat, appState.userLocation.lng,
-                    station.lat, station.lng
-                );
-                
-                if (distance < minDistance) {
-                    minDistance = distance;
-                    nearestStation = station;
+            rankItem.innerHTML = `
+                <div class="rank-position ${rankClass}">${index + 1}</div>
+                <div style="flex: 1;">
+                    <strong>${team.name}</strong>
+                    <div style="color: #6b7280; font-size: 0.9rem;">
+                        ${team.score} Punkte
+                    </div>
+                </div>
+                ${isUserTeam ? '<div style="color: #f59e0b;">👤</div>' : ''}
+            `;
+            
+            rankingList.appendChild(rankItem);
+        });
+    }
+
+    function sendMessage() {
+        const input = document.getElementById('chatInput');
+        const message = input.value.trim();
+        
+        if (message) {
+            messaging.sendMessage(appState.userName, message);
+            input.value = '';
+        }
+    }
+
+    function showSuccessMessage(message) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'success-message';
+        messageDiv.textContent = message;
+        
+        document.body.appendChild(messageDiv);
+        
+        setTimeout(() => {
+            messageDiv.remove();
+        }, 3000);
+    }
+
+    // Map Functions
+    function initMap() {
+        if (!document.getElementById('map') || appState.map) return;
+        
+        appState.map = L.map('map').setView([50.9375, 6.9597], 15);
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(appState.map);
+        
+        stations.forEach((station, index) => {
+            const isCompleted = appState.completedStations.includes(station.id);
+            const marker = L.marker([station.lat, station.lng])
+                .bindPopup(`
+                    <div style="text-align: center; max-width: 200px;">
+                        <h4>${station.title}</h4>
+                        <p>${station.subtitle}</p>
+                        <p><strong>Station ${station.id}/${stations.length}</strong></p>
+                        ${isCompleted ? '<p style="color: green;">✅ Abgeschlossen</p>' : '<p style="color: orange;">⏳ Ausstehend</p>'}
+                    </div>
+                `)
+                .addTo(appState.map);
+            
+            appState.markers.push(marker);
+        });
+        
+        if (appState.userLocation) {
+            addUserLocationToMap();
+        }
+        
+        const routeCoordinates = stations.map(station => [station.lat, station.lng]);
+        L.polyline(routeCoordinates, {
+            color: '#dc2626',
+            weight: 3,
+            opacity: 0.7
+        }).addTo(appState.map);
+    }
+
+    function addUserLocationToMap() {
+        if (!appState.map || !appState.userLocation) return;
+        
+        const userIcon = L.divIcon({
+            html: '<div style="background: #3b82f6; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3);"></div>',
+            className: 'user-location-marker',
+            iconSize: [20, 20],
+            iconAnchor: [10, 10]
+        });
+        
+        L.marker([appState.userLocation.lat, appState.userLocation.lng], {
+            icon: userIcon
+        })
+        .bindPopup('📍 Dein Standort')
+        .addTo(appState.map);
+    }
+
+    function centerOnUser() {
+        if (appState.userLocation && appState.map) {
+            appState.map.setView([appState.userLocation.lat, appState.userLocation.lng], 17);
+        } else {
+            alert('Standort nicht verfügbar. Bitte erlaube Standortzugriff in den Browser-Einstellungen.');
+        }
+    }
+
+    function updateLocationInfo() {
+        if (!appState.userLocation) return;
+        
+        let nearestStation = null;
+        let minDistance = Infinity;
+        
+        stations.forEach(station => {
+            const distance = calculateDistance(
+                appState.userLocation.lat, appState.userLocation.lng,
+                station.lat, station.lng
+            );
+            
+            if (distance < minDistance) {
+                minDistance = distance;
+                nearestStation = station;
+            }
+        });
+        
+        if (nearestStation) {
+            const distanceText = minDistance < 1 
+                ? `${Math.round(minDistance * 1000)}m` 
+                : `${minDistance.toFixed(1)}km`;
+            
+            document.getElementById('distanceInfo').textContent = 
+                `📍 Nächste Station: ${nearestStation.title} (${distanceText})`;
+        }
+    }
+
+    function calculateDistance(lat1, lng1, lat2, lng2) {
+        const R = 6371;
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLng = (lng2 - lng1) * Math.PI / 180;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                  Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                  Math.sin(dLng/2) * Math.sin(dLng/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return R * c;
+    }
+
+    // State Management
+    function saveState() {
+        const stateToSave = {
+            ...appState,
+            map: null, // Don't save map object
+            markers: [] // Don't save markers
+        };
+        localStorage.setItem('tourState', JSON.stringify(stateToSave));
+    }
+
+    function loadState() {
+        const saved = localStorage.getItem('tourState');
+        if (saved) {
+            const savedState = JSON.parse(saved);
+            appState = { ...appState, ...savedState };
+            updateUI();
+            
+            // Restore team selection
+            if (appState.selectedTeam) {
+                const teamOptions = document.querySelectorAll('.team-option');
+                teamOptions.forEach(option => {
+                    if (option.textContent.includes(appState.teamName)) {
+                        option.classList.add('selected');
+                    }
+                });
+                document.getElementById('teamSelector').style.display = 'none';
+            }
+            
+            // Restore uploaded photos
+            appState.uploadedPhotos.forEach(photo => {
+                const uploadArea = document.getElementById(`upload-area-${photo.stationId}`);
+                if (uploadArea) {
+                    uploadArea.classList.add('has-photo');
+                    uploadArea.innerHTML = `
+                        <img src="${photo.imageUrl}" class="photo-preview" alt="Uploaded photo">
+                        <p>📷 Foto erfolgreich hochgeladen!</p>
+                        <small>Klicke hier für ein neues Foto</small>
+                    `;
+                    
+                    if (photo.score) {
+                        const ratingDiv = document.getElementById(`rating-${photo.stationId}`);
+                        if (ratingDiv) {
+                            ratingDiv.classList.remove('hidden');
+                            document.getElementById(`score-${photo.stationId}`).textContent = Math.round(photo.score);
+                            
+                            if (photo.analysis) {
+                                document.getElementById(`rating-text-${photo.stationId}`).innerHTML = `
+                                    <strong>KI-Bewertung:</strong><br>
+                                    Qualität: ${Math.round(photo.analysis.breakdown.technical.overall)}% | 
+                                    Komposition: ${Math.round(photo.analysis.breakdown.composition.overall)}% | 
+                                    Kreativität: ${Math.round(photo.analysis.breakdown.creativity)}%
+                                `;
+                                document.getElementById(`rating-details-${photo.stationId}`).innerHTML = 
+                                    photo.analysis.feedback.join('<br>');
+                            }
+                        }
+                    }
                 }
             });
-            
-            if (nearestStation) {
-                const distanceText = minDistance < 1 
-                    ? `${Math.round(minDistance * 1000)}m` 
-                    : `${minDistance.toFixed(1)}km`;
-                
-                document.getElementById('distanceInfo').textContent = 
-                    `📍 Nächste Station: ${nearestStation.title} (${distanceText})`;
-            }
         }
+    }
 
-        function calculateDistance(lat1, lng1, lat2, lng2) {
-            const R = 6371;
-            const dLat = (lat2 - lat1) * Math.PI / 180;
-            const dLng = (lng2 - lng1) * Math.PI / 180;
-            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                      Math.sin(dLng/2) * Math.sin(dLng/2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-            return R * c;
-        }
+    // Initialize app when page loads
+    document.addEventListener('DOMContentLoaded', initApp);
 
-        // Initialize app when page loads
-        document.addEventListener('DOMContentLoaded', initApp);
-    </script>
+    // Service Worker for offline functionality
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register(
+            'data:application/javascript,' + encodeURIComponent(`
+                const CACHE_NAME = 'cologne-tour-v1';
+                self.addEventListener('install', event => {
+                    self.skipWaiting();
+                });
+                self.addEventListener('activate', event => {
+                    event.waitUntil(clients.claim());
+                });
+                self.addEventListener('fetch', event => {
+                    if (event.request.destination === 'image') {
+                        event.respondWith(
+                            caches.open(CACHE_NAME).then(cache => {
+                                return cache.match(event.request).then(response => {
+                                    if (response) return response;
+                                    return fetch(event.request).then(fetchResponse => {
+                                        cache.put(event.request, fetchResponse.clone());
+                                        return fetchResponse;
+                                    });
+                                });
+                            })
+                        );
+                    }
+                });
+            `)
+        ).catch(console.log);
+    }
+</script>
+```
+
 </body>
 </html>
