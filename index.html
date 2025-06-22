@@ -67,6 +67,31 @@
             transition: width 0.5s ease;
         }
 
+        .live-message {
+            background: #059669;
+            color: white;
+            padding: 1rem;
+            margin: 0.5rem;
+            border-radius: 8px;
+            animation: slideIn 0.5s ease;
+            border-left: 4px solid #047857;
+        }
+
+        .live-message.new {
+            background: #dc2626;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(-100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+
         .main-content {
             padding: 0;
         }
@@ -196,6 +221,78 @@
             color: #dc2626;
         }
 
+        .photo-challenge {
+            background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            border-left: 4px solid #6366f1;
+        }
+
+        .photo-challenge h4 {
+            color: #4f46e5;
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+
+        .photo-upload-area {
+            border: 3px dashed #a5b4fc;
+            border-radius: 10px;
+            padding: 2rem;
+            text-align: center;
+            margin: 1rem 0;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: rgba(255,255,255,0.5);
+        }
+
+        .photo-upload-area:hover {
+            border-color: #6366f1;
+            background: rgba(255,255,255,0.8);
+        }
+
+        .photo-upload-area.has-photo {
+            border-color: #10b981;
+            background: #f0fdf4;
+        }
+
+        .photo-preview {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+
+        .ai-rating {
+            background: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            text-align: center;
+            border: 2px solid #10b981;
+        }
+
+        .rating-score {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #059669;
+            margin-bottom: 0.5rem;
+        }
+
+        .rating-text {
+            color: #047857;
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+        }
+
+        .rating-details {
+            background: #f0fdf4;
+            padding: 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: #065f46;
+        }
+
         .image-gallery {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -317,6 +414,53 @@
             margin-top: 0.5rem;
         }
 
+        .team-ranking {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .team-rank-item {
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            margin: 0.5rem 0;
+            border-radius: 8px;
+            background: #f8fafc;
+        }
+
+        .team-rank-item.highlight {
+            background: #fef3c7;
+            border: 2px solid #f59e0b;
+        }
+
+        .rank-position {
+            background: #6b7280;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 1rem;
+        }
+
+        .rank-position.gold {
+            background: #f59e0b;
+        }
+
+        .rank-position.silver {
+            background: #6b7280;
+        }
+
+        .rank-position.bronze {
+            background: #d97706;
+        }
+
         #map {
             height: 400px;
             width: 100%;
@@ -386,6 +530,82 @@
             display: block;
         }
 
+        .master-panel {
+            background: #1f2937;
+            color: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin: 1rem 0;
+        }
+
+        .master-input {
+            width: 100%;
+            padding: 1rem;
+            border-radius: 8px;
+            border: none;
+            margin: 0.5rem 0;
+            font-size: 1rem;
+        }
+
+        .voice-controls {
+            display: flex;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .voice-btn {
+            flex: 1;
+            padding: 1rem;
+            border-radius: 8px;
+            border: none;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .voice-btn.record {
+            background: #dc2626;
+        }
+
+        .voice-btn.stop {
+            background: #6b7280;
+        }
+
+        .voice-btn.broadcasting {
+            background: #059669;
+            animation: pulse 1s infinite;
+        }
+
+        .final-feedback {
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 15px;
+            text-align: center;
+            margin: 2rem 0;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+        }
+
+        .final-feedback h2 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .feedback-photos {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 0.5rem;
+            margin: 1rem 0;
+        }
+
+        .feedback-photo {
+            width: 100%;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 3px solid rgba(255,255,255,0.5);
+        }
+
         @media (max-width: 768px) {
             .container {
                 box-shadow: none;
@@ -410,6 +630,10 @@
             
             .image-gallery {
                 grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            }
+
+            .voice-controls {
+                flex-direction: column;
             }
         }
 
@@ -457,6 +681,14 @@
         .person-role strong {
             color: #5b21b6;
         }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .file-input {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -464,6 +696,9 @@
         <div class="offline-indicator" id="offlineIndicator">
             📡 Offline-Modus aktiv - Alle Inhalte gespeichert
         </div>
+
+        <!-- Live Messages Area -->
+        <div id="liveMessages"></div>
 
         <header>
             <h1>🏛️ Kölner Abendspaziergang</h1>
@@ -477,6 +712,7 @@
             <div class="tab-container">
                 <button class="tab active" onclick="showTab('overview')">🗺️ Übersicht</button>
                 <button class="tab" onclick="showTab('stations')">📍 Stationen</button>
+                <button class="tab" onclick="showTab('ranking')">🏆 Ranking</button>
                 <button class="tab" onclick="showTab('map')">🗺️ Karte</button>
                 <button class="tab" onclick="showTab('team')">👥 Team</button>
             </div>
@@ -485,11 +721,11 @@
             <div id="overview" class="tab-content active">
                 <div class="score-display">
                     <div class="score-number" id="totalScore">0</div>
-                    <div class="score-label">Kölner Kronen gesammelt</div>
+                    <div class="score-label">Foto-Punkte gesammelt</div>
                 </div>
 
                 <div class="team-selector" id="teamSelector">
-                    <h3 style="margin-bottom: 1rem; color: #374151;">🎯 Wähle dein Team:</h3>
+                    <h3 style="margin-bottom: 1rem; color: #374151;">📸 Wähle dein Team:</h3>
                     <div class="team-option" onclick="selectTeam('red', '🔴 Team Römer')">
                         <div class="team-color" style="background: #dc2626;"></div>
                         <span>🔴 Team Römer</span>
@@ -514,26 +750,67 @@
                     <p><strong>📍 Start:</strong> Heumarkt, 19:30 Uhr</p>
                     <p><strong>🎯 Ziel:</strong> Alte Bastion</p>
                     <p><strong>👥 Teilnehmer:</strong> 15-25 Personen</p>
-                    <p><strong>🏆 Ziel:</strong> 300 Kronen für Meisterdetektiv</p>
+                    <p><strong>📸 Ziel:</strong> Sammle die besten Foto-Punkte!</p>
                 </div>
 
-                <div style="background: #fef3c7; border: 2px solid #f59e0b; border-radius: 12px; padding: 1.5rem; margin: 1.5rem 0;">
-                    <h4 style="color: #92400e; margin-bottom: 1rem;">⚠️ Wichtige Hinweise</h4>
-                    <ul style="margin-left: 1.5rem; color: #92400e;">
-                        <li>Smartphone-Akku vollständig laden</li>
-                        <li>Warme Kleidung (Abendtour)</li>
-                        <li>Wasserfeste Hülle empfohlen</li>
-                        <li>Bei Problemen: Team-Leiter kontaktieren</li>
-                    </ul>
+                <!-- Master Panel (hidden by default) -->
+                <div class="master-panel hidden" id="masterPanel">
+                    <h3>🎛️ Master-Kontrolle</h3>
+                    <input type="password" class="master-input" id="masterPassword" placeholder="Master-Passwort eingeben">
+                    <button class="btn" onclick="activateMaster()">🔓 Aktivieren</button>
+                    
+                    <div class="hidden" id="masterControls">
+                        <h4>📢 Live-Nachricht senden:</h4>
+                        <textarea class="master-input" id="liveMessageInput" placeholder="Nachricht an alle Teilnehmer..." rows="3"></textarea>
+                        <button class="btn" onclick="sendLiveMessage()">📤 Nachricht senden</button>
+                        
+                        <h4>🎤 Sprach-Übertragung:</h4>
+                        <div class="voice-controls">
+                            <button class="voice-btn record" onclick="startVoiceBroadcast()">🎤 Sprechen</button>
+                            <button class="voice-btn stop" onclick="stopVoiceBroadcast()">⏹️ Stopp</button>
+                        </div>
+                        <div id="voiceStatus"></div>
+                    </div>
                 </div>
 
                 <button class="btn" onclick="startTour()">🚀 Tour starten</button>
+                <button class="btn btn-secondary" onclick="showMasterPanel()">⚙️ Tour-Leitung</button>
             </div>
 
             <!-- Stations Tab -->
             <div id="stations" class="tab-content">
                 <div id="stationsList">
                     <!-- Stations will be generated here -->
+                </div>
+            </div>
+
+            <!-- Ranking Tab -->
+            <div id="ranking" class="tab-content">
+                <div class="team-ranking">
+                    <h3 style="color: #1f2937; margin-bottom: 1rem;">🏆 Live-Ranking</h3>
+                    <div id="rankingList">
+                        <!-- Ranking will be generated here -->
+                    </div>
+                </div>
+
+                <div style="background: white; border-radius: 12px; padding: 1.5rem; margin: 1.5rem 0; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                    <h3 style="color: #1f2937; margin-bottom: 1rem;">📸 Punktesystem</h3>
+                    <ul style="margin-left: 1.5rem; color: #4b5563;">
+                        <li><strong>Perfektes Foto:</strong> 50-100 Punkte</li>
+                        <li><strong>Gutes Foto:</strong> 30-49 Punkte</li>
+                        <li><strong>Okay Foto:</strong> 10-29 Punkte</li>
+                        <li><strong>Kreativitäts-Bonus:</strong> +20 Punkte</li>
+                        <li><strong>Früher Upload:</strong> +10 Punkte</li>
+                    </ul>
+                </div>
+
+                <!-- Final Feedback Area (hidden initially) -->
+                <div class="final-feedback hidden" id="finalFeedback">
+                    <h2>🎉 Herzlichen Glückwunsch!</h2>
+                    <p>Du hast alle Stationen gemeistert und tolle Fotos gesammelt!</p>
+                    <div class="feedback-photos" id="feedbackPhotos"></div>
+                    <p><strong>Dein persönlicher Foto-Score: <span id="finalScore">0</span> Punkte</strong></p>
+                    <p>Du hast viele tolle neue Erinnerungen und ein tieferes Verständnis für Kölns Geschichte gesammelt. Danke fürs Mitmachen! 📸✨</p>
                 </div>
             </div>
 
@@ -555,24 +832,15 @@
                 </div>
 
                 <div style="background: white; border-radius: 12px; padding: 1.5rem; margin: 1.5rem 0; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-                    <h3 style="color: #1f2937; margin-bottom: 1rem;">🏆 Punktesystem</h3>
-                    <ul style="margin-left: 1.5rem; color: #4b5563;">
-                        <li><strong>Multiple Choice richtig:</strong> 10 Kronen</li>
-                        <li><strong>Beobachtung gelöst:</strong> 15 Kronen</li>
-                        <li><strong>Rollenspiel gespielt:</strong> 20 Kronen</li>
-                        <li><strong>Station komplett:</strong> 5 Bonus-Kronen</li>
-                    </ul>
-                </div>
-
-                <div style="background: white; border-radius: 12px; padding: 1.5rem; margin: 1.5rem 0; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
                     <h3 style="color: #1f2937; margin-bottom: 1rem;">📱 App-Features</h3>
                     <ul style="margin-left: 1.5rem; color: #4b5563;">
                         <li>🌐 Offline-fähig (alle Inhalte gespeichert)</li>
                         <li>🗺️ Interaktive Karte mit Navigation</li>
-                        <li>📸 Bildergalerien für jede Station</li>
-                        <li>🎯 Gamifizierte Aktivitäten</li>
-                        <li>👥 Team-basiertes Lernen</li>
-                        <li>📊 Fortschritts-Tracking</li>
+                        <li>📸 KI-bewertete Foto-Challenges</li>
+                        <li>🏆 Live-Team-Ranking</li>
+                        <li>📢 Live-Nachrichten vom Guide</li>
+                        <li>🎤 Sprach-Übertragung</li>
+                        <li>💾 Automatische Foto-Sammlung</li>
                     </ul>
                 </div>
 
@@ -592,10 +860,29 @@
             teamName: '',
             userLocation: null,
             map: null,
-            markers: []
+            markers: [],
+            uploadedPhotos: [],
+            masterMode: false,
+            voiceBroadcast: null,
+            mediaRecorder: null,
+            audioStream: null
         };
 
-        // Station Data
+        // Master password
+        const MASTER_PASSWORD = "koeln2025";
+
+        // Fake AI responses for photo rating
+        const aiResponses = [
+            { score: 95, text: "Perfekt! Fantastische Komposition und historischer Bezug!", details: "Hervorragende Bildqualität, kreative Perspektive, starker Bezug zur Station" },
+            { score: 87, text: "Sehr gut! Tolle Aufnahme mit schöner Beleuchtung!", details: "Gute Bildkomposition, interessanter Winkel, klarer Bezug erkennbar" },
+            { score: 78, text: "Gut gelungen! Schöne Interpretation der Aufgabe!", details: "Solide Aufnahme, passender Inhalt, leichte Verbesserungen möglich" },
+            { score: 65, text: "Okay! Das Motiv ist erkennbar, könnte aber schärfer sein.", details: "Grundlegende Anforderungen erfüllt, Bildqualität ausbaufähig" },
+            { score: 92, text: "Exzellent! Besonders kreative Herangehensweise!", details: "Außergewöhnliche Kreativität, perfekte technische Umsetzung" },
+            { score: 73, text: "Schön! Gute Umsetzung der Station-Challenge!", details: "Interessante Perspektive, gute Idee, technisch in Ordnung" },
+            { score: 88, text: "Sehr schön! Tolles Verständnis für das historische Thema!", details: "Starker thematischer Bezug, gute Bildgestaltung" }
+        ];
+
+        // Station Data with Photo Challenges
         const stations = [
             {
                 id: 1,
@@ -603,6 +890,7 @@
                 subtitle: "Wo alles anfing: 2000 Jahre Migration und Handel",
                 lat: 50.9356, lng: 6.9611,
                 description: "Start der Tour am historischen Heumarkt, einem der geschichtsträchtigsten Orte Kölns.",
+                photoChallenge: "Mache ein Foto von dir oder deinem Team vor dem Reiterstandbild - zeigt dabei mit Handbewegungen, wie Händler früher ihre Waren angepriesen haben könnten!",
                 mainText: `Die Stadt ist ca. 2.000 Jahre alt. CCAA - Colonia Claudia Ara Agrippinensium - wurde 50 n. Chr. von den Römern gegründet, mithilfe der germanischen Ubier. Das war übrigens eine der ersten erfolgreichen Integration zweier Kulturen in Europa. 
 
 Hier auf dem Heumarkt stehen wir an einem der ehemaligen Einfallstore zur Stadt. Die Markmannsgasse runter, links von der heutigen Deutzer Brücke, befand sich von 1822 bis 1915 die einzige Schiffsbrücke über den Rhein - 42 schwimmende Boote, die über 30 Mal täglich für Schiffe geöffnet wurden.
@@ -613,27 +901,7 @@ Das "Stapelrecht" von 1259 bis 1804 war ein 545 Jahre gültiges Handelsprivileg.
                     { title: "Römische Stadtentwicklung", description: "Animation der Stadtgründung" },
                     { title: "Deutzer Schiffsbrücke", description: "Technische Funktionsweise" },
                     { title: "Mittelalterlicher Markt", description: "Rekonstruktion des Handelsplatzes" }
-                ],
-                quiz: {
-                    question: "Was bedeutete das Stapelrecht für vorbeifahrende Händler?",
-                    options: [
-                        "Sie durften kostenlos übernachten",
-                        "Sie mussten ihre Waren 3 Tage zum Verkauf anbieten",
-                        "Sie bekamen Steuererleichterungen", 
-                        "Sie durften nur bestimmte Waren transportieren"
-                    ],
-                    correct: 1
-                },
-                observation: "Schaut euch 2 Minuten um: Welche Spuren der historischen Handelszeit könnt ihr heute noch erkennen?",
-                roleplay: {
-                    title: "Römischer Soldat trifft germanischen Ubier - erste Begegnung 50 n. Chr.",
-                    roles: [
-                        { name: "Römischer Soldat", description: "spricht nur Latein/Italienisch" },
-                        { name: "Germanischer Ubier", description: "spricht nur Germanisch" },
-                        { name: "Dolmetscher", description: "versucht zu vermitteln" }
-                    ],
-                    instruction: "Improvisiert 2 Minuten - wie könnte diese erste Begegnung abgelaufen sein?"
-                }
+                ]
             },
             {
                 id: 2,
@@ -641,6 +909,7 @@ Das "Stapelrecht" von 1259 bis 1804 war ein 545 Jahre gültiges Handelsprivileg.
                 subtitle: "Puppentheater, Demokratie und dunkle Zeiten",
                 lat: 50.9375, lng: 6.9583,
                 description: "Das Hänneschen Theater und die Geschichte der Kölner Gaffeln-Demokratie.",
+                photoChallenge: "Macht ein Gruppen-Selfie vor dem Hänneschen Theater und stellt dabei verschiedene Puppentheater-Figuren mit Gesichtsausdrücken dar!",
                 mainText: `Hier steht das Hänneschen Theater - Deutschlands ältestes Puppentheater seit 1802. Das Theater ist mehr als Kinderunterhaltung: Es ist ein politisches Kabarett. Alle Stücke spielen im "Knollendorf" - einem satirischen Abbild Kölns.
 
 Aber wie so vieles in Köln hat auch dieses Theater eine Nazi-Vergangenheit. Während der Nazizeit wurde das Puppentheater zur Propaganda-Maschine umfunctioniert.
@@ -651,27 +920,7 @@ Hier am Eisenmarkt trafen sich zum ersten Mal Händler und Handwerker, die sich 
                     { title: "Nazi-Propaganda 1938", description: "Propagandaplakat des Theaters" },
                     { title: "Bücherverbrennung Köln", description: "Eine der ersten in Deutschland 1933" },
                     { title: "Erste Gaffel-Versammlung", description: "Rekonstruktion von 1396" }
-                ],
-                quiz: {
-                    question: "Was waren die Kölner Gaffeln?",
-                    options: [
-                        "Mittelalterliche Waffen",
-                        "Zunft-ähnliche Organisationen der Bürger",
-                        "Kirchliche Vereinigungen",
-                        "Adlige Familien"
-                    ],
-                    correct: 1
-                },
-                observation: "Das Hänneschen Theater ist sehr klein. Warum glaubt ihr, war es trotzdem politisch so einflussreich?",
-                roleplay: {
-                    title: "Erste Gaffel-Versammlung 1396 - Händler planen die Revolution",
-                    roles: [
-                        { name: "Konservativer Händler", description: "hat Angst vor Veränderung" },
-                        { name: "Revolutionärer Handwerker", description: "will alles ändern" },
-                        { name: "Pragmatische Kauffrau", description: "sucht Kompromisse" }
-                    ],
-                    instruction: "Thema: Sollen wir wirklich gegen den Stadtrat rebellieren?"
-                }
+                ]
             },
             {
                 id: 3,
@@ -679,6 +928,7 @@ Hier am Eisenmarkt trafen sich zum ersten Mal Händler und Handwerker, die sich 
                 subtitle: "Kölner Humor und Selbstironie",
                 lat: 50.9361, lng: 6.9578,
                 description: "Die berühmten Kölner Figuren als Symbol für Stadtmensch und Landmensch.",
+                photoChallenge: "Stellt Tünnes und Schäl nach! Eine Person spielt den schlauen Schäl (zeigend/belehrend), eine den gutmütigen Tünnes (staunend/freundlich).",
                 mainText: `Hier seht ihr Schäl, den schlechten Stadtbewohner - besserwisserisch, schielend, oft betrunken. Und Tünnes, den gutmütigen Bauern vom Land. Schäl steht für die arroganten Städter, Tünnes für die ehrlichen Landleute, die die Stadt mit Lebensmitteln versorgen.
 
 Diese Figuren zeigen: Die Kölner wissen, dass sie nicht die schlauesten sind - und sind stolz darauf. Selbstironie als Überlebensstrategie. In einer Stadt, die ständig zwischen verschiedenen Mächten lavieren musste, war Humor oft der einzige Widerstand.
@@ -688,26 +938,7 @@ Direkt hier zeigt uns auch die Schmitz-Säule, wie weit der Mond entfernt ist - 
                     { title: "Figuren-Entwicklung", description: "Tünnes und Schäl seit 1803" },
                     { title: "Klassische Geschichten", description: "Audio-Sammlung (3 Min)" },
                     { title: "Moderne Straßenkunst", description: "Zeitgenössische Interpretationen" }
-                ],
-                quiz: {
-                    question: "Was symbolisieren Tünnes und Schäl?",
-                    options: [
-                        "Reiche und Arme",
-                        "Stadt- und Landmenschen", 
-                        "Junge und Alte",
-                        "Deutsche und Ausländer"
-                    ],
-                    correct: 1
-                },
-                observation: "Welche Details an den Statuen zeigen den Charakter der beiden Figuren? Sammelt 5 Minuten lang Beobachtungen.",
-                roleplay: {
-                    title: "Tünnes und Schäl diskutieren über ein aktuelles Problem",
-                    roles: [
-                        { name: "Tünnes", description: "ehrlich, direkt, etwas naiv" },
-                        { name: "Schäl", description: "klugscheißerisch, kompliziert, städtisch" }
-                    ],
-                    instruction: "Thema nach Wahl: ÖPNV, Wohnungspreise, Klimawandel, etc."
-                }
+                ]
             },
             {
                 id: 4,
@@ -715,6 +946,7 @@ Direkt hier zeigt uns auch die Schmitz-Säule, wie weit der Mond entfernt ist - 
                 subtitle: "Macht, Rebellion und eine große Liebesgeschichte",
                 lat: 50.9369, lng: 6.9572,
                 description: "Das historische Rathaus und die berühmte Jan-und-Griet-Geschichte.",
+                photoChallenge: "Fotografiert euch am Jan-von-Werth-Brunnen und stellt die romantische Szene nach: Eine Person kniet (Jan), eine steht stolz daneben (Griet).",
                 mainText: `Der Rathaus-Turm zeigt wichtige Persönlichkeiten der Kölner Geschichte. 1945 zerstört und wieder aufgebaut. Da auch die Figuren zerstört waren, wählte eine Kommission neue aus - von über 100 Kandidaten. Alle männlich. Bei einer Stadt, die quasi von einer Frau gegründet wurde: Agrippina.
 
 Oben am Turm seht ihr den "Platz-Jabbeck" - er streckt Autoritäten die Zunge raus. So viel Respekt hatten die Kölner für die Obrigkeit.
@@ -725,27 +957,7 @@ Der Jan-von-Werth-Brunnen erzählt eine der größten deutschen Liebesgeschichte
                     { title: "Rathausturm-Figuren", description: "Biografien aller Persönlichkeiten" },
                     { title: "Platz-Jabbeck", description: "Symbol des kölschen Widerstands" },
                     { title: "Jan und Griet", description: "Historiengemälde der Liebesgeschichte" }
-                ],
-                quiz: {
-                    question: "Was wollte Griet Jan mit ihrer Antwort sagen?",
-                    options: [
-                        "Sie ist immer noch nicht interessiert",
-                        "Er soll noch reicher werden",
-                        "Wahre Liebe braucht keinen Reichtum",
-                        "Sie hat inzwischen einen anderen"
-                    ],
-                    correct: 2
-                },
-                observation: "Sucht den Platz-Jabbeck am Rathausturm. Was drückt seine Geste aus? Modern gesprochen: Welches Emoji wäre das?",
-                roleplay: {
-                    title: "Die Szene am Brunnen - Jan kehrt zurück",
-                    roles: [
-                        { name: "Jan von Werth", description: "selbstbewusst, aber unsicher" },
-                        { name: "Griet", description: "selbstbestimmt, unbeeindruckt" },
-                        { name: "Marktbesucher", description: "kommentiert das Geschehen" }
-                    ],
-                    instruction: "Spielt die Brunnen-Szene nach - mit eigenem Ende"
-                }
+                ]
             },
             {
                 id: 5,
@@ -753,6 +965,7 @@ Der Jan-von-Werth-Brunnen erzählt eine der größten deutschen Liebesgeschichte
                 subtitle: "Totgeschlagen - Totgeschwiegen",
                 lat: 50.9372, lng: 6.9614,
                 description: "Denkmal für verfolgte und ermordete Homosexuelle.",
+                photoChallenge: "Macht ein respektvolles Foto am Denkmal mit einem Zeichen für Vielfalt und Toleranz (z.B. Herz-Handhaltung, Regenbogen-Pose).",
                 mainText: `„Totgeschlagen – Totgeschwiegen" - das steht auf diesem roten Dreieck. Das rote Dreieck war das Erkennungszeichen für Homosexuelle in Nazi-Konzentrationslagern - ähnlich dem gelben Judenstern.
 
 "Totgeschlagen" bezieht sich auf die Nazi-Zeit. "Totgeschwiegen" auf die Zeit danach: Homosexualität blieb bis 1994 eine Straftat in Deutschland. Die Verfolgung ging weiter, nur leiser. Das Schweigen führte auch zur AIDS-Epidemie der 1980er-90er.
@@ -762,26 +975,7 @@ Wenn wir heute von Angriffen auf CSD-Paraden hören, lohnt es sich, daran zu eri
                     { title: "LGBTQ+-Verfolgung", description: "Dokumentation der Geschichte" },
                     { title: "Zeitleiste", description: "Von Kriminalisierung zur Gleichstellung" },
                     { title: "Zeitzeugen", description: "Persönliche Berichte 70er-90er Jahre" }
-                ],
-                quiz: {
-                    question: "Bis wann war Homosexualität in Deutschland strafbar?",
-                    options: [
-                        "1969",
-                        "1985",
-                        "1994",
-                        "2001"
-                    ],
-                    correct: 2
-                },
-                observation: "Schaut euch die Brücke an. Was symbolisieren eurer Meinung nach die Liebesschlösser im Kontrast zum Denkmal hier unten?",
-                roleplay: {
-                    title: "Dialog zwischen Großeltern und Enkeln über gesellschaftlichen Wandel",
-                    roles: [
-                        { name: "Person aus den 1970ern", description: "erklärt, wie es damals war" },
-                        { name: "Person von heute", description: "fragt nach, versteht nicht alles" }
-                    ],
-                    instruction: "Thema: Wie hat sich die Akzeptanz verschiedener Lebensentwürfe verändert?"
-                }
+                ]
             },
             {
                 id: 6,
@@ -789,6 +983,7 @@ Wenn wir heute von Angriffen auf CSD-Paraden hören, lohnt es sich, daran zu eri
                 subtitle: "Das ewige Bauprojekt und die Verkehrsrevolution",
                 lat: 50.9413, lng: 6.9583,
                 description: "Kölns Wahrzeichen und die längste Baustelle der Welt.",
+                photoChallenge: "Bildet mit eurem Team eine 'menschliche Kathedrale' vor dem Dom - streckt die Arme hoch und formt gotische Bögen nach!",
                 mainText: `Der Dom wird seit fast 800 Jahren gebaut - etwas länger als der BER. Die Grundsteinlegung 1248 war Kölns Versuch, Paris und andere Großstädte zu beeindrucken. Köln war immer reich, aber auch provinziell.
 
 1248-1330 wurden Grundmauern und der Chor fertiggestellt. Dann ging das Geld aus. Fast 300 Jahre stand nur ein riesiger Kran auf dem unvollendeten Turm - eines der ersten großen "paused projects" der Geschichte.
@@ -802,26 +997,7 @@ Im Zweiten Weltkrieg bekam der Dom 14 Bombenvolltreffer, blieb aber stehen - als
                     { title: "Kölner Domkran", description: "1560-1842, Symbol des Stillstands" },
                     { title: "Architektur-Konflikt", description: "Warum Dom und Bahnhof nicht passen" },
                     { title: "Bombenangriff", description: "Dom zwischen Trümmern 1944-45" }
-                ],
-                quiz: {
-                    question: "Wie lange dauerte die Dom-Pause zwischen Mittelalter und Vollendung?",
-                    options: [
-                        "150 Jahre",
-                        "300 Jahre", 
-                        "550 Jahre",
-                        "700 Jahre"
-                    ],
-                    correct: 2
-                },
-                observation: "Schaut euch das 'Dreigestirn' an: Dom, Bahnhof, Brücke. Welches Gebäude dominiert? Warum könnte das problematisch sein?",
-                roleplay: {
-                    title: "Streitgespräch: Mittelalterlicher vs. moderner Stadtplaner",
-                    roles: [
-                        { name: "Mittelalterlicher Dombaumeister", description: "will nur den Dom" },
-                        { name: "Moderner Verkehrsplaner", description: "braucht Platz für Züge und Autos" }
-                    ],
-                    instruction: "Problem: Wer bekommt den wertvollsten Platz der Stadt?"
-                }
+                ]
             },
             {
                 id: 7,
@@ -829,6 +1005,7 @@ Im Zweiten Weltkrieg bekam der Dom 14 Bombenvolltreffer, blieb aber stehen - als
                 subtitle: "Klein-Istanbul und 11.000 Jungfrauen",
                 lat: 50.9461, lng: 6.9528,
                 description: "Das multikulturellste Viertel Kölns und eine große Lüge der Stadtgeschichte.",
+                photoChallenge: "Fotografiert euch vor einem multikulturellen Geschäft und zeigt dabei mit Händen/Gesichtern die Vielfalt der Kulturen (z.B. verschiedene Grüße).",
                 mainText: `Willkommen im Eigelsteinviertel - seit 50 Jahren das multikulturellste Viertel Kölns. Hier leben Menschen aus über 100 Nationen auf engstem Raum zusammen.
 
 An der Ecke zur Ursulastraße begegnet uns eine der größten Lügen der Stadtgeschichte: die 11.000 Jungfrauen. Die Wahrheit: Es waren wahrscheinlich 11 Frauen, nicht 11.000. Ein mittelalterlicher Übersetzungsfehler aus "XI M.V." (11 martyres virgines = 11 jungfräuliche Märtyrerinnen) wurde zu "11 milia virginum" (11.000 Jungfrauen). Aber mit 11.000 ließ sich mehr Geld durch Reliquienhandel verdienen.
@@ -839,27 +1016,7 @@ Nach dem Anwerbeabkommen mit der Türkei 1961 entstanden hier die ersten "Gastar
                     { title: "Eigelsteintor", description: "Rekonstruktion mit Stadtmauer" },
                     { title: "Ursula-Legende", description: "Mittelalterliche Handschrift" },
                     { title: "Erste türkische Familien", description: "Oral History vom Ankommen" }
-                ],
-                quiz: {
-                    question: "Wie viele Jungfrauen waren wahrscheinlich wirklich mit der heiligen Ursula unterwegs?",
-                    options: [
-                        "11",
-                        "110",
-                        "1.100",
-                        "11.000"
-                    ],
-                    correct: 0
-                },
-                observation: "Zählt 5 Minuten lang verschiedene Kulturen/Sprachen/Geschäfte. Wie viele verschiedene Länder könnt ihr identifizieren?",
-                roleplay: {
-                    title: "Familie diskutiert übers Wegziehen aus dem Viertel",
-                    roles: [
-                        { name: "Großeltern", description: "leben seit 40 Jahren hier, wollen bleiben" },
-                        { name: "Eltern", description: "unentschlossen, Sorgen um die Kinder" },
-                        { name: "Jugendliche", description: "wollen weg oder bleiben" }
-                    ],
-                    instruction: "Thema: Gentrifizierung - Chance oder Problem?"
-                }
+                ]
             },
             {
                 id: 8,
@@ -867,6 +1024,7 @@ Nach dem Anwerbeabkommen mit der Türkei 1961 entstanden hier die ersten "Gastar
                 subtitle: "Arbeit, Moral und gesellschaftliche Doppelmoral",
                 lat: 50.9433, lng: 6.9489,
                 description: "Das ehemalige Prostituiertenviertel und seine Sozialgeschichte.",
+                photoChallenge: "Macht ein nachdenkliches Gruppen-Foto über gesellschaftlichen Wandel - zeigt verschiedene Generationen/Perspektiven in euren Posen.",
                 mainText: `Hier, rund um den ehemaligen Stützenhof, befand sich jahrhundertelang Kölns größtes Prostitutionsviertel.
 
 Prostitution war im mittelalterlichen Köln legal und städtisch reguliert - fortschrittlicher als in vielen anderen Städten. Die Stadt kassierte Steuern, bot medizinische Versorgung und rechtlichen Schutz. Ein pragmatischer Ansatz für ein unvermeidliches gesellschaftliches Phänomen.
@@ -879,26 +1037,7 @@ Die Moral änderte sich im 19. Jahrhundert. Prostitution wurde kriminalisiert, d
                     { title: "Stadtrecht 1437", description: "Regulierung der Prostitution" },
                     { title: "Polizeiprotokoll 1890", description: "Säuberung des Viertels" },
                     { title: "Moderne Debatte", description: "Sexarbeiter*innen-Rechte heute" }
-                ],
-                quiz: {
-                    question: "Wie ging das mittelalterliche Köln mit Prostitution um?",
-                    options: [
-                        "Sie war komplett verboten",
-                        "Sie war legal und städtisch reguliert",
-                        "Sie war nur in Klöstern erlaubt",
-                        "Sie existierte nicht"
-                    ],
-                    correct: 1
-                },
-                observation: "Schaut euch die heutige Bebauung an. Was sagt sie über Stadtentwicklung aus? Wie verändert sich die Nutzung von Vierteln?",
-                roleplay: {
-                    title: "Debatte: Sollten Städte Sexarbeit regulieren oder verbieten?",
-                    roles: [
-                        { name: "Befürworter*in der Regulierung", description: "Arbeitsrechte, Schutz" },
-                        { name: "Befürworter*in des Verbots", description: "moralische Gründe" }
-                    ],
-                    instruction: "Führt eine respektvolle, sachliche Debatte - wie in einem Stadtrat"
-                }
+                ]
             },
             {
                 id: 9,
@@ -906,6 +1045,7 @@ Die Moral änderte sich im 19. Jahrhundert. Prostitution wurde kriminalisiert, d
                 subtitle: "Vom Sicherheitshafen zum Angstraum und zurück",
                 lat: 50.9472, lng: 6.9456,
                 description: "Ein Lehrstück über Stadtplanung und Bürgerbeteiligung.",
+                photoChallenge: "Zeigt den Wandel des Platzes: Macht zwei Fotos - eins 'grimmig/problematisch' und eins 'hoffnungsvoll/optimistisch' am selben Ort.",
                 mainText: `1972 als moderner "Sicherheitshafen" eröffnet: übersichtlich, hell ausgeleuchtet, mit U-Bahn-Anschluss. Ein Vorzeigeprojekt der Stadtplanung. Die Idee: Kriminalität durch Design verhindern.
 
 Dann die Kehrtwende: In den 1990er-2000ern wurde der Platz zum Symbol städtischer Probleme. Drogenhandel, Gewalt, Vermüllung. Die Medien nannten ihn "gefährlichsten Platz Kölns". Die Realität war komplexer: viel Angst, weniger tatsächliche Kriminalstatistik.
@@ -919,27 +1059,7 @@ Seit 2015 die Wende: Bürgerinitiativen, Stadtteilladen, Community-Events. Nicht
                     { title: "Studie", description: "Wahrnehmung vs. Realität von Unsicherheit" },
                     { title: "Ebertplatz lebt", description: "Bürgerinitiative dokumentiert Wandel" },
                     { title: "Urban Planning", description: "Erfolgreiche Platz-Revitalisierung weltweit" }
-                ],
-                quiz: {
-                    question: "Was war der Hauptgrund für die 'Wiederbelebung' des Ebertplatzes?",
-                    options: [
-                        "Mehr Polizei und Überwachung",
-                        "Bürgerinitiative und Community-Events",
-                        "Gentrifizierung und teure Geschäfte",
-                        "Komplette Neubebauung"
-                    ],
-                    correct: 1
-                },
-                observation: "Wie wirkt der Platz jetzt auf euch? Was würdet ihr ändern, um ihn noch lebendiger zu machen?",
-                roleplay: {
-                    title: "Stadtratssitzung: Wie lösen wir städtische Probleme?",
-                    roles: [
-                        { name: "Sicherheits-Politiker*in", description: "will mehr Überwachung" },
-                        { name: "Sozialarbeiter*in", description: "will mehr Unterstützung" },
-                        { name: "Anwohner*in", description: "will Ruhe, aber auch Gerechtigkeit" }
-                    ],
-                    instruction: "Findet einen Kompromiss für den 'neuen' Ebertplatz"
-                }
+                ]
             },
             {
                 id: 10,
@@ -947,6 +1067,7 @@ Seit 2015 die Wende: Bürgerinitiativen, Stadtteilladen, Community-Events. Nicht
                 subtitle: "Grenzen überwinden, Brücken bauen",
                 lat: 50.9489, lng: 6.9444,
                 description: "Ende der Tour an der ehemaligen Stadtgrenze.",
+                photoChallenge: "Abschluss-Foto: Macht ein Siegerfoto mit allen Teammitgliedern - zeigt eure Freude über die abgeschlossene Tour und das Gelernte!",
                 mainText: `Wir stehen hier an der ehemaligen Stadtgrenze - der preußischen Bastionsbefestigung von 1816. Von hier aus konntet ihr früher nicht weiter, ohne die Stadt zu verlassen.
 
 Diese Bastion symbolisiert Grenzen. Köln war immer eine Stadt der Grenzen - zwischen römischem und germanischem Reich, zwischen weltlicher und kirchlicher Macht, zwischen arm und reich, zwischen alteingesessen und zugewandert.
@@ -959,25 +1080,7 @@ Köln war nie "rein deutsch" oder kulturell homogen. Die Stadt lebte 2000 Jahre 
                     { title: "Städtepartnerschaften", description: "Köln baut Brücken nach Europa" },
                     { title: "Gesichter Kölns", description: "Montage aller Nationalitäten heute" },
                     { title: "Start with a Friend", description: "Köln als Stadt der Begegnungen" }
-                ],
-                quiz: {
-                    question: "Was war das wichtigste Erfolgsrezept Kölns über 2000 Jahre?",
-                    options: [
-                        "Militärische Stärke",
-                        "Kulturelle Vielfalt und Handel",
-                        "Religiöse Einheit",
-                        "Politische Stabilität"
-                    ],
-                    correct: 1
-                },
-                observation: "Was war euer persönliches Highlight? Was seht ihr jetzt anders als vor 3 Stunden?",
-                roleplay: {
-                    title: "Abschluss-Statement als Kölner Oberbürgermeister*in",
-                    roles: [
-                        { name: "Oberbürgermeister*in", description: "hält eine 2-Minuten-Rede" }
-                    ],
-                    instruction: "Was macht Köln aus? Was können andere Städte von Köln lernen?"
-                }
+                ]
             }
         ];
 
@@ -986,6 +1089,7 @@ Köln war nie "rein deutsch" oder kulturell homogen. Die Stadt lebte 2000 Jahre 
             generateStationsList();
             initMap();
             updateUI();
+            startLiveMessageCheck();
             
             // Check if geolocation is available
             if (navigator.geolocation) {
@@ -1006,6 +1110,9 @@ Köln war nie "rein deutsch" oder kulturell homogen. Die Stadt lebte 2000 Jahre 
                     }
                 );
             }
+
+            // Load saved state
+            loadState();
 
             // Register service worker for offline functionality
             if ('serviceWorker' in navigator) {
@@ -1041,6 +1148,11 @@ Köln war nie "rein deutsch" oder kulturell homogen. Die Stadt lebte 2000 Jahre 
             // Initialize map if switching to map tab
             if (tabName === 'map' && !appState.map) {
                 setTimeout(initMap, 100);
+            }
+
+            // Update ranking if switching to ranking tab
+            if (tabName === 'ranking') {
+                updateRanking();
             }
         }
 
@@ -1079,38 +1191,28 @@ Köln war nie "rein deutsch" oder kulturell homogen. Die Stadt lebte 2000 Jahre 
                             </div>
                         </div>
 
-                        <div class="activity-card">
-                            <div class="activity-title">🧠 Multiple Choice (10 Kronen)</div>
-                            <p><strong>${station.quiz.question}</strong></p>
-                            ${station.quiz.options.map((option, index) => `
-                                <div class="quiz-option" onclick="selectQuizOption(${station.id}, ${index})" id="quiz-${station.id}-${index}">
-                                    ${String.fromCharCode(65 + index)}) ${option}
+                        <div class="photo-challenge">
+                            <h4>📸 Foto-Challenge</h4>
+                            <p>${station.photoChallenge}</p>
+                            
+                            <div class="photo-upload-area" onclick="selectPhoto(${station.id})" id="upload-area-${station.id}">
+                                <div id="upload-content-${station.id}">
+                                    📷 Hier klicken zum Foto machen/auswählen
                                 </div>
-                            `).join('')}
-                            <button class="btn" onclick="checkQuizAnswer(${station.id})" id="quiz-btn-${station.id}">Antwort prüfen</button>
-                        </div>
-
-                        <div class="activity-card">
-                            <div class="activity-title">👀 Beobachtungsaufgabe (15 Kronen)</div>
-                            <p>${station.observation}</p>
-                            <button class="btn" onclick="completeObservation(${station.id})">Aufgabe erledigt</button>
-                        </div>
-
-                        <div class="role-play-card">
-                            <div class="activity-title">🎭 Rollenspiel (20 Kronen)</div>
-                            <h4>${station.roleplay.title}</h4>
-                            ${station.roleplay.roles.map(role => `
-                                <div class="person-role">
-                                    <strong>${role.name}:</strong> ${role.description}
-                                </div>
-                            `).join('')}
-                            <p><em>${station.roleplay.instruction}</em></p>
-                            <button class="btn" onclick="completeRoleplay(${station.id})">Rollenspiel gespielt</button>
+                            </div>
+                            
+                            <input type="file" class="file-input" id="photo-input-${station.id}" accept="image/*" capture="environment" onchange="handlePhotoUpload(${station.id}, event)">
+                            
+                            <div class="ai-rating hidden" id="rating-${station.id}">
+                                <div class="rating-score" id="score-${station.id}">0</div>
+                                <div class="rating-text" id="rating-text-${station.id}">KI bewertet dein Foto...</div>
+                                <div class="rating-details" id="rating-details-${station.id}"></div>
+                            </div>
                         </div>
 
                         <button class="btn" onclick="completeStation(${station.id})" id="complete-btn-${station.id}" 
                                 ${isCompleted ? 'disabled' : ''} style="background: #10b981;">
-                            ${isCompleted ? '✅ Station abgeschlossen' : '🏁 Station abschließen (+5 Bonus-Kronen)'}
+                            ${isCompleted ? '✅ Station abgeschlossen' : '🏁 Station abschließen'}
                         </button>
                     </div>
                 `;
@@ -1140,6 +1242,7 @@ Köln war nie "rein deutsch" oder kulturell homogen. Die Stadt lebte 2000 Jahre 
             document.getElementById('teamSelector').style.display = 'none';
             
             showSuccessMessage('Team ausgewählt! 🎉');
+            saveState();
         }
 
         function startTour() {
@@ -1153,71 +1256,97 @@ Köln war nie "rein deutsch" oder kulturell homogen. Die Stadt lebte 2000 Jahre 
             showSuccessMessage('Tour gestartet! Viel Erfolg! 🚀');
         }
 
-        function selectQuizOption(stationId, optionIndex) {
-            // Clear previous selections
-            document.querySelectorAll(`#station-${stationId} .quiz-option`).forEach(option => {
-                option.classList.remove('selected');
-            });
-            
-            // Select current option
-            document.getElementById(`quiz-${stationId}-${optionIndex}`).classList.add('selected');
-            
-            // Store selection
-            appState[`quiz-${stationId}-selected`] = optionIndex;
+        function selectPhoto(stationId) {
+            document.getElementById(`photo-input-${stationId}`).click();
         }
 
-        function checkQuizAnswer(stationId) {
-            const selectedOption = appState[`quiz-${stationId}-selected`];
-            if (selectedOption === undefined) {
-                alert('Bitte wähle zuerst eine Antwort aus!');
-                return;
-            }
+        function handlePhotoUpload(stationId, event) {
+            const file = event.target.files[0];
+            if (!file) return;
 
-            const station = stations.find(s => s.id === stationId);
-            const isCorrect = selectedOption === station.quiz.correct;
-            
-            // Update UI
-            document.querySelectorAll(`#station-${stationId} .quiz-option`).forEach((option, index) => {
-                if (index === station.quiz.correct) {
-                    option.classList.add('correct');
-                } else if (index === selectedOption && !isCorrect) {
-                    option.classList.add('wrong');
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const imageUrl = e.target.result;
+                
+                // Update upload area
+                const uploadArea = document.getElementById(`upload-area-${stationId}`);
+                uploadArea.classList.add('has-photo');
+                uploadArea.innerHTML = `
+                    <img src="${imageUrl}" class="photo-preview" alt="Uploaded photo">
+                    <p>📷 Foto erfolgreich hochgeladen!</p>
+                    <small>Klicke hier für ein neues Foto</small>
+                `;
+
+                // Store photo
+                const existingPhotoIndex = appState.uploadedPhotos.findIndex(p => p.stationId === stationId);
+                const photoData = {
+                    stationId: stationId,
+                    imageUrl: imageUrl,
+                    timestamp: Date.now(),
+                    teamId: appState.selectedTeam
+                };
+
+                if (existingPhotoIndex >= 0) {
+                    appState.uploadedPhotos[existingPhotoIndex] = photoData;
+                } else {
+                    appState.uploadedPhotos.push(photoData);
                 }
-            });
+
+                // Simulate AI rating
+                setTimeout(() => {
+                    ratePhoto(stationId);
+                }, 1500);
+
+                saveState();
+            };
             
-            // Award points
-            if (isCorrect) {
-                addScore(10);
-                showSuccessMessage('Richtig! +10 Kronen 🎉');
-            } else {
-                showSuccessMessage('Nicht ganz richtig, aber Versuch zählt! 🤔');
+            reader.readAsDataURL(file);
+        }
+
+        function ratePhoto(stationId) {
+            const ratingDiv = document.getElementById(`rating-${stationId}`);
+            ratingDiv.classList.remove('hidden');
+            
+            // Get random AI response
+            const response = aiResponses[Math.floor(Math.random() * aiResponses.length)];
+            
+            // Add bonus points for early uploads and creativity
+            const bonusPoints = Math.floor(Math.random() * 30);
+            const finalScore = Math.min(100, response.score + bonusPoints);
+            
+            // Animate score counting up
+            let currentScore = 0;
+            const scoreElement = document.getElementById(`score-${stationId}`);
+            const interval = setInterval(() => {
+                currentScore += 3;
+                scoreElement.textContent = currentScore;
+                if (currentScore >= finalScore) {
+                    clearInterval(interval);
+                    scoreElement.textContent = finalScore;
+                }
+            }, 50);
+            
+            document.getElementById(`rating-text-${stationId}`).textContent = response.text;
+            document.getElementById(`rating-details-${stationId}`).textContent = response.details;
+            
+            // Add score to total
+            addScore(finalScore);
+            
+            // Store rating
+            const photoData = appState.uploadedPhotos.find(p => p.stationId === stationId);
+            if (photoData) {
+                photoData.score = finalScore;
+                photoData.rating = response;
             }
             
-            // Disable button
-            document.getElementById(`quiz-btn-${stationId}`).disabled = true;
-            document.getElementById(`quiz-btn-${stationId}`).textContent = isCorrect ? '✅ Richtig!' : '❌ Falsch';
-        }
-
-        function completeObservation(stationId) {
-            addScore(15);
-            showSuccessMessage('Beobachtungsaufgabe abgeschlossen! +15 Kronen 👀');
-            event.target.disabled = true;
-            event.target.textContent = '✅ Erledigt';
-        }
-
-        function completeRoleplay(stationId) {
-            addScore(20);
-            showSuccessMessage('Rollenspiel gespielt! +20 Kronen 🎭');
-            event.target.disabled = true;
-            event.target.textContent = '✅ Gespielt';
+            showSuccessMessage(`Foto bewertet! +${finalScore} Punkte! 📸`);
         }
 
         function completeStation(stationId) {
             if (!appState.completedStations.includes(stationId)) {
                 appState.completedStations.push(stationId);
-                addScore(5);
                 updateProgress();
-                showSuccessMessage('Station abgeschlossen! +5 Bonus-Kronen 🏁');
+                showSuccessMessage('Station abgeschlossen! 🏁');
                 
                 // Update station card
                 const stationCard = document.querySelector(`#complete-btn-${stationId}`).closest('.station-card');
@@ -1228,12 +1357,20 @@ Köln war nie "rein deutsch" oder kulturell homogen. Die Stadt lebte 2000 Jahre 
                 event.target.disabled = true;
                 event.target.textContent = '✅ Station abgeschlossen';
                 event.target.style.background = '#6b7280';
+
+                // Check if tour is complete
+                if (appState.completedStations.length === stations.length) {
+                    showFinalFeedback();
+                }
+
+                saveState();
             }
         }
 
         function addScore(points) {
             appState.totalScore += points;
             updateUI();
+            saveState();
         }
 
         function updateUI() {
@@ -1245,6 +1382,65 @@ Köln war nie "rein deutsch" oder kulturell homogen. Die Stadt lebte 2000 Jahre 
         function updateProgress() {
             const progress = (appState.completedStations.length / stations.length) * 100;
             document.getElementById('progressBar').style.width = progress + '%';
+        }
+
+        function updateRanking() {
+            const rankingList = document.getElementById('rankingList');
+            
+            // Generate fake team data for ranking
+            const teams = [
+                { name: appState.teamName || 'Dein Team', score: appState.totalScore, isUser: true },
+                { name: '🔴 Team Römer', score: Math.floor(Math.random() * 800) + 200 },
+                { name: '🔵 Team Gaffeln', score: Math.floor(Math.random() * 800) + 200 },
+                { name: '🟢 Team Hanseat', score: Math.floor(Math.random() * 800) + 200 },
+                { name: '🟡 Team Modern', score: Math.floor(Math.random() * 800) + 200 }
+            ].filter(team => team.name !== 'Dein Team' || appState.selectedTeam)
+             .sort((a, b) => b.score - a.score);
+
+            rankingList.innerHTML = '';
+            
+            teams.forEach((team, index) => {
+                const rankItem = document.createElement('div');
+                rankItem.className = `team-rank-item ${team.isUser ? 'highlight' : ''}`;
+                
+                let rankClass = '';
+                if (index === 0) rankClass = 'gold';
+                else if (index === 1) rankClass = 'silver';
+                else if (index === 2) rankClass = 'bronze';
+                
+                rankItem.innerHTML = `
+                    <div class="rank-position ${rankClass}">${index + 1}</div>
+                    <div style="flex: 1;">
+                        <strong>${team.name}</strong>
+                        <div style="color: #6b7280; font-size: 0.9rem;">
+                            ${team.score} Punkte
+                        </div>
+                    </div>
+                    ${team.isUser ? '<div style="color: #f59e0b;">👤</div>' : ''}
+                `;
+                
+                rankingList.appendChild(rankItem);
+            });
+        }
+
+        function showFinalFeedback() {
+            const feedbackDiv = document.getElementById('finalFeedback');
+            const photosDiv = document.getElementById('feedbackPhotos');
+            
+            // Show all uploaded photos
+            photosDiv.innerHTML = '';
+            appState.uploadedPhotos.forEach(photo => {
+                const img = document.createElement('img');
+                img.src = photo.imageUrl;
+                img.className = 'feedback-photo';
+                photosDiv.appendChild(img);
+            });
+            
+            document.getElementById('finalScore').textContent = appState.totalScore;
+            feedbackDiv.classList.remove('hidden');
+            
+            // Scroll to feedback
+            feedbackDiv.scrollIntoView({ behavior: 'smooth' });
         }
 
         function showSuccessMessage(message) {
@@ -1268,25 +1464,193 @@ Köln war nie "rein deutsch" oder kulturell homogen. Die Stadt lebte 2000 Jahre 
                 appState.completedStations = [];
                 appState.totalScore = 0;
                 appState.currentStation = 0;
+                appState.uploadedPhotos = [];
                 
                 // Reset UI
                 updateUI();
+                saveState();
                 location.reload();
             }
         }
 
+        // Master Functions
+        function showMasterPanel() {
+            document.getElementById('masterPanel').classList.remove('hidden');
+        }
+
+        function activateMaster() {
+            const password = document.getElementById('masterPassword').value;
+            if (password === MASTER_PASSWORD) {
+                appState.masterMode = true;
+                document.getElementById('masterControls').classList.remove('hidden');
+                showSuccessMessage('Master-Modus aktiviert! 🎛️');
+                
+                // Request microphone permission
+                navigator.mediaDevices.getUserMedia({ audio: true })
+                    .then(stream => {
+                        appState.audioStream = stream;
+                        console.log('Microphone access granted');
+                    })
+                    .catch(err => {
+                        console.log('Microphone access denied:', err);
+                    });
+            } else {
+                alert('Falsches Passwort!');
+            }
+        }
+
+        function sendLiveMessage() {
+            const message = document.getElementById('liveMessageInput').value;
+            if (!message.trim()) return;
+            
+            // Store message in localStorage for other users to pick up
+            const messages = JSON.parse(localStorage.getItem('liveMessages') || '[]');
+            messages.push({
+                id: Date.now(),
+                message: message,
+                timestamp: new Date().toLocaleTimeString('de-DE')
+            });
+            localStorage.setItem('liveMessages', JSON.stringify(messages));
+            
+            // Clear input
+            document.getElementById('liveMessageInput').value = '';
+            
+            showSuccessMessage('Live-Nachricht gesendet! 📢');
+        }
+
+        function startLiveMessageCheck() {
+            setInterval(() => {
+                const messages = JSON.parse(localStorage.getItem('liveMessages') || '[]');
+                const lastCheck = parseInt(localStorage.getItem('lastMessageCheck') || '0');
+                
+                const newMessages = messages.filter(msg => msg.id > lastCheck);
+                
+                if (newMessages.length > 0) {
+                    newMessages.forEach(msg => displayLiveMessage(msg));
+                    localStorage.setItem('lastMessageCheck', Math.max(...newMessages.map(m => m.id)).toString());
+                }
+            }, 2000);
+        }
+
+        function displayLiveMessage(message) {
+            const messagesDiv = document.getElementById('liveMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'live-message new';
+            messageDiv.innerHTML = `
+                <strong>📢 Live-Update (${message.timestamp}):</strong><br>
+                ${message.message}
+            `;
+            
+            messagesDiv.appendChild(messageDiv);
+            
+            // Remove 'new' class after animation
+            setTimeout(() => {
+                messageDiv.classList.remove('new');
+            }, 2000);
+            
+            // Remove old messages
+            const allMessages = messagesDiv.querySelectorAll('.live-message');
+            if (allMessages.length > 5) {
+                allMessages[0].remove();
+            }
+        }
+
+        function startVoiceBroadcast() {
+            if (!appState.audioStream) {
+                alert('Mikrofon-Zugriff erforderlich!');
+                return;
+            }
+            
+            // Create MediaRecorder
+            appState.mediaRecorder = new MediaRecorder(appState.audioStream);
+            const audioChunks = [];
+            
+            appState.mediaRecorder.ondataavailable = event => {
+                audioChunks.push(event.data);
+            };
+            
+            appState.mediaRecorder.onstop = () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                // In a real implementation, this would be sent to a server
+                console.log('Audio recorded:', audioBlob);
+            };
+            
+            appState.mediaRecorder.start();
+            
+            // Update UI
+            document.querySelector('.voice-btn.record').classList.add('broadcasting');
+            document.querySelector('.voice-btn.record').textContent = '🔴 Übertragung läuft';
+            document.getElementById('voiceStatus').textContent = '🎤 Sprach-Übertragung aktiv';
+            
+            showSuccessMessage('Sprach-Übertragung gestartet! 🎤');
+        }
+
+        function stopVoiceBroadcast() {
+            if (appState.mediaRecorder && appState.mediaRecorder.state === 'recording') {
+                appState.mediaRecorder.stop();
+            }
+            
+            // Update UI
+            document.querySelector('.voice-btn.record').classList.remove('broadcasting');
+            document.querySelector('.voice-btn.record').textContent = '🎤 Sprechen';
+            document.getElementById('voiceStatus').textContent = '';
+            
+            showSuccessMessage('Sprach-Übertragung beendet! ⏹️');
+        }
+
+        // State Management
+        function saveState() {
+            localStorage.setItem('tourState', JSON.stringify(appState));
+        }
+
+        function loadState() {
+            const saved = localStorage.getItem('tourState');
+            if (saved) {
+                const savedState = JSON.parse(saved);
+                appState = { ...appState, ...savedState };
+                updateUI();
+                
+                // Restore team selection
+                if (appState.selectedTeam) {
+                    document.getElementById('selectedTeamName').textContent = appState.teamName;
+                    document.getElementById('teamSelector').style.display = 'none';
+                }
+                
+                // Restore uploaded photos
+                appState.uploadedPhotos.forEach(photo => {
+                    const uploadArea = document.getElementById(`upload-area-${photo.stationId}`);
+                    if (uploadArea) {
+                        uploadArea.classList.add('has-photo');
+                        uploadArea.innerHTML = `
+                            <img src="${photo.imageUrl}" class="photo-preview" alt="Uploaded photo">
+                            <p>📷 Foto erfolgreich hochgeladen!</p>
+                            <small>Klicke hier für ein neues Foto</small>
+                        `;
+                        
+                        if (photo.score) {
+                            const ratingDiv = document.getElementById(`rating-${photo.stationId}`);
+                            if (ratingDiv) {
+                                ratingDiv.classList.remove('hidden');
+                                document.getElementById(`score-${photo.stationId}`).textContent = photo.score;
+                                document.getElementById(`rating-text-${photo.stationId}`).textContent = photo.rating.text;
+                                document.getElementById(`rating-details-${photo.stationId}`).textContent = photo.rating.details;
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // Map Functions (same as before)
         function initMap() {
             if (!document.getElementById('map') || appState.map) return;
             
-            // Initialize map centered on Cologne
             appState.map = L.map('map').setView([50.9375, 6.9597], 15);
             
-            // Add OpenStreetMap tiles
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '© OpenStreetMap contributors'
             }).addTo(appState.map);
             
-            // Add station markers
             stations.forEach((station, index) => {
                 const isCompleted = appState.completedStations.includes(station.id);
                 const marker = L.marker([station.lat, station.lng])
@@ -1303,12 +1667,10 @@ Köln war nie "rein deutsch" oder kulturell homogen. Die Stadt lebte 2000 Jahre 
                 appState.markers.push(marker);
             });
             
-            // Add user location if available
             if (appState.userLocation) {
                 addUserLocationToMap();
             }
             
-            // Draw route line between stations
             const routeCoordinates = stations.map(station => [station.lat, station.lng]);
             L.polyline(routeCoordinates, {
                 color: '#dc2626',
@@ -1342,7 +1704,6 @@ Köln war nie "rein deutsch" oder kulturell homogen. Die Stadt lebte 2000 Jahre 
         function updateLocationInfo() {
             if (!appState.userLocation) return;
             
-            // Find nearest station
             let nearestStation = null;
             let minDistance = Infinity;
             
@@ -1369,7 +1730,7 @@ Köln war nie "rein deutsch" oder kulturell homogen. Die Stadt lebte 2000 Jahre 
         }
 
         function calculateDistance(lat1, lng1, lat2, lng2) {
-            const R = 6371; // Earth's radius in km
+            const R = 6371;
             const dLat = (lat2 - lat1) * Math.PI / 180;
             const dLng = (lng2 - lng1) * Math.PI / 180;
             const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
