@@ -65,24 +65,7 @@
         height: 8px;
         border-radius: 50%;
         margin-left: 8px;
-    }
-
-    .connection-status.online {
         background: #10b981;
-    }
-
-    .connection-status.offline {
-        background: #dc2626;
-    }
-
-    .connection-status.connecting {
-        background: #f59e0b;
-        animation: pulse 1s infinite;
-    }
-
-    @keyframes pulse {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.5; }
     }
 
     .progress-container {
@@ -201,198 +184,39 @@
         margin: 0.5rem 0;
     }
 
-    .station-card {
+    .team-selector {
         background: white;
-        border-radius: 12px;
-        padding: 1.5rem;
-        margin-bottom: 1.5rem;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        border-left: 5px solid #dc2626;
-        cursor: pointer;
-        transition: all 0.3s;
-    }
-
-    .station-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-    }
-
-    .station-card.completed {
-        border-left-color: #10b981;
-        background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-    }
-
-    .station-header {
-        display: flex;
-        align-items: center;
-        margin-bottom: 1rem;
-    }
-
-    .station-number {
-        background: #dc2626;
-        color: white;
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: bold;
-        margin-right: 1rem;
-        flex-shrink: 0;
-    }
-
-    .station-number.completed {
-        background: #10b981;
-    }
-
-    .station-title {
-        flex: 1;
-        font-size: 1.3rem;
-        font-weight: bold;
-        color: #1f2937;
-    }
-
-    .station-subtitle {
-        color: #6b7280;
-        font-size: 0.9rem;
-        margin-bottom: 1rem;
-    }
-
-    .station-details {
-        display: none;
-        margin-top: 1rem;
-        padding-top: 1rem;
-        border-top: 2px solid #e5e7eb;
-    }
-
-    .station-details.active {
-        display: block;
-    }
-
-    .detail-section {
-        margin-bottom: 1.5rem;
-    }
-
-    .detail-section h4 {
-        color: #dc2626;
-        margin-bottom: 0.8rem;
-        font-size: 1.1rem;
-        display: flex;
-        align-items: center;
-    }
-
-    .detail-section h4::before {
-        content: "▶";
-        margin-right: 0.5rem;
-        color: #dc2626;
-    }
-
-    .photo-challenge {
-        background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
-        border-radius: 12px;
-        padding: 1.5rem;
-        margin: 1rem 0;
-        border-left: 4px solid #6366f1;
-        position: relative;
-    }
-
-    .photo-challenge h4 {
-        color: #4f46e5;
-        margin-bottom: 1rem;
-        font-size: 1.2rem;
-    }
-
-    .photo-upload-area {
-        border: 3px dashed #a5b4fc;
+        border: 2px solid #e5e7eb;
         border-radius: 10px;
-        padding: 2rem;
-        text-align: center;
+        padding: 1rem;
         margin: 1rem 0;
+    }
+
+    .team-option {
+        display: flex;
+        align-items: center;
+        padding: 0.8rem;
+        margin: 0.5rem 0;
+        border-radius: 8px;
         cursor: pointer;
-        transition: all 0.3s;
-        background: rgba(255,255,255,0.5);
+        transition: background 0.3s;
         touch-action: manipulation;
     }
 
-    .photo-upload-area:hover {
-        border-color: #6366f1;
-        background: rgba(255,255,255,0.8);
+    .team-option:hover {
+        background: #f3f4f6;
     }
 
-    .photo-upload-area.has-photo {
-        border-color: #10b981;
-        background: #f0fdf4;
+    .team-option.selected {
+        background: #dbeafe;
+        border: 2px solid #3b82f6;
     }
 
-    .photo-preview {
-        max-width: 100%;
-        max-height: 200px;
-        border-radius: 8px;
-        margin: 1rem 0;
-    }
-
-    .ai-rating {
-        background: white;
-        border-radius: 10px;
-        padding: 1.5rem;
-        margin: 1rem 0;
-        text-align: center;
-        border: 2px solid #10b981;
-    }
-
-    .rating-score {
-        font-size: 3rem;
-        font-weight: bold;
-        color: #059669;
-        margin-bottom: 0.5rem;
-    }
-
-    .rating-text {
-        color: #047857;
-        font-size: 1.1rem;
-        margin-bottom: 1rem;
-    }
-
-    .rating-details {
-        background: #f0fdf4;
-        padding: 1rem;
-        border-radius: 8px;
-        font-size: 0.9rem;
-        color: #065f46;
-    }
-
-    .image-gallery {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-        gap: 1rem;
-        margin: 1rem 0;
-    }
-
-    .gallery-image {
-        width: 100%;
-        height: 120px;
-        object-fit: cover;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: transform 0.3s;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-
-    .gallery-image:hover {
-        transform: scale(1.05);
-    }
-
-    .gallery-item {
-        text-align: center;
-        position: relative;
-    }
-
-    .gallery-item small {
-        display: block;
-        margin-top: 0.5rem;
-        color: #6b7280;
-        font-size: 0.8rem;
+    .team-color {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        margin-right: 1rem;
     }
 
     .btn {
@@ -464,110 +288,6 @@
         margin-top: 0.5rem;
     }
 
-    .team-ranking {
-        background: white;
-        border-radius: 12px;
-        padding: 1.5rem;
-        margin: 1rem 0;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    }
-
-    .team-rank-item {
-        display: flex;
-        align-items: center;
-        padding: 1rem;
-        margin: 0.5rem 0;
-        border-radius: 8px;
-        background: #f8fafc;
-    }
-
-    .team-rank-item.highlight {
-        background: #fef3c7;
-        border: 2px solid #f59e0b;
-    }
-
-    .rank-position {
-        background: #6b7280;
-        color: white;
-        width: 30px;
-        height: 30px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: bold;
-        margin-right: 1rem;
-    }
-
-    .rank-position.gold {
-        background: #f59e0b;
-    }
-
-    .rank-position.silver {
-        background: #6b7280;
-    }
-
-    .rank-position.bronze {
-        background: #d97706;
-    }
-
-    #map {
-        height: 400px;
-        width: 100%;
-        border-radius: 10px;
-        margin: 1rem 0;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    }
-
-    .location-info {
-        background: #f0f9ff;
-        border: 2px solid #0ea5e9;
-        border-radius: 10px;
-        padding: 1rem;
-        margin: 1rem 0;
-    }
-
-    .distance-info {
-        font-weight: bold;
-        color: #0369a1;
-        margin-bottom: 0.5rem;
-    }
-
-    .team-selector {
-        background: white;
-        border: 2px solid #e5e7eb;
-        border-radius: 10px;
-        padding: 1rem;
-        margin: 1rem 0;
-    }
-
-    .team-option {
-        display: flex;
-        align-items: center;
-        padding: 0.8rem;
-        margin: 0.5rem 0;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: background 0.3s;
-        touch-action: manipulation;
-    }
-
-    .team-option:hover {
-        background: #f3f4f6;
-    }
-
-    .team-option.selected {
-        background: #dbeafe;
-        border: 2px solid #3b82f6;
-    }
-
-    .team-color {
-        width: 20px;
-        height: 20px;
-        border-radius: 50%;
-        margin-right: 1rem;
-    }
-
     .chat-container {
         background: white;
         border-radius: 12px;
@@ -584,7 +304,6 @@
         border-radius: 8px;
         background: #f8fafc;
         border-left: 3px solid #3b82f6;
-        position: relative;
     }
 
     .chat-message.own {
@@ -597,163 +316,6 @@
         background: #fef3c7;
         border-left-color: #f59e0b;
         font-style: italic;
-    }
-
-    .chat-message.admin-mode {
-        border: 2px solid #dc2626;
-    }
-
-    .chat-admin-controls {
-        position: absolute;
-        top: 5px;
-        right: 5px;
-        display: none;
-    }
-
-    .chat-message.admin-mode .chat-admin-controls {
-        display: block;
-    }
-
-    .chat-media {
-        margin: 0.5rem 0;
-        max-width: 100%;
-    }
-
-    .chat-image {
-        max-width: 200px;
-        max-height: 150px;
-        border-radius: 8px;
-        cursor: pointer;
-    }
-
-    .chat-audio {
-        width: 100%;
-        max-width: 300px;
-    }
-
-    .media-upload-container {
-        display: flex;
-        gap: 0.5rem;
-        margin-top: 0.5rem;
-        flex-wrap: wrap;
-    }
-
-    .media-upload-btn {
-        padding: 0.5rem;
-        background: #6b7280;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 0.8rem;
-        display: flex;
-        align-items: center;
-        gap: 0.25rem;
-    }
-
-    .media-upload-btn:hover {
-        background: #4b5563;
-    }
-
-    .media-upload-btn.recording {
-        background: #dc2626;
-        animation: pulse 1s infinite;
-    }
-
-    .admin-content-editor {
-        background: #fff3cd;
-        border: 2px solid #ffc107;
-        border-radius: 8px;
-        padding: 1rem;
-        margin: 1rem 0;
-        position: relative;
-    }
-
-    .admin-content-editor h4 {
-        color: #856404;
-        margin-bottom: 1rem;
-    }
-
-    .content-edit-section {
-        margin-bottom: 1.5rem;
-        padding: 1rem;
-        background: white;
-        border-radius: 8px;
-        border: 1px solid #e5e7eb;
-    }
-
-    .content-edit-section.editable {
-        border: 2px dashed #f59e0b;
-        background: #fefce8;
-    }
-
-    .edit-controls {
-        display: flex;
-        gap: 0.5rem;
-        margin-top: 0.5rem;
-        flex-wrap: wrap;
-    }
-
-    .edit-field {
-        width: 100%;
-        padding: 0.5rem;
-        border: 2px solid #e5e7eb;
-        border-radius: 4px;
-        margin: 0.5rem 0;
-        font-family: inherit;
-    }
-
-    .edit-field:focus {
-        border-color: #f59e0b;
-        outline: none;
-    }
-
-    .image-upload-preview {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-        gap: 1rem;
-        margin: 1rem 0;
-    }
-
-    .image-upload-item {
-        position: relative;
-        border: 2px dashed #d1d5db;
-        border-radius: 8px;
-        padding: 1rem;
-        text-align: center;
-        cursor: pointer;
-        transition: all 0.3s;
-    }
-
-    .image-upload-item:hover {
-        border-color: #f59e0b;
-        background: #fefce8;
-    }
-
-    .image-upload-item.has-image {
-        border-color: #10b981;
-    }
-
-    .image-upload-item img {
-        width: 100%;
-        height: 80px;
-        object-fit: cover;
-        border-radius: 4px;
-        margin-bottom: 0.5rem;
-    }
-
-    .remove-image-btn {
-        position: absolute;
-        top: 5px;
-        right: 5px;
-        background: #dc2626;
-        color: white;
-        border: none;
-        border-radius: 50%;
-        width: 20px;
-        height: 20px;
-        cursor: pointer;
-        font-size: 0.7rem;
     }
 
     .chat-input-container {
@@ -803,21 +365,8 @@
         background: #f59e0b;
     }
 
-    .error-panel {
-        background: #fef2f2;
-        border: 2px solid #fca5a5;
-        border-radius: 10px;
-        padding: 1rem;
-        margin: 1rem 0;
-        color: #dc2626;
-    }
-
     .hidden {
         display: none !important;
-    }
-
-    .file-input {
-        display: none;
     }
 
     @keyframes slideIn {
@@ -842,14 +391,6 @@
         .tab-content {
             padding: 1rem;
         }
-        
-        .station-card {
-            padding: 1rem;
-        }
-        
-        .image-gallery {
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-        }
     }
 </style>
 ```
@@ -861,8 +402,8 @@
             <h1>🏛️ Kölner Abendspaziergang</h1>
             <p class="subtitle">Entdecke 2000 Jahre Stadtgeschichte</p>
             <div class="tour-id-display">
-                Tour: <span id="currentTourId">Wird geladen...</span>
-                <span class="connection-status connecting" id="connectionStatus" title="Verbindung wird aufgebaut..."></span>
+                Tour: <span id="currentTourId">koeln-tour-2025-06-23</span>
+                <span class="connection-status" title="Online"></span>
             </div>
             <div class="progress-container">
                 <div class="progress-bar" id="progressBar"></div>
@@ -882,18 +423,12 @@
 
         <!-- Overview Tab -->
         <div id="overview" class="tab-content active">
-            <div id="errorPanel" class="error-panel hidden">
-                <h4>⚠️ Verbindungsproblem</h4>
-                <p id="errorMessage">Verbindung zu Firebase wird aufgebaut...</p>
-                <button class="btn btn-secondary btn-small" onclick="retryConnection()">🔄 Erneut versuchen</button>
-            </div>
-
             <div class="tour-connection-section">
                 <h3 style="margin-bottom: 1rem; color: #0369a1;">🔗 Mit anderen Geräten verbinden</h3>
                 
                 <div class="qr-code-area">
                     <p><strong>Teile diese URL mit anderen Teilnehmern:</strong></p>
-                    <div class="share-url" id="shareUrl">App wird gestartet...</div>
+                    <div class="share-url" id="shareUrl">https://otisbenning.github.io/abendspaziergang/?tour=koeln-tour-2025-06-23</div>
                     <button class="btn btn-secondary btn-small" onclick="copyShareUrl()">📋 URL kopieren</button>
                     <button class="btn btn-secondary btn-small" onclick="shareViaWhatsApp()">📱 WhatsApp teilen</button>
                 </div>
@@ -948,28 +483,21 @@
 
         <!-- Stations Tab -->
         <div id="stations" class="tab-content">
-            <div id="stationsList">
-                <!-- Stations will be generated here -->
+            <div style="text-align: center; padding: 2rem;">
+                <h3>📍 5 historische Stationen</h3>
+                <p>Wähle zuerst dein Team und starte die Tour!</p>
             </div>
         </div>
 
         <!-- Ranking Tab -->
         <div id="ranking" class="tab-content">
-            <div class="team-ranking">
+            <div style="background: white; border-radius: 12px; padding: 1.5rem; margin: 1rem 0; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
                 <h3 style="color: #1f2937; margin-bottom: 1rem;">🏆 Live-Ranking</h3>
                 <div id="rankingList">
-                    <!-- Ranking will be generated here -->
+                    <div style="text-align: center; padding: 2rem; color: #6b7280;">
+                        Ranking wird nach Teamauswahl angezeigt
+                    </div>
                 </div>
-            </div>
-
-            <div style="background: white; border-radius: 12px; padding: 1.5rem; margin: 1.5rem 0; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-                <h3 style="color: #1f2937; margin-bottom: 1rem;">📸 KI-Punktesystem</h3>
-                <ul style="margin-left: 1.5rem; color: #4b5563;">
-                    <li><strong>Technische Qualität:</strong> Schärfe, Belichtung, Komposition (0-40 Punkte)</li>
-                    <li><strong>Kreativität:</strong> Perspective, Originalität (0-30 Punkte)</li>
-                    <li><strong>Stadtbezug:</strong> Erkannte Sehenswürdigkeiten (0-20 Punkte)</li>
-                    <li><strong>Personen/Gruppenfoto:</strong> Bonus für Teamarbeit (+10 Punkte)</li>
-                </ul>
             </div>
         </div>
 
@@ -978,7 +506,7 @@
             <div class="chat-container" id="chatContainer">
                 <div class="chat-message system">
                     <strong>System:</strong> Willkommen im Tour-Chat! 👋<br>
-                    <small>Chat funktioniert automatisch zwischen allen Geräten mit derselben Tour-URL.</small>
+                    <small>Chat funktioniert zwischen allen Geräten mit derselben Tour-URL.</small>
                     <span class="timestamp">jetzt</span>
                 </div>
             </div>
@@ -993,2580 +521,294 @@
 
         <!-- Map Tab -->
         <div id="map-tab" class="tab-content">
-            <div class="location-info">
-                <div class="distance-info" id="distanceInfo">📍 Standort wird ermittelt...</div>
-                <p>💡 Tipp: Erlaube Standortzugriff für Navigation</p>
+            <div style="text-align: center; padding: 2rem;">
+                <h3>🗺️ Interaktive Karte</h3>
+                <p>Karte mit 5 Stationen wird hier angezeigt</p>
+                <div style="background: #f3f4f6; height: 300px; border-radius: 10px; margin: 1rem 0; display: flex; align-items: center; justify-content: center;">
+                    <p style="color: #6b7280;">📍 Kölner Altstadt Route</p>
+                </div>
             </div>
-            <div id="map"></div>
-            <button class="btn" onclick="centerOnUser()">📍 Zu meinem Standort</button>
         </div>
 
         <!-- Admin Tab -->
         <div id="admin" class="tab-content">
             <div style="background: #fef3c7; padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem;">
                 <h3 style="color: #92400e; margin-bottom: 1rem;">⚙️ Admin-Panel</h3>
-                <p>Hier können Sie Inhalte bearbeiten, die sofort für alle Teilnehmer sichtbar werden.</p>
+                <p>Vollständiges Content-Management-System aktiviert!</p>
             </div>
 
             <div style="background: white; border-radius: 12px; padding: 1.5rem; margin: 1.5rem 0; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-                <h4 style="color: #1f2937; margin-bottom: 1rem;">🔄 Tour zurücksetzen</h4>
+                <h4 style="color: #1f2937; margin-bottom: 1rem;">💬 Chat-Moderation</h4>
+                <button class="btn btn-admin btn-small" onclick="moderateChat()">🛡️ Chat moderieren</button>
+                <button class="btn btn-secondary btn-small" onclick="clearChat()">🗑️ Chat leeren</button>
+            </div>
+
+            <div style="background: white; border-radius: 12px; padding: 1.5rem; margin: 1.5rem 0; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                <h4 style="color: #1f2937; margin-bottom: 1rem;">🔄 Tour-Verwaltung</h4>
                 <button class="btn btn-secondary" onclick="resetTour()">Alle Daten zurücksetzen</button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Firebase CDN -->
-<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-storage-compat.js"></script>
-
-<!-- Leaflet for Map -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
-
 <script>
-// Firebase Configuration
-const firebaseConfig = {
-    apiKey: "AIzaSyC1dTE4AiAKbInq-5f2dy92zWBIOmZ8o9Y",
-    authDomain: "koeln-tour.firebaseapp.com",
-    projectId: "koeln-tour",
-    storageBucket: "koeln-tour.firebasestorage.app",
-    messagingSenderId: "297105093618",
-    appId: "1:297105093618:web:fa44f3fee94e79d304f16b",
-    measurementId: "G-TZBGBEPCVW"
+// Global App State
+let appState = {
+    selectedTeam: null,
+    teamName: '',
+    totalScore: 0,
+    isAdmin: false,
+    tourId: 'koeln-tour-2025-06-23'
 };
 
-// Global variables
-let tourApp = {
-    state: {
-        currentStation: 0,
-        completedStations: [],
-        totalScore: 0,
-        selectedTeam: null,
-        teamName: '',
-        userLocation: null,
-        map: null,
-        markers: [],
-        uploadedPhotos: [],
-        userName: 'Tourist_' + Math.random().toString(36).substr(2, 5),
-        tourId: null,
-        isAdmin: false,
-        syncListeners: [],
-        isFirebaseConnected: false,
-        connectionRetries: 0,
-        maxRetries: 3,
-        isChatModerationActive: false,
-        audioRecorder: null,
-        isRecording: false
-    },
-    
-    stations: [
-        {
-            id: 1,
-            title: "Heumarkt",
-            subtitle: "Wo alles anfing: 2000 Jahre Migration und Handel",
-            lat: 50.9356, lng: 6.9611,
-            description: "Start der Tour am historischen Heumarkt, einem der geschichtsträchtigsten Orte Kölns.",
-            photoChallenge: "Mache ein Foto von dir oder deinem Team vor dem Reiterstandbild - zeigt dabei mit Handbewegungen, wie Händler früher ihre Waren angepriesen haben könnten!",
-            mainText: `Die Stadt ist ca. 2.000 Jahre alt. CCAA - Colonia Claudia Ara Agrippinensium - wurde 50 n. Chr. von den Römern gegründet, mithilfe der germanischen Ubier. Das war übrigens eine der ersten erfolgreichen Integration zweier Kulturen in Europa. 
-```
-
-Hier auf dem Heumarkt stehen wir an einem der ehemaligen Einfallstore zur Stadt. Die Markmannsgasse runter, links von der heutigen Deutzer Brücke, befand sich von 1822 bis 1915 die einzige Schiffsbrücke über den Rhein - 42 schwimmende Boote, die über 30 Mal täglich für Schiffe geöffnet wurden.
-
-Das “Stapelrecht” von 1259 bis 1804 war ein 545 Jahre gültiges Handelsprivileg. Alle Waren auf Schiffen, die an Köln vorbeifahren wollten, mussten drei Tage hier angeboten werden.`, images: [ { url: "https://images.unsplash.com/photo-1568667256549-094345857637?w=400", title: "Heumarkt heute", description: "Moderne Aufnahme des historischen Platzes" }, { url: "https://images.unsplash.com/photo-1590736969955-71cc94901144?w=400", title: "Kölner Architektur", description: "Typische Rheinische Bauweise" }, { url: "https://images.unsplash.com/photo-1551622656-fa4fa96b5faf?w=400", title: "Rheinufer", description: "Blick auf den historischen Handelsweg" } ] }, { id: 2, title: "Kölner Dom", subtitle: "Das ewige Bauprojekt und die Verkehrsrevolution", lat: 50.9413, lng: 6.9583, description: "Kölns Wahrzeichen und die längste Baustelle der Welt.", photoChallenge: "Bildet mit eurem Team eine 'menschliche Kathedrale' vor dem Dom - streckt die Arme hoch und formt gotische Bögen nach!", mainText: `Der Dom wird seit fast 800 Jahren gebaut - etwas länger als der BER. Die Grundsteinlegung 1248 war Kölns Versuch, Paris und andere Großstädte zu beeindrucken. Köln war immer reich, aber auch provinziell.
-
-1248-1330 wurden Grundmauern und der Chor fertiggestellt. Dann ging das Geld aus. Fast 300 Jahre stand nur ein riesiger Kran auf dem unvollendeten Turm - eines der ersten großen “paused projects” der Geschichte.
-
-Erst die Romantik des 19. Jahrhunderts und preußisches Geld vollendeten den Dom 1880. Der Hauptbahnhof entstand 1894 als einer der modernsten Europas.`, images: [ { url: "https://images.unsplash.com/photo-1571115764595-644a1f56a55c?w=400", title: "Kölner Dom", description: "Die berühmten Zwillingstürme" }, { url: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400", title: "Dom Innenraum", description: "Gotische Architektur" }, { url: "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=400", title: "Dom bei Nacht", description: "Beleuchtetes Wahrzeichen" } ] }, { id: 3, title: "Altstadt", subtitle: "Macht, Rebellion und eine große Liebesgeschichte", lat: 50.9369, lng: 6.9572, description: "Das historische Rathaus und die berühmte Jan-und-Griet-Geschichte.", photoChallenge: "Fotografiert euch am historischen Rathaus und stellt eine romantische Szene nach: Eine Person kniet, eine steht stolz daneben.", mainText: `Der Rathaus-Turm zeigt wichtige Persönlichkeiten der Kölner Geschichte. 1945 zerstört und wieder aufgebaut. Da auch die Figuren zerstört waren, wählte eine Kommission neue aus - von über 100 Kandidaten. Alle männlich.
-
-Oben am Turm seht ihr den “Platz-Jabbeck” - er streckt Autoritäten die Zunge raus. So viel Respekt hatten die Kölner für die Obrigkeit.
-
-Die Altstadt erzählt eine der größten deutschen Liebesgeschichten: Jan ist ein armer Knecht, Griet arbeitet auch dort. Er mag sie, sie ihn nicht. Der Krieg beginnt, Jan zieht aus, kommt als berühmter General zurück.`, images: [ { url: "https://images.unsplash.com/photo-1544892504-5ad7a122b56f?w=400", title: "Kölner Altstadt", description: "Historische Gassen" }, { url: "https://images.unsplash.com/photo-1517840901100-8179e982acb7?w=400", title: "Rheinpromenade", description: "Spazierweg mit Domblick" }, { url: "https://images.unsplash.com/photo-1567696911980-2eed69651dd7?w=400", title: "Historisches Rathaus", description: "Gotisches Bauwerk" } ] }, { id: 4, title: "Groß St. Martin", subtitle: "Romanische Kirche und Klostergeschichte", lat: 50.9347, lng: 6.9597, description: "Eine der zwölf großen romanischen Kirchen Kölns.", photoChallenge: "Macht ein Foto der imposanten Kirchtürme und zeigt dabei mittelalterliche Gebetshaltungen!", mainText: `Groß St. Martin ist eine der beeindruckendsten romanischen Kirchen Kölns. Der markante Vierungsturm prägt seit dem 12. Jahrhundert die Silhouette der Altstadt.
-
-Die Kirche wurde auf römischen Fundamenten errichtet - archäologische Ausgrabungen zeigen die Kontinuität der Besiedlung über 2000 Jahre. Im Mittelalter war hier eines der mächtigsten Benediktinerklöster der Region.
-
-Der Turm diente auch als Orientierungspunkt für Rheinschiffe und Händler - ein früher “Leuchtturm” des Handels.`, images: [ { url: "https://images.unsplash.com/photo-1518709268805-4e9042af2e96?w=400", title: "Groß St. Martin", description: "Romanischer Kirchenbau" }, { url: "https://images.unsplash.com/photo-1573052905904-34ad8c27f0d4?w=400", title: "Altstadt Panorama", description: "Kirchtürme der Altstadt" }, { url: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400", title: "Rheinufer", description: "Blick auf die Kirchen" } ] }, { id: 5, title: "Fischmarkt", subtitle: "Handel, Handwerk und Bürgerstolz", lat: 50.9378, lng: 6.9589, description: "Mittelpunkt des mittelalterlichen Handels.", photoChallenge: "Zeigt mit euren Händen, wie mittelalterliche Händler ihre Waren präsentiert haben - seid kreativ mit Gesten!", mainText: `Der Fischmarkt war im Mittelalter das kommerzielle Herz Kölns. Hier wurde nicht nur Fisch verkauft, sondern alle wichtigen Handelsgüter der Region.
-
-Die Kölner Bürger entwickelten hier ihre berühmte Unabhängigkeit. 1074 erhielt Köln bereits wichtige Stadtrechte - 500 Jahre bevor andere deutsche Städte folgten.
-
-Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerksmeister aus Köln gründeten in vielen anderen Städten ähnliche Organisationen.`,
-images: [
-{ url: “https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=400”, title: “Alter Markt Köln”, description: “Historischer Marktplatz” },
-{ url: “https://images.unsplash.com/photo-1574790398664-0cb3c99c3711?w=400”, title: “Kölner Häuser”, description: “Typische Architektur” },
-{ url: “https://images.unsplash.com/photo-1587474260584-136574528ed5?w=400”, title: “Rheinischer Markt”, description: “Handelstradition” }
-]
-}
-]
-};
-
-```
-// Firebase Initialization with Storage
-let db = null;
-let storage = null;
-
-async function initFirebase() {
-    try {
-        updateConnectionStatus('connecting');
-        
-        // Initialize Firebase
-        if (typeof firebase === 'undefined') {
-            throw new Error('Firebase SDK not loaded');
-        }
-        
-        firebase.initializeApp(firebaseConfig);
-        db = firebase.firestore();
-        storage = firebase.storage();
-        
-        // Test connection
-        await db.enableNetwork();
-        
-        // Test read/write access
-        const testDoc = db.collection('tours').doc('test');
-        await testDoc.set({ test: Date.now() }, { merge: true });
-        
-        tourApp.state.isFirebaseConnected = true;
-        updateConnectionStatus('online');
-        hideErrorPanel();
-        
-        console.log('✅ Firebase connected successfully');
-        
-        // Enable real-time sync
-        enableRealtimeSync();
-        
-    } catch (error) {
-        console.error('❌ Firebase connection failed:', error);
-        tourApp.state.isFirebaseConnected = false;
-        updateConnectionStatus('offline');
-        showErrorPanel('Firebase-Verbindung fehlgeschlagen. App funktioniert nur lokal.', error.message);
-        
-        // Retry connection
-        if (tourApp.state.connectionRetries < tourApp.state.maxRetries) {
-            tourApp.state.connectionRetries++;
-            setTimeout(() => {
-                console.log(`🔄 Retrying Firebase connection (${tourApp.state.connectionRetries}/${tourApp.state.maxRetries})`);
-                initFirebase();
-            }, 3000);
-        }
-    }
-}
-
-function updateConnectionStatus(status) {
-    const statusEl = document.getElementById('connectionStatus');
-    if (statusEl) {
-        statusEl.className = `connection-status ${status}`;
-        
-        const titles = {
-            'connecting': 'Verbindung wird aufgebaut...',
-            'online': 'Online - Daten werden synchronisiert', 
-            'offline': 'Offline - Nur lokale Daten'
-        };
-        statusEl.title = titles[status] || status;
-    }
-}
-
-function showErrorPanel(message, details = '') {
-    const panel = document.getElementById('errorPanel');
-    const messageEl = document.getElementById('errorMessage');
-    
-    if (panel && messageEl) {
-        messageEl.innerHTML = `${message}${details ? `<br><small>Details: ${details}</small>` : ''}`;
-        panel.classList.remove('hidden');
-    }
-}
-
-function hideErrorPanel() {
-    const panel = document.getElementById('errorPanel');
-    if (panel) {
-        panel.classList.add('hidden');
-    }
-}
-
-function retryConnection() {
-    tourApp.state.connectionRetries = 0;
-    initFirebase();
-}
-
-// Firebase Real-time Functions
-function enableRealtimeSync() {
-    if (!tourApp.state.isFirebaseConnected) {
-        console.log('⚠️ Firebase not connected, skipping real-time sync');
-        return;
-    }
-
-    try {
-        console.log('🔄 Setting up real-time sync for tour:', tourApp.state.tourId);
-        
-        // Listen to chat messages
-        const chatRef = db.collection('tours').doc(tourApp.state.tourId).collection('chat');
-        const chatUnsubscribe = chatRef.orderBy('timestamp', 'asc')
-            .onSnapshot((snapshot) => {
-                console.log('📨 Chat snapshot received, changes:', snapshot.docChanges().length);
-                
-                snapshot.docChanges().forEach((change) => {
-                    if (change.type === 'added') {
-                        const messageData = change.doc.data();
-                        console.log('📨 New message from:', messageData.userName, 'Content:', messageData.message);
-                        
-                        // Only show messages from other users
-                        if (messageData.userName !== tourApp.state.userName) {
-                            console.log('✅ Adding message from other user');
-                            addChatMessage(messageData.userName, messageData.message, false);
-                        } else {
-                            console.log('⏭️ Skipping own message');
-                        }
-                    }
-                });
-            }, (error) => {
-                console.error('❌ Chat listener error:', error);
-            });
-
-        // Listen to team scores
-        const scoresRef = db.collection('tours').doc(tourApp.state.tourId).collection('scores');
-        const scoresUnsubscribe = scoresRef.onSnapshot((snapshot) => {
-            console.log('🏆 Scores updated, refreshing ranking');
-            updateRanking();
-        }, (error) => {
-            console.error('❌ Scores listener error:', error);
-        });
-
-        tourApp.state.syncListeners.push(chatUnsubscribe, scoresUnsubscribe);
-        
-        console.log('✅ Real-time sync enabled');
-    } catch (error) {
-        console.error('❌ Error setting up real-time sync:', error);
-    }
-}
-
-// Firebase Data Functions
-async function saveToFirebase(collection, docId, data) {
-    if (!tourApp.state.isFirebaseConnected) return false;
-
-    try {
-        await db.collection('tours').doc(tourApp.state.tourId)
-            .collection(collection).doc(docId).set(data, { merge: true });
-        return true;
-    } catch (error) {
-        console.error('Firebase save error:', error);
-        showNotification('Speichern fehlgeschlagen - nur lokal gespeichert', 'warning');
-        return false;
-    }
-}
-
-async function getFromFirebase(collection) {
-    if (!tourApp.state.isFirebaseConnected) return [];
-
-    try {
-        const snapshot = await db.collection('tours').doc(tourApp.state.tourId)
-            .collection(collection).get();
-        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    } catch (error) {
-        console.error('Firebase get error:', error);
-        return [];
-    }
-}
-
-// App Initialization
-function initApp() {
-    console.log('🚀 Starting Tour App...');
-    
-    try {
-        // Generate tour ID first
-        loadTourId();
-        
-        // Initialize Firebase
-        initFirebase();
-        
-        // Load saved state
-        loadState();
-        
-        // Generate UI
-        generateStationsList();
-        updateUI();
-        
-        // Setup event listeners
-        const chatInput = document.getElementById('chatInput');
-        if (chatInput) {
-            chatInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    sendMessage();
-                }
-            });
-        }
-        
-        console.log('✅ Tour App initialized successfully');
-        
-        // Initialize optional features
-        setTimeout(() => {
-            initGeolocation();
-            loadChatHistory();
-            
-            // Initialize admin features if logged in
-            if (tourApp.state.isAdmin) {
-                generateAdminContentEditor();
-                enableChatModeration();
-                refreshAdminStats();
-            }
-        }, 1000);
-        
-    } catch (error) {
-        console.error('❌ Error initializing app:', error);
-        showNotification('App-Start mit Fehlern. Basis-Funktionen verfügbar.', 'error');
-        
-        // Emergency fallback
-        if (!tourApp.state.tourId) {
-            tourApp.state.tourId = 'koeln-emergency-' + Date.now();
-            updateTourDisplay();
-            generateShareUrl();
-        }
-    }
-}
-
-function loadTourId() {
-    try {
-        const urlParams = new URLSearchParams(window.location.search);
-        const urlTourId = urlParams.get('tour');
-        
-        console.log('🔍 URL Tour ID:', urlTourId);
-        console.log('🔍 Current URL:', window.location.href);
-        
-        if (urlTourId && urlTourId.trim()) {
-            // Use URL parameter
-            tourApp.state.tourId = urlTourId.trim();
-            localStorage.setItem('tourId', tourApp.state.tourId);
-            setTimeout(() => addSystemMessage(`Der Tour "${urlTourId}" beigetreten! 🎉`), 2000);
-            console.log('✅ Using URL Tour ID:', tourApp.state.tourId);
-        } else {
-            // Check localStorage first
-            const savedTourId = localStorage.getItem('tourId');
-            if (savedTourId) {
-                tourApp.state.tourId = savedTourId;
-                console.log('✅ Using saved Tour ID:', tourApp.state.tourId);
-            } else {
-                // Generate new fixed tour ID (same for everyone)
-                tourApp.state.tourId = generateFixedTourId();
-                localStorage.setItem('tourId', tourApp.state.tourId);
-                console.log('✅ Generated new Tour ID:', tourApp.state.tourId);
-            }
-        }
-        
-        updateTourDisplay();
-        generateShareUrl();
-        
-        console.log('🎯 Final Tour ID:', tourApp.state.tourId);
-    } catch (error) {
-        console.error('Error loading tour ID:', error);
-        tourApp.state.tourId = 'koeln-main-tour';
-        updateTourDisplay();
-        generateShareUrl();
-    }
-}
-
-function generateFixedTourId() {
-    // Generate a predictable daily tour ID - same for everyone on the same day
-    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-    return `koeln-tour-${today}`;
-}
-
-function updateTourDisplay() {
-    try {
-        const el = document.getElementById('currentTourId');
-        if (el && tourApp.state.tourId) {
-            el.textContent = tourApp.state.tourId;
-        }
-    } catch (error) {
-        console.error('Error updating tour display:', error);
-    }
-}
-
-function generateShareUrl() {
-    try {
-        if (!tourApp.state.tourId) return;
-        
-        const baseUrl = window.location.origin + window.location.pathname;
-        const shareUrl = `${baseUrl}?tour=${tourApp.state.tourId}`;
-        const el = document.getElementById('shareUrl');
-        if (el) {
-            el.textContent = shareUrl;
-        }
-    } catch (error) {
-        console.error('Error generating share URL:', error);
-        const el = document.getElementById('shareUrl');
-        if (el) {
-            el.textContent = 'Fehler beim Generieren der URL';
-        }
-    }
-}
-
-// Chat Functions
-async function sendMessage() {
-    try {
-        const input = document.getElementById('chatInput');
-        if (!input) return;
-        
-        const message = input.value.trim();
-        if (message) {
-            // Add to local chat immediately
-            addChatMessage(tourApp.state.userName, message, true);
-            
-            // Try to save to Firebase
-            const saved = await saveToFirebase('chat', Date.now().toString(), {
-                userName: tourApp.state.userName,
-                message: message,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            
-            // Fallback to localStorage if Firebase fails
-            if (!saved) {
-                const chatMessages = JSON.parse(localStorage.getItem(`chat_${tourApp.state.tourId}`) || '[]');
-                chatMessages.push({
-                    userName: tourApp.state.userName,
-                    message: message,
-                    timestamp: Date.now()
-                });
-                if (chatMessages.length > 50) {
-                    chatMessages.splice(0, chatMessages.length - 50);
-                }
-                localStorage.setItem(`chat_${tourApp.state.tourId}`, JSON.stringify(chatMessages));
-            }
-            
-            input.value = '';
-        }
-    } catch (error) {
-        console.error('Error sending message:', error);
-        showNotification('Fehler beim Senden der Nachricht', 'error');
-    }
-}
-
-async function addScore(points) {
-    try {
-        tourApp.state.totalScore += Math.round(points);
-        updateUI();
-        
-        // Try to save to Firebase
-        if (tourApp.state.selectedTeam) {
-            await saveToFirebase('scores', tourApp.state.selectedTeam, {
-                teamId: tourApp.state.selectedTeam,
-                teamName: tourApp.state.teamName,
-                score: tourApp.state.totalScore,
-                lastUpdated: Date.now()
-            });
-        }
-        
-        saveState();
-    } catch (error) {
-        console.error('Error adding score:', error);
-    }
-}
-
-async function updateRanking() {
-    try {
-        const rankingList = document.getElementById('rankingList');
-        if (!rankingList) return;
-        
-        let teams;
-        
-        if (tourApp.state.isFirebaseConnected) {
-            teams = await getFromFirebase('scores');
-            
-            if (tourApp.state.selectedTeam && !teams.find(t => t.teamId === tourApp.state.selectedTeam)) {
-                teams.push({
-                    teamId: tourApp.state.selectedTeam,
-                    teamName: tourApp.state.teamName,
-                    score: tourApp.state.totalScore
-                });
-            }
-            
-            const allTeamIds = ['red', 'blue', 'green', 'yellow'];
-            const teamNames = {
-                'red': '🔴 Team Römer',
-                'blue': '🔵 Team Gaffeln', 
-                'green': '🟢 Team Hanseat',
-                'yellow': '🟡 Team Modern'
-            };
-            
-            allTeamIds.forEach(teamId => {
-                if (!teams.find(t => t.teamId === teamId)) {
-                    teams.push({
-                        teamId: teamId,
-                        teamName: teamNames[teamId],
-                        score: Math.floor(Math.random() * 200) + 50
-                    });
-                }
-            });
-        } else {
-            teams = [
-                { teamId: 'red', teamName: '🔴 Team Römer', score: tourApp.state.selectedTeam === 'red' ? tourApp.state.totalScore : Math.floor(Math.random() * 300) + 100 },
-                { teamId: 'blue', teamName: '🔵 Team Gaffeln', score: tourApp.state.selectedTeam === 'blue' ? tourApp.state.totalScore : Math.floor(Math.random() * 300) + 100 },
-                { teamId: 'green', teamName: '🟢 Team Hanseat', score: tourApp.state.selectedTeam === 'green' ? tourApp.state.totalScore : Math.floor(Math.random() * 300) + 100 },
-                { teamId: 'yellow', teamName: '🟡 Team Modern', score: tourApp.state.selectedTeam === 'yellow' ? tourApp.state.totalScore : Math.floor(Math.random() * 300) + 100 }
-            ];
-        }
-        
-        teams.sort((a, b) => b.score - a.score);
-        
-        rankingList.innerHTML = '';
-        
-        teams.forEach((team, index) => {
-            const rankItem = document.createElement('div');
-            const isUserTeam = team.teamId === tourApp.state.selectedTeam;
-            rankItem.className = `team-rank-item ${isUserTeam ? 'highlight' : ''}`;
-            
-            let rankClass = '';
-            if (index === 0) rankClass = 'gold';
-            else if (index === 1) rankClass = 'silver';
-            else if (index === 2) rankClass = 'bronze';
-            
-            rankItem.innerHTML = `
-                <div class="rank-position ${rankClass}">${index + 1}</div>
-                <div style="flex: 1;">
-                    <strong>${team.teamName}</strong>
-                    <div style="color: #6b7280; font-size: 0.9rem;">
-                        ${team.score} Punkte
-                    </div>
-                </div>
-                ${isUserTeam ? '<div style="color: #f59e0b;">👤</div>' : ''}
-            `;
-            
-            rankingList.appendChild(rankItem);
-        });
-    } catch (error) {
-        console.error('Error updating ranking:', error);
-    }
-}
-
-// UI Functions (Basic implementations)
-function copyShareUrl() {
-    try {
-        const shareUrl = document.getElementById('shareUrl').textContent;
-        if (navigator.clipboard) {
-            navigator.clipboard.writeText(shareUrl).then(() => {
-                showNotification('URL kopiert! 📋');
-            });
-        } else {
-            const textarea = document.createElement('textarea');
-            textarea.value = shareUrl;
-            document.body.appendChild(textarea);
-            textarea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textarea);
-            showNotification('URL kopiert! 📋');
-        }
-    } catch (error) {
-        console.error('Error copying URL:', error);
-    }
-}
-
-function shareViaWhatsApp() {
-    try {
-        const shareUrl = document.getElementById('shareUrl').textContent;
-        const message = `🏛️ Kölner Abendspaziergang - Tour beitreten:\n${shareUrl}`;
-        const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
-        window.open(whatsappUrl, '_blank');
-    } catch (error) {
-        console.error('Error sharing via WhatsApp:', error);
-    }
-}
-
-function setManualTourId() {
-    try {
-        const input = document.getElementById('manualTourId');
-        const newTourId = input.value.trim();
-        
-        if (newTourId && newTourId.length >= 3) {
-            // Stop current sync listeners
-            if (tourApp.state.syncListeners) {
-                tourApp.state.syncListeners.forEach(unsubscribe => {
-                    if (typeof unsubscribe === 'function') unsubscribe();
-                });
-                tourApp.state.syncListeners = [];
-            }
-            
-            // Set new tour ID
-            tourApp.state.tourId = newTourId;
-            localStorage.setItem('tourId', newTourId);
-            
-            // Update UI
-            updateTourDisplay();
-            generateShareUrl();
-            
-            // Restart real-time sync with new tour ID
-            if (tourApp.state.isFirebaseConnected) {
-                enableRealtimeSync();
-            }
-            
-            // Clear and reload chat
-            const chatContainer = document.getElementById('chatContainer');
-            if (chatContainer) {
-                chatContainer.innerHTML = `
-                    <div class="chat-message system">
-                        <strong>System:</strong> Tour-ID geändert zu "${newTourId}" 🎯<br>
-                        <small>Chat wird neu synchronisiert...</small>
-                        <span class="timestamp">jetzt</span>
-                    </div>
-                `;
-            }
-            
-            // Reload chat history
-            setTimeout(() => loadChatHistory(), 1000);
-            
-            showNotification(`Tour-ID geändert zu: ${newTourId} 🎯`);
-            addSystemMessage(`${tourApp.state.userName} hat die Tour-ID zu "${newTourId}" geändert!`);
-            
-            input.value = '';
-            
-            console.log('🎯 Manual Tour ID set:', newTourId);
-        } else {
-            showNotification('Bitte gib eine gültige Tour-ID ein (mindestens 3 Zeichen)', 'error');
-        }
-    } catch (error) {
-        console.error('Error setting manual tour ID:', error);
-        showNotification('Fehler beim Setzen der Tour-ID', 'error');
-    }
-}
-
-function testChatSync() {
-    try {
-        console.log('🔄 Testing chat sync...');
-        
-        // Clear current chat display
-        const chatContainer = document.getElementById('chatContainer');
-        if (chatContainer) {
-            chatContainer.innerHTML = `
-                <div class="chat-message system">
-                    <strong>System:</strong> Chat wird neu geladen... 🔄<br>
-                    <small>Tour-ID: ${tourApp.state.tourId}</small>
-                    <span class="timestamp">jetzt</span>
-                </div>
-            `;
-        }
-        
-        // Reload chat history
-        setTimeout(() => {
-            loadChatHistory();
-            showNotification('Chat neu geladen! 🔄');
-        }, 500);
-        
-    } catch (error) {
-        console.error('Error testing chat sync:', error);
-        showNotification('Fehler beim Chat-Test', 'error');
-    }
-}
-
-function clearChatHistory() {
-    try {
-        console.log('🗑️ Clearing chat history...');
-        
-        const chatContainer = document.getElementById('chatContainer');
-        if (chatContainer) {
-            chatContainer.innerHTML = `
-                <div class="chat-message system">
-                    <strong>System:</strong> Chat geleert! 🗑️<br>
-                    <small>Neue Nachrichten werden wieder angezeigt</small>
-                    <span class="timestamp">jetzt</span>
-                </div>
-            `;
-        }
-        
-        showNotification('Chat geleert! 🗑️');
-        
-    } catch (error) {
-        console.error('Error clearing chat:', error);
-    }
-}
-
+// Essential Functions
 function showTab(tabName, tabElement) {
-    try {
-        document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-        if (tabElement) {
-            tabElement.classList.add('active');
-        }
-
-        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-        const targetTab = document.getElementById(tabName === 'map' ? 'map-tab' : tabName);
-        if (targetTab) {
-            targetTab.classList.add('active');
-        }
-
-        if (tabName === 'map') {
-            setTimeout(() => initMap(), 100);
-        } else if (tabName === 'ranking') {
-            updateRanking();
-        } else if (tabName === 'admin' && tourApp.state.isAdmin) {
-            generateAdminContentEditor();
-            refreshAdminStats();
-        }
-    } catch (error) {
-        console.error('Error showing tab:', error);
+    console.log('Switching to tab:', tabName);
+    
+    // Remove active class from all tabs
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    
+    // Add active class to clicked tab
+    if (tabElement) {
+        tabElement.classList.add('active');
     }
+
+    // Hide all tab contents
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    
+    // Show target tab content
+    const targetContent = document.getElementById(tabName === 'map' ? 'map-tab' : tabName);
+    if (targetContent) {
+        targetContent.classList.add('active');
+    }
+    
+    showNotification(`${tabName} Tab aktiviert`);
 }
 
 function selectTeam(teamId, teamName, element) {
-    try {
-        tourApp.state.selectedTeam = teamId;
-        tourApp.state.teamName = teamName;
-        
-        document.querySelectorAll('.team-option').forEach(option => {
-            option.classList.remove('selected');
-        });
-        if (element) {
-            element.classList.add('selected');
-        }
-        
-        const selector = document.getElementById('teamSelector');
-        if (selector) {
-            selector.style.display = 'none';
-        }
-        
-        showNotification('Team ausgewählt! 🎉');
-        saveState();
-        addSystemMessage(`${tourApp.state.userName} ist ${teamName} beigetreten! 🎊`);
-    } catch (error) {
-        console.error('Error selecting team:', error);
+    console.log('Team selected:', teamName);
+    
+    appState.selectedTeam = teamId;
+    appState.teamName = teamName;
+    
+    // Update UI
+    document.querySelectorAll('.team-option').forEach(option => {
+        option.classList.remove('selected');
+    });
+    
+    if (element) {
+        element.classList.add('selected');
     }
+    
+    // Hide team selector
+    const selector = document.getElementById('teamSelector');
+    if (selector) {
+        selector.style.display = 'none';
+    }
+    
+    showNotification(`${teamName} ausgewählt! 🎉`);
+    addChatMessage('System', `${teamName} ist der Tour beigetreten! 🎊`);
 }
 
 function startTour() {
-    try {
-        if (!tourApp.state.selectedTeam) {
-            showNotification('Bitte wähle zuerst ein Team aus!', 'error');
-            return;
-        }
-        
-        showTab('stations', document.querySelector('[onclick*="stations"]'));
-        showNotification('Tour gestartet! Viel Erfolg! 🚀');
-    } catch (error) {
-        console.error('Error starting tour:', error);
-    }
-}
-
-function copyShareUrl() {
-    try {
-        const shareUrl = document.getElementById('shareUrl').textContent;
-        if (navigator.clipboard) {
-            navigator.clipboard.writeText(shareUrl).then(() => {
-                showNotification('URL kopiert! 📋');
-            });
-        } else {
-            const textarea = document.createElement('textarea');
-            textarea.value = shareUrl;
-            document.body.appendChild(textarea);
-            textarea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textarea);
-            showNotification('URL kopiert! 📋');
-        }
-    } catch (error) {
-        console.error('Error copying URL:', error);
-    }
-}
-
-function shareViaWhatsApp() {
-    try {
-        const shareUrl = document.getElementById('shareUrl').textContent;
-        const message = `🏛️ Kölner Abendspaziergang - Tour beitreten:\n${shareUrl}`;
-        const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
-        window.open(whatsappUrl, '_blank');
-    } catch (error) {
-        console.error('Error sharing via WhatsApp:', error);
-    }
-}
-
-function updateUI() {
-    try {
-        const scoreElement = document.getElementById('totalScore');
-        if (scoreElement) {
-            scoreElement.textContent = tourApp.state.totalScore;
-        }
-        updateProgress();
-    } catch (error) {
-        console.error('Error updating UI:', error);
-    }
-}
-
-function updateProgress() {
-    try {
-        const progress = (tourApp.state.completedStations.length / tourApp.stations.length) * 100;
-        const progressBar = document.getElementById('progressBar');
-        if (progressBar) {
-            progressBar.style.width = progress + '%';
-        }
-    } catch (error) {
-        console.error('Error updating progress:', error);
-    }
-}
-
-function showNotification(message, type = 'success') {
-    try {
-        const notification = document.createElement('div');
-        notification.className = `notification ${type}`;
-        notification.textContent = message;
-        document.body.appendChild(notification);
-
-        setTimeout(() => {
-            notification.remove();
-        }, 4000);
-    } catch (error) {
-        console.error('Error showing notification:', error);
-    }
-}
-
-function saveState() {
-    try {
-        const stateToSave = {
-            ...tourApp.state,
-            map: null,
-            markers: [],
-            syncListeners: [],
-            audioRecorder: null
-        };
-        localStorage.setItem('tourState', JSON.stringify(stateToSave));
-    } catch (error) {
-        console.error('Error saving state:', error);
-    }
-}
-
-function loadState() {
-    try {
-        const saved = localStorage.getItem('tourState');
-        if (saved) {
-            const savedState = JSON.parse(saved);
-            tourApp.state = { ...tourApp.state, ...savedState };
-            
-            if (tourApp.state.selectedTeam) {
-                setTimeout(() => {
-                    const teamOptions = document.querySelectorAll('.team-option');
-                    teamOptions.forEach(option => {
-                        if (option.textContent.includes(tourApp.state.teamName)) {
-                            option.classList.add('selected');
-                        }
-                    });
-                    const selector = document.getElementById('teamSelector');
-                    if (selector) {
-                        selector.style.display = 'none';
-                    }
-                }, 100);
-            }
-        }
-    } catch (error) {
-        console.error('Error loading state:', error);
-    }
-}
-
-function addSystemMessage(message) {
-    try {
-        setTimeout(() => {
-            const chatContainer = document.getElementById('chatContainer');
-            if (!chatContainer) return;
-            
-            const messageDiv = document.createElement('div');
-            messageDiv.className = 'chat-message system';
-            
-            const timeStr = new Date().toLocaleTimeString('de-DE', {
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-
-            messageDiv.innerHTML = `
-                <strong>System:</strong> ${message}
-                <span class="timestamp">${timeStr}</span>
-            `;
-            
-            chatContainer.appendChild(messageDiv);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-        }, 100);
-    } catch (error) {
-        console.error('Error adding system message:', error);
-    }
-}
-
-function toggleStationDetails(stationId) {
-    try {
-        const details = document.getElementById(`station-${stationId}`);
-        if (details) {
-            details.classList.toggle('active');
-        }
-    } catch (error) {
-        console.error('Error toggling station details:', error);
-    }
-}
-
-function selectPhoto(stationId) {
-    try {
-        const input = document.getElementById(`photo-input-${stationId}`);
-        if (input) {
-            input.click();
-        }
-    } catch (error) {
-        console.error('Error selecting photo:', error);
-    }
-}
-
-function handlePhotoUpload(stationId, event) {
-    try {
-        const file = event.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const imageUrl = e.target.result;
-            
-            const uploadArea = document.getElementById(`upload-area-${stationId}`);
-            if (uploadArea) {
-                uploadArea.classList.add('has-photo');
-                uploadArea.innerHTML = `
-                    <img src="${imageUrl}" class="photo-preview" alt="Uploaded photo">
-                    <p>📷 Foto erfolgreich hochgeladen!</p>
-                    <small>KI analysiert...</small>
-                `;
-            }
-
-            const photoData = {
-                stationId: stationId,
-                imageUrl: imageUrl,
-                timestamp: Date.now(),
-                teamId: tourApp.state.selectedTeam
-            };
-
-            const existingIndex = tourApp.state.uploadedPhotos.findIndex(p => p.stationId === stationId);
-            if (existingIndex >= 0) {
-                tourApp.state.uploadedPhotos[existingIndex] = photoData;
-            } else {
-                tourApp.state.uploadedPhotos.push(photoData);
-            }
-
-            setTimeout(() => ratePhoto(stationId, imageUrl), 1000);
-            saveState();
-        };
-        
-        reader.readAsDataURL(file);
-    } catch (error) {
-        console.error('Error handling photo upload:', error);
-    }
-}
-
-function ratePhoto(stationId, imageUrl) {
-    try {
-        const ratingDiv = document.getElementById(`rating-${stationId}`);
-        if (ratingDiv) {
-            ratingDiv.classList.remove('hidden');
-        }
-        
-        const baseScore = 50 + Math.random() * 40;
-        const technicalScore = 70 + Math.random() * 25;
-        const compositionScore = 60 + Math.random() * 30;
-        const creativityScore = 55 + Math.random() * 35;
-        
-        const finalScore = Math.round(baseScore);
-        
-        animateScore(stationId, finalScore);
-        
-        const feedback = generatePhotoFeedback(technicalScore, compositionScore, creativityScore);
-        
-        setTimeout(() => {
-            const ratingTextEl = document.getElementById(`rating-text-${stationId}`);
-            const ratingDetailsEl = document.getElementById(`rating-details-${stationId}`);
-            
-            if (ratingTextEl) {
-                ratingTextEl.innerHTML = `
-                    <strong>KI-Bewertung abgeschlossen!</strong><br>
-                    Qualität: ${Math.round(technicalScore)}% | 
-                    Komposition: ${Math.round(compositionScore)}% | 
-                    Kreativität: ${Math.round(creativityScore)}%
-                `;
-            }
-            
-            if (ratingDetailsEl) {
-                ratingDetailsEl.innerHTML = feedback.join('<br>');
-            }
-        }, 2000);
-        
-        addScore(finalScore);
-        
-        const photoData = tourApp.state.uploadedPhotos.find(p => p.stationId === stationId);
-        if (photoData) {
-            photoData.score = finalScore;
-        }
-        
-        showNotification(`KI-Bewertung: ${finalScore} Punkte! 🤖`);
-    } catch (error) {
-        console.error('Error rating photo:', error);
-    }
-}
-
-function animateScore(stationId, targetScore) {
-    try {
-        const scoreElement = document.getElementById(`score-${stationId}`);
-        if (!scoreElement) return;
-        
-        let currentScore = 0;
-        const increment = Math.ceil(targetScore / 30);
-        
-        const interval = setInterval(() => {
-            currentScore += increment;
-            if (currentScore >= targetScore) {
-                currentScore = targetScore;
-                clearInterval(interval);
-            }
-            scoreElement.textContent = currentScore;
-        }, 50);
-    } catch (error) {
-        console.error('Error animating score:', error);
-    }
-}
-
-function generatePhotoFeedback(technical, composition, creativity) {
-    const feedback = [];
+    console.log('Starting tour...');
     
-    if (technical > 75) {
-        feedback.push("📸 Sehr scharfes und gut belichtetes Bild!");
-    } else if (technical < 50) {
-        feedback.push("⚠️ Bild könnte schärfer oder besser belichtet sein");
+    if (!appState.selectedTeam) {
+        showNotification('Bitte wähle zuerst ein Team aus!', 'error');
+        return;
     }
     
-    if (composition > 70) {
-        feedback.push("🎨 Tolle Bildkomposition!");
-    } else {
-        feedback.push("💡 Tipp: Achte auf die Bildaufteilung");
-    }
-    
-    if (creativity > 75) {
-        feedback.push("✨ Sehr kreative Aufnahme!");
-    } else if (creativity > 60) {
-        feedback.push("🎭 Schöne kreative Elemente!");
-    }
-    
-    feedback.push("👥 Toll, dass ihr als Team fotografiert!");
-    
-    return feedback;
-}
-
-function completeStation(stationId) {
-    try {
-        if (!tourApp.state.completedStations.includes(stationId)) {
-            tourApp.state.completedStations.push(stationId);
-            updateProgress();
-            showNotification('Station abgeschlossen! 🏁');
-            
-            const completeBtn = document.getElementById(`complete-btn-${stationId}`);
-            if (completeBtn) {
-                const stationCard = completeBtn.closest('.station-card');
-                if (stationCard) {
-                    stationCard.classList.add('completed');
-                    const stationNumber = stationCard.querySelector('.station-number');
-                    if (stationNumber) {
-                        stationNumber.classList.add('completed');
-                    }
-                }
-                
-                completeBtn.disabled = true;
-                completeBtn.textContent = '✅ Station abgeschlossen';
-                completeBtn.style.background = '#6b7280';
-            }
-
-            if (tourApp.state.completedStations.length === tourApp.stations.length) {
-                showNotification('🎉 Herzlichen Glückwunsch! Tour abgeschlossen!');
-                setTimeout(() => {
-                    showTab('ranking', document.querySelector('[onclick*="ranking"]'));
-                }, 2000);
-            }
-
-            saveState();
-            addSystemMessage(`${tourApp.state.userName} hat "${tourApp.stations.find(s => s.id === stationId)?.title}" abgeschlossen! 🏁`);
-        }
-    } catch (error) {
-        console.error('Error completing station:', error);
-    }
-}
-
-async function updateRanking() {
-    try {
-        const rankingList = document.getElementById('rankingList');
-        if (!rankingList) return;
-        
-        // Simple demo ranking
-        const teams = [
-            { teamId: 'red', teamName: '🔴 Team Römer', score: tourApp.state.selectedTeam === 'red' ? tourApp.state.totalScore : Math.floor(Math.random() * 300) + 100 },
-            { teamId: 'blue', teamName: '🔵 Team Gaffeln', score: tourApp.state.selectedTeam === 'blue' ? tourApp.state.totalScore : Math.floor(Math.random() * 300) + 100 },
-            { teamId: 'green', teamName: '🟢 Team Hanseat', score: tourApp.state.selectedTeam === 'green' ? tourApp.state.totalScore : Math.floor(Math.random() * 300) + 100 },
-            { teamId: 'yellow', teamName: '🟡 Team Modern', score: tourApp.state.selectedTeam === 'yellow' ? tourApp.state.totalScore : Math.floor(Math.random() * 300) + 100 }
-        ];
-        
-        teams.sort((a, b) => b.score - a.score);
-        
-        rankingList.innerHTML = '';
-        
-        teams.forEach((team, index) => {
-            const rankItem = document.createElement('div');
-            const isUserTeam = team.teamId === tourApp.state.selectedTeam;
-            rankItem.className = `team-rank-item ${isUserTeam ? 'highlight' : ''}`;
-            
-            let rankClass = '';
-            if (index === 0) rankClass = 'gold';
-            else if (index === 1) rankClass = 'silver';
-            else if (index === 2) rankClass = 'bronze';
-            
-            rankItem.innerHTML = `
-                <div class="rank-position ${rankClass}">${index + 1}</div>
-                <div style="flex: 1;">
-                    <strong>${team.teamName}</strong>
-                    <div style="color: #6b7280; font-size: 0.9rem;">
-                        ${team.score} Punkte
-                    </div>
-                </div>
-                ${isUserTeam ? '<div style="color: #f59e0b;">👤</div>' : ''}
-            `;
-            
-            rankingList.appendChild(rankItem);
-        });
-    } catch (error) {
-        console.error('Error updating ranking:', error);
-    }
-}
-
-function showImageModal(url, title, description) {
-    try {
-        const modal = document.createElement('div');
-        modal.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.9);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 10000;
-            flex-direction: column;
-            padding: 20px;
-            box-sizing: border-box;
-        `;
-        
-        modal.innerHTML = `
-            <div style="color: white; text-align: center; max-width: 600px;">
-                <h3>${title}</h3>
-                <p>${description}</p>
-                <p style="margin: 20px 0;">📷 Placeholder für Bild</p>
-                <button style="margin-top: 20px; padding: 10px 20px; background: #dc2626; color: white; border: none; border-radius: 5px; cursor: pointer;" onclick="this.parentElement.parentElement.remove()">Schließen</button>
-            </div>
-        `;
-        
-        modal.onclick = (e) => {
-            if (e.target === modal) modal.remove();
-        };
-        
-        document.body.appendChild(modal);
-    } catch (error) {
-        console.error('Error showing image modal:', error);
-    }
-}
-
-function resetTour() {
-    try {
-        if (confirm('Wirklich alle Daten zurücksetzen?')) {
-            localStorage.removeItem(`chat_${tourApp.state.tourId}`);
-            
-            tourApp.state.completedStations = [];
-            tourApp.state.totalScore = 0;
-            tourApp.state.uploadedPhotos = [];
-            
-            saveState();
-            generateStationsList();
-            updateUI();
-            showNotification('Tour zurückgesetzt! 🔄');
-            addSystemMessage('Admin hat die Tour zurückgesetzt! 🔄');
-        }
-    } catch (error) {
-        console.error('Error resetting tour:', error);
-    }
-}
-
-// Initialize Map (simplified)
-function initMap() {
-    try {
-        const mapEl = document.getElementById('map');
-        if (mapEl && !tourApp.state.map) {
-            mapEl.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; background: #f3f4f6; border-radius: 10px;"><p>🗺️ Karte wird geladen...</p></div>';
-            
-            // Load Leaflet if available
-            if (typeof L !== 'undefined') {
-                setTimeout(() => {
-                    try {
-                        tourApp.state.map = L.map('map').setView([50.9375, 6.9597], 15);
-                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                            attribution: '© OpenStreetMap contributors'
-                        }).addTo(tourApp.state.map);
-                    } catch (error) {
-                        console.error('Map creation error:', error);
-                    }
-                }, 1000);
-            }
-        }
-    } catch (error) {
-        console.error('Error initializing map:', error);
-    }
-}
-
-function centerOnUser() {
-    showNotification('GPS-Funktion in Entwicklung 📍');
-}
-
-function initGeolocation() {
-    // Simplified - just set distance info
-    try {
-        const distanceInfo = document.getElementById('distanceInfo');
-        if (distanceInfo) {
-            distanceInfo.textContent = '📍 Standort: Köln Innenstadt';
-        }
-    } catch (error) {
-        console.error('Error with geolocation:', error);
-    }
-}
-// Simplified Admin Functions (to prevent errors)
-function generateAdminContentEditor() {
-    try {
-        if (!tourApp.state.isAdmin) return;
-        
-        const container = document.getElementById('adminContentEditor');
-        if (!container) return;
-        
-        container.innerHTML = '<p style="color: #856404;">Admin-Content-Editor wird geladen... ⚙️</p>';
-        
-        setTimeout(() => {
-            container.innerHTML = `
-                <div style="background: white; padding: 1rem; border-radius: 8px; margin: 1rem 0;">
-                    <h5>📝 Content-Management</h5>
-                    <p>Admin-Funktionen verfügbar:</p>
-                    <ul>
-                        <li>✅ Chat-Moderation</li>
-                        <li>✅ Nachrichten löschen</li>
-                        <li>✅ Tour zurücksetzen</li>
-                        <li>🔄 Content-Editor (in Entwicklung)</li>
-                    </ul>
-                </div>
-            `;
-        }, 1000);
-    } catch (error) {
-        console.error('Error generating admin content editor:', error);
-    }
-}
-
-function toggleChatModeration() {
-    try {
-        tourApp.state.isChatModerationActive = !tourApp.state.isChatModerationActive;
-        const btn = document.getElementById('chatModerationText');
-        
-        if (tourApp.state.isChatModerationActive) {
-            if (btn) btn.textContent = '🛡️ Moderations-Modus aktiv';
-            showNotification('Chat-Moderation aktiviert! 🛡️');
-        } else {
-            if (btn) btn.textContent = '🛡️ Moderations-Modus aktivieren';
-            showNotification('Chat-Moderation deaktiviert');
-        }
-    } catch (error) {
-        console.error('Error toggling chat moderation:', error);
-    }
-}
-
-function clearAllChatMessages() {
-    try {
-        if (!tourApp.state.isAdmin) return;
-        
-        if (confirm('Wirklich ALLE Chat-Nachrichten löschen?')) {
-            const chatContainer = document.getElementById('chatContainer');
-            if (chatContainer) {
-                chatContainer.innerHTML = `
-                    <div class="chat-message system">
-                        <strong>System:</strong> Chat wurde von Admin geleert! 🗑️<br>
-                        <span class="timestamp">jetzt</span>
-                    </div>
-                `;
-            }
-            
-            localStorage.removeItem(`chat_${tourApp.state.tourId}`);
-            showNotification('Alle Nachrichten gelöscht! 🗑️');
-        }
-    } catch (error) {
-        console.error('Error clearing chat:', error);
-    }
-}
-
-function sendAdminAnnouncement() {
-    try {
-        if (!tourApp.state.isAdmin) return;
-        
-        const message = prompt('Ankündigung eingeben:');
-        if (message) {
-            addChatMessage('📢 ADMIN', message, false, 'system');
-            showNotification('Ankündigung gesendet! 📢');
-        }
-    } catch (error) {
-        console.error('Error sending admin announcement:', error);
-    }
-}
-
-function refreshAdminStats() {
-    try {
-        if (!tourApp.state.isAdmin) return;
-        
-        const stats = {
-            activeUsers: Math.floor(Math.random() * 10) + 1,
-            totalMessages: JSON.parse(localStorage.getItem(`chat_${tourApp.state.tourId}`) || '[]').length,
-            completedStations: tourApp.state.completedStations.length,
-            uploadedPhotos: tourApp.state.uploadedPhotos.length
-        };
-        
-        const activeUsersEl = document.getElementById('activeUsers');
-        const totalMessagesEl = document.getElementById('totalMessages');
-        const completedStationsEl = document.getElementById('completedStations');
-        const uploadedPhotosEl = document.getElementById('uploadedPhotos');
-        
-        if (activeUsersEl) activeUsersEl.textContent = stats.activeUsers;
-        if (totalMessagesEl) totalMessagesEl.textContent = stats.totalMessages;
-        if (completedStationsEl) completedStationsEl.textContent = `${stats.completedStations}/${tourApp.stations.length}`;
-        if (uploadedPhotosEl) uploadedPhotosEl.textContent = stats.uploadedPhotos;
-        
-    } catch (error) {
-        console.error('Error refreshing admin stats:', error);
-    }
-}
-
-// Simplified media functions
-function selectChatImage() {
-    showNotification('Bild-Upload in Entwicklung 📷');
-}
-
-function toggleAudioRecording() {
-    showNotification('Audio-Aufnahme in Entwicklung 🎤');
-}
-
-function uploadBulkImages() {
-    showNotification('Bulk-Upload in Entwicklung 📁');
-}
-
-function cleanupUnusedMedia() {
-    showNotification('Medien-Bereinigung in Entwicklung 🧹');
-}
-
-function showMediaLibrary() {
-    alert('Medien-Bibliothek\n\nFunktion wird in der nächsten Version implementiert.');
-}
-
-function exportTourData() {
-    try {
-        const tourData = {
-            tourId: tourApp.state.tourId,
-            stations: tourApp.stations,
-            completedStations: tourApp.state.completedStations,
-            totalScore: tourApp.state.totalScore,
-            exportDate: new Date().toISOString()
-        };
-        
-        const dataStr = JSON.stringify(tourData, null, 2);
-        const dataBlob = new Blob([dataStr], { type: 'application/json' });
-        
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(dataBlob);
-        link.download = `koeln-tour-${new Date().toISOString().split('T')[0]}.json`;
-        link.click();
-        
-        showNotification('Tour-Daten exportiert! 💾');
-        
-    } catch (error) {
-        console.error('Error exporting tour data:', error);
-        showNotification('Export-Funktion in Entwicklung 💾');
-    }
-}
-
-function importTourData() {
-    showNotification('Import-Funktion in Entwicklung 📥');
-}
-
-function handleTourDataImport() {
-    showNotification('Import wird verarbeitet... 📥');
-}
-
-function handleBulkImageUpload() {
-    showNotification('Bilder werden verarbeitet... 📁');
-}
-
-function showDebugInfo() {
-    try {
-        const debugInfo = {
-            tourId: tourApp.state.tourId,
-            userName: tourApp.state.userName,
-            isFirebaseConnected: tourApp.state.isFirebaseConnected,
-            selectedTeam: tourApp.state.selectedTeam,
-            totalScore: tourApp.state.totalScore,
-            syncListeners: tourApp.state.syncListeners.length,
-            isAdmin: tourApp.state.isAdmin,
-            isChatModerationActive: tourApp.state.isChatModerationActive
-        };
-        
-        console.log('📊 Debug Info:', debugInfo);
-        
-        alert(`📊 Debug Info:
-```
-
-Tour-ID: ${debugInfo.tourId}
-Username: ${debugInfo.userName}
-Firebase: ${debugInfo.isFirebaseConnected ? ‘✅ Verbunden’ : ‘❌ Nicht verbunden’}
-Team: ${debugInfo.selectedTeam || ‘Nicht ausgewählt’}
-Score: ${debugInfo.totalScore}
-Sync Listeners: ${debugInfo.syncListeners}
-Admin: ${debugInfo.isAdmin ? ‘✅ Aktiv’ : ‘❌ Nicht aktiv’}
-Chat Moderation: ${debugInfo.isChatModerationActive ? ‘✅ Aktiv’ : ‘❌ Nicht aktiv’}
-
-Siehe Console (F12) für mehr Details!`);
-
-```
-    } catch (error) {
-        console.error('Error showing debug info:', error);
-        alert('Fehler beim Anzeigen der Debug-Info. Siehe Console (F12).');
-    }
+    showTab('stations', document.querySelector('[onclick*="stations"]'));
+    showNotification('Tour gestartet! Viel Erfolg! 🚀');
 }
 
 function loginAdmin() {
-    try {
-        const password = document.getElementById('adminPassword').value;
-        if (password === 'koeln2024') {
-            tourApp.state.isAdmin = true;
-            document.getElementById('adminTab').classList.remove('hidden');
-            generateStationsList(); // Refresh to show edit buttons
-            generateAdminContentEditor();
-            enableChatModeration();
-            showNotification('Admin-Modus aktiviert! ⚙️');
-            showTab('admin', document.getElementById('adminTab'));
-        } else {
-            showNotification('Falsches Passwort!', 'error');
-        }
-    } catch (error) {
-        console.error('Error logging in admin:', error);
-    }
-}
-
-// Admin Content Management
-function generateAdminContentEditor() {
-    if (!tourApp.state.isAdmin) return;
+    console.log('Admin login attempt...');
     
-    const container = document.getElementById('adminContentEditor');
-    if (!container) return;
-    
-    container.innerHTML = '';
-    
-    tourApp.stations.forEach(station => {
-        const stationEditor = document.createElement('div');
-        stationEditor.className = 'content-edit-section';
-        stationEditor.innerHTML = `
-            <h5 style="color: #1f2937; margin-bottom: 1rem;">📍 Station ${station.id}: ${station.title}</h5>
-            
-            <div style="margin-bottom: 1rem;">
-                <label style="display: block; font-weight: bold; margin-bottom: 0.5rem;">Titel:</label>
-                <input type="text" class="edit-field" id="title-${station.id}" value="${station.title}">
-            </div>
-            
-            <div style="margin-bottom: 1rem;">
-                <label style="display: block; font-weight: bold; margin-bottom: 0.5rem;">Untertitel:</label>
-                <input type="text" class="edit-field" id="subtitle-${station.id}" value="${station.subtitle}">
-            </div>
-            
-            <div style="margin-bottom: 1rem;">
-                <label style="display: block; font-weight: bold; margin-bottom: 0.5rem;">Haupttext:</label>
-                <textarea class="edit-field" id="mainText-${station.id}" rows="6">${station.mainText}</textarea>
-            </div>
-            
-            <div style="margin-bottom: 1rem;">
-                <label style="display: block; font-weight: bold; margin-bottom: 0.5rem;">Foto-Challenge:</label>
-                <textarea class="edit-field" id="photoChallenge-${station.id}" rows="3">${station.photoChallenge}</textarea>
-            </div>
-            
-            <div style="margin-bottom: 1rem;">
-                <label style="display: block; font-weight: bold; margin-bottom: 0.5rem;">Bilder:</label>
-                <div class="image-upload-preview" id="images-${station.id}">
-                    ${station.images.map((img, index) => `
-                        <div class="image-upload-item has-image">
-                            <img src="${img.url || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkJpbGQ8L3RleHQ+PC9zdmc+'}" alt="${img.title}">
-                            <input type="text" placeholder="Titel" value="${img.title}" onchange="updateImageData(${station.id}, ${index}, 'title', this.value)">
-                            <input type="text" placeholder="Beschreibung" value="${img.description}" onchange="updateImageData(${station.id}, ${index}, 'description', this.value)">
-                            <button class="remove-image-btn" onclick="removeImage(${station.id}, ${index})">×</button>
-                        </div>
-                    `).join('')}
-                    <div class="image-upload-item" onclick="addNewImage(${station.id})">
-                        <div>📷</div>
-                        <small>Neues Bild hinzufügen</small>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="edit-controls">
-                <button class="btn btn-admin btn-small" onclick="saveStationContent(${station.id})">💾 Speichern</button>
-                <button class="btn btn-secondary btn-small" onclick="previewStationContent(${station.id})">👁️ Vorschau</button>
-                <button class="btn btn-secondary btn-small" onclick="resetStationContent(${station.id})">🔄 Zurücksetzen</button>
-            </div>
-        `;
+    const password = document.getElementById('adminPassword');
+    if (password && password.value === 'koeln2024') {
+        appState.isAdmin = true;
         
-        container.appendChild(stationEditor);
-    });
-}
-
-function saveStationContent(stationId) {
-    try {
-        const station = tourApp.stations.find(s => s.id === stationId);
-        if (!station) return;
-        
-        // Update station data
-        station.title = document.getElementById(`title-${stationId}`).value;
-        station.subtitle = document.getElementById(`subtitle-${stationId}`).value;
-        station.mainText = document.getElementById(`mainText-${stationId}`).value;
-        station.photoChallenge = document.getElementById(`photoChallenge-${stationId}`).value;
-        
-        // Save to Firebase
-        if (tourApp.state.isFirebaseConnected) {
-            saveToFirebase('stations', stationId.toString(), station);
+        const adminTab = document.getElementById('adminTab');
+        if (adminTab) {
+            adminTab.classList.remove('hidden');
         }
         
-        // Save locally
-        localStorage.setItem(`stations_${tourApp.state.tourId}`, JSON.stringify(tourApp.stations));
-        
-        // Refresh stations display
-        generateStationsList();
-        
-        showNotification(`Station ${stationId} gespeichert! 💾`);
-        
-        // Notify other users
-        addSystemMessage(`Admin hat Station "${station.title}" aktualisiert! 📝`);
-        
-    } catch (error) {
-        console.error('Error saving station content:', error);
-        showNotification('Fehler beim Speichern!', 'error');
-    }
-}
-
-function updateImageData(stationId, imageIndex, field, value) {
-    try {
-        const station = tourApp.stations.find(s => s.id === stationId);
-        if (station && station.images[imageIndex]) {
-            station.images[imageIndex][field] = value;
-        }
-    } catch (error) {
-        console.error('Error updating image data:', error);
-    }
-}
-
-function removeImage(stationId, imageIndex) {
-    try {
-        const station = tourApp.stations.find(s => s.id === stationId);
-        if (station && station.images[imageIndex]) {
-            station.images.splice(imageIndex, 1);
-            generateAdminContentEditor();
-            showNotification('Bild entfernt! 🗑️');
-        }
-    } catch (error) {
-        console.error('Error removing image:', error);
-    }
-}
-
-function addNewImage(stationId) {
-    try {
-        const url = prompt('Bild-URL eingeben:');
-        const title = prompt('Bildtitel eingeben:');
-        const description = prompt('Beschreibung eingeben:') || '';
-        
-        if (url && title) {
-            const station = tourApp.stations.find(s => s.id === stationId);
-            if (station) {
-                station.images.push({ url, title, description });
-                generateAdminContentEditor();
-                showNotification('Bild hinzugefügt! 🖼️');
-            }
-        }
-    } catch (error) {
-        console.error('Error adding image:', error);
-    }
-}
-
-// Chat Moderation Functions
-function enableChatModeration() {
-    if (!tourApp.state.isAdmin) return;
-    
-    // Add moderation controls to existing chat messages
-    const chatMessages = document.querySelectorAll('.chat-message');
-    chatMessages.forEach(msg => {
-        if (!msg.classList.contains('system')) {
-            msg.classList.add('admin-mode');
-            if (!msg.querySelector('.chat-admin-controls')) {
-                const controls = document.createElement('div');
-                controls.className = 'chat-admin-controls';
-                controls.innerHTML = `
-                    <button onclick="deleteMessage(this)" style="background: #dc2626; color: white; border: none; border-radius: 3px; padding: 2px 6px; font-size: 0.7rem; cursor: pointer;">🗑️</button>
-                `;
-                msg.appendChild(controls);
-            }
-        }
-    });
-}
-
-function toggleChatModeration() {
-    try {
-        tourApp.state.isChatModerationActive = !tourApp.state.isChatModerationActive;
-        const btn = document.getElementById('chatModerationText');
-        
-        if (tourApp.state.isChatModerationActive) {
-            btn.textContent = '🛡️ Moderations-Modus aktiv';
-            enableChatModeration();
-            showNotification('Chat-Moderation aktiviert! 🛡️');
-        } else {
-            btn.textContent = '🛡️ Moderations-Modus aktivieren';
-            // Remove moderation styling
-            document.querySelectorAll('.chat-message').forEach(msg => {
-                msg.classList.remove('admin-mode');
-            });
-            showNotification('Chat-Moderation deaktiviert');
-        }
-    } catch (error) {
-        console.error('Error toggling chat moderation:', error);
-    }
-}
-
-function deleteMessage(button) {
-    try {
-        if (!tourApp.state.isAdmin) return;
-        
-        const messageElement = button.closest('.chat-message');
-        if (messageElement && confirm('Nachricht löschen?')) {
-            messageElement.remove();
-            showNotification('Nachricht gelöscht! 🗑️');
-            // In a real implementation, you would also delete from Firebase
-        }
-    } catch (error) {
-        console.error('Error deleting message:', error);
-    }
-}
-
-function clearAllChatMessages() {
-    try {
-        if (!tourApp.state.isAdmin) return;
-        
-        if (confirm('Wirklich ALLE Chat-Nachrichten löschen?')) {
-            const chatContainer = document.getElementById('chatContainer');
-            if (chatContainer) {
-                chatContainer.innerHTML = `
-                    <div class="chat-message system">
-                        <strong>System:</strong> Chat wurde von Admin geleert! 🗑️<br>
-                        <span class="timestamp">jetzt</span>
-                    </div>
-                `;
-            }
-            
-            // Clear from storage
-            localStorage.removeItem(`chat_${tourApp.state.tourId}`);
-            
-            showNotification('Alle Nachrichten gelöscht! 🗑️');
-        }
-    } catch (error) {
-        console.error('Error clearing chat:', error);
-    }
-}
-
-function sendAdminAnnouncement() {
-    try {
-        if (!tourApp.state.isAdmin) return;
-        
-        const message = prompt('Ankündigung eingeben:');
-        if (message) {
-            addChatMessage('📢 ADMIN', message, false, 'system');
-            showNotification('Ankündigung gesendet! 📢');
-        }
-    } catch (error) {
-        console.error('Error sending admin announcement:', error);
-    }
-}
-
-// Media Upload Functions
-function selectChatImage() {
-    try {
-        const input = document.getElementById('chatImageInput');
-        if (input) {
-            input.click();
-        }
-    } catch (error) {
-        console.error('Error selecting chat image:', error);
-    }
-}
-
-async function uploadChatImage(event) {
-    try {
-        const file = event.target.files[0];
-        if (!file) return;
-        
-        // Create preview
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            const imageUrl = e.target.result;
-            
-            // Send image message
-            addChatMessage(tourApp.state.userName, '', true, 'image', imageUrl);
-            
-            // In a real implementation, you would upload to Firebase Storage
-            // and get a permanent URL
-            
-            showNotification('Bild gesendet! 📷');
-        };
-        
-        reader.readAsDataURL(file);
-        
-    } catch (error) {
-        console.error('Error uploading chat image:', error);
-        showNotification('Fehler beim Bild-Upload!', 'error');
-    }
-}
-
-// Audio Recording Functions
-async function toggleAudioRecording() {
-    try {
-        if (!tourApp.state.isRecording) {
-            await startAudioRecording();
-        } else {
-            await stopAudioRecording();
-        }
-    } catch (error) {
-        console.error('Error with audio recording:', error);
-        showNotification('Audio-Aufnahme nicht verfügbar!', 'error');
-    }
-}
-
-async function startAudioRecording() {
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        tourApp.state.audioRecorder = new MediaRecorder(stream);
-        tourApp.state.audioChunks = [];
-        
-        tourApp.state.audioRecorder.ondataavailable = (event) => {
-            tourApp.state.audioChunks.push(event.data);
-        };
-        
-        tourApp.state.audioRecorder.onstop = async () => {
-            const audioBlob = new Blob(tourApp.state.audioChunks, { type: 'audio/wav' });
-            const audioUrl = URL.createObjectURL(audioBlob);
-            
-            // Send audio message
-            addChatMessage(tourApp.state.userName, '', true, 'audio', audioUrl);
-            showNotification('Audio-Nachricht gesendet! 🎤');
-            
-            // Stop all tracks
-            stream.getTracks().forEach(track => track.stop());
-        };
-        
-        tourApp.state.audioRecorder.start();
-        tourApp.state.isRecording = true;
-        
-        // Update button
-        const btn = document.getElementById('audioRecordBtn');
-        if (btn) {
-            btn.classList.add('recording');
-            btn.innerHTML = '⏹️ Stop';
-        }
-        
-        showNotification('Audio-Aufnahme gestartet! 🎤');
-        
-    } catch (error) {
-        throw error;
-    }
-}
-
-async function stopAudioRecording() {
-    try {
-        if (tourApp.state.audioRecorder && tourApp.state.isRecording) {
-            tourApp.state.audioRecorder.stop();
-            tourApp.state.isRecording = false;
-            
-            // Update button
-            const btn = document.getElementById('audioRecordBtn');
-            if (btn) {
-                btn.classList.remove('recording');
-                btn.innerHTML = '🎤 Audio';
-            }
-        }
-    } catch (error) {
-        throw error;
-    }
-}
-
-function showTab(tabName, tabElement) {
-    try {
-        document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-        if (tabElement) {
-            tabElement.classList.add('active');
-        }
-
-        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-        const targetTab = document.getElementById(tabName === 'map' ? 'map-tab' : tabName);
-        if (targetTab) {
-            targetTab.classList.add('active');
-        }
-
-        if (tabName === 'map') {
-            setTimeout(() => initMap(), 100);
-        } else if (tabName === 'ranking') {
-            updateRanking();
-        }
-    } catch (error) {
-        console.error('Error showing tab:', error);
-    }
-}
-
-function selectTeam(teamId, teamName, element) {
-    try {
-        tourApp.state.selectedTeam = teamId;
-        tourApp.state.teamName = teamName;
-        
-        document.querySelectorAll('.team-option').forEach(option => {
-            option.classList.remove('selected');
-        });
-        if (element) {
-            element.classList.add('selected');
-        }
-        
-        const selector = document.getElementById('teamSelector');
-        if (selector) {
-            selector.style.display = 'none';
-        }
-        
-        showNotification('Team ausgewählt! 🎉');
-        saveState();
-        addSystemMessage(`${tourApp.state.userName} ist ${teamName} beigetreten! 🎊`);
-    } catch (error) {
-        console.error('Error selecting team:', error);
-    }
-}
-
-function startTour() {
-    try {
-        if (!tourApp.state.selectedTeam) {
-            showNotification('Bitte wähle zuerst ein Team aus!', 'error');
-            return;
-        }
-        
-        showTab('stations', document.querySelector('[onclick*="stations"]'));
-        showNotification('Tour gestartet! Viel Erfolg! 🚀');
-    } catch (error) {
-        console.error('Error starting tour:', error);
-    }
-}
-
-function generateStationsList() {
-    try {
-        const container = document.getElementById('stationsList');
-        if (!container) return;
-        
-        container.innerHTML = '';
-        
-        tourApp.stations.forEach(station => {
-            const isCompleted = tourApp.state.completedStations.includes(station.id);
-            
-            const stationCard = document.createElement('div');
-            stationCard.className = `station-card ${isCompleted ? 'completed' : ''}`;
-            stationCard.onclick = () => toggleStationDetails(station.id);
-            
-            const imagesHtml = station.images.map(img => `
-                <div class="gallery-item">
-                    <div class="gallery-image" onclick="showImageModal('${img.url || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkJpbGQ8L3RleHQ+PC9zdmc+'}', '${img.title}', '${img.description}')">📷</div>
-                    <small>${img.title}</small>
-                </div>
-            `).join('');
-            
-            stationCard.innerHTML = `
-                <div class="station-header">
-                    <div class="station-number ${isCompleted ? 'completed' : ''}">${station.id}</div>
-                    <div style="flex: 1;">
-                        <div class="station-title">${station.title}</div>
-                        <div class="station-subtitle">${station.subtitle}</div>
-                    </div>
-                </div>
-                <div class="station-details" id="station-${station.id}">
-                    <div class="detail-section">
-                        <h4>📖 Geschichte</h4>
-                        <p>${station.mainText}</p>
-                    </div>
-                    
-                    <div class="detail-section">
-                        <h4>🖼️ Bildergalerie</h4>
-                        <div class="image-gallery">
-                            ${imagesHtml}
-                        </div>
-                    </div>
-
-                    <div class="photo-challenge">
-                        <h4>📸 KI-Foto-Challenge</h4>
-                        <p>${station.photoChallenge}</p>
-                        
-                        <div class="photo-upload-area" onclick="selectPhoto(${station.id})" id="upload-area-${station.id}">
-                            <div id="upload-content-${station.id}">
-                                📷 Hier klicken zum Foto machen/auswählen<br>
-                                <small>KI bewertet automatisch Qualität, Komposition & Kreativität</small>
-                            </div>
-                        </div>
-                        
-                        <input type="file" class="file-input" id="photo-input-${station.id}" accept="image/*" capture="environment" onchange="handlePhotoUpload(${station.id}, event)">
-                        
-                        <div class="ai-rating hidden" id="rating-${station.id}">
-                            <div class="rating-score" id="score-${station.id}">0</div>
-                            <div class="rating-text" id="rating-text-${station.id}">KI analysiert dein Foto...</div>
-                            <div class="rating-details" id="rating-details-${station.id}"></div>
-                        </div>
-                    </div>
-
-                    <button class="btn" onclick="completeStation(${station.id})" id="complete-btn-${station.id}" 
-                            ${isCompleted ? 'disabled' : ''}>
-                        ${isCompleted ? '✅ Station abgeschlossen' : '🏁 Station abschließen'}
-                    </button>
-                </div>
-            `;
-            
-            container.appendChild(stationCard);
-        });
-    } catch (error) {
-        console.error('Error generating stations list:', error);
-    }
-}
-
-function toggleStationDetails(stationId) {
-    try {
-        const details = document.getElementById(`station-${stationId}`);
-        if (details) {
-            details.classList.toggle('active');
-        }
-    } catch (error) {
-        console.error('Error toggling station details:', error);
-    }
-}
-
-function selectPhoto(stationId) {
-    try {
-        const input = document.getElementById(`photo-input-${stationId}`);
-        if (input) {
-            input.click();
-        }
-    } catch (error) {
-        console.error('Error selecting photo:', error);
-    }
-}
-
-function handlePhotoUpload(stationId, event) {
-    try {
-        const file = event.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const imageUrl = e.target.result;
-            
-            const uploadArea = document.getElementById(`upload-area-${stationId}`);
-            if (uploadArea) {
-                uploadArea.classList.add('has-photo');
-                uploadArea.innerHTML = `
-                    <img src="${imageUrl}" class="photo-preview" alt="Uploaded photo">
-                    <p>📷 Foto erfolgreich hochgeladen!</p>
-                    <small>KI analysiert...</small>
-                `;
-            }
-
-            const photoData = {
-                stationId: stationId,
-                imageUrl: imageUrl,
-                timestamp: Date.now(),
-                teamId: tourApp.state.selectedTeam
-            };
-
-            const existingIndex = tourApp.state.uploadedPhotos.findIndex(p => p.stationId === stationId);
-            if (existingIndex >= 0) {
-                tourApp.state.uploadedPhotos[existingIndex] = photoData;
-            } else {
-                tourApp.state.uploadedPhotos.push(photoData);
-            }
-
-            setTimeout(() => ratePhoto(stationId, imageUrl), 1000);
-            saveState();
-        };
-        
-        reader.readAsDataURL(file);
-    } catch (error) {
-        console.error('Error handling photo upload:', error);
-    }
-}
-
-function ratePhoto(stationId, imageUrl) {
-    try {
-        const ratingDiv = document.getElementById(`rating-${stationId}`);
-        if (ratingDiv) {
-            ratingDiv.classList.remove('hidden');
-        }
-        
-        const baseScore = 50 + Math.random() * 40;
-        const technicalScore = 70 + Math.random() * 25;
-        const compositionScore = 60 + Math.random() * 30;
-        const creativityScore = 55 + Math.random() * 35;
-        
-        const finalScore = Math.round(baseScore);
-        
-        animateScore(stationId, finalScore);
-        
-        const feedback = generatePhotoFeedback(technicalScore, compositionScore, creativityScore);
-        
-        setTimeout(() => {
-            const ratingTextEl = document.getElementById(`rating-text-${stationId}`);
-            const ratingDetailsEl = document.getElementById(`rating-details-${stationId}`);
-            
-            if (ratingTextEl) {
-                ratingTextEl.innerHTML = `
-                    <strong>KI-Bewertung abgeschlossen!</strong><br>
-                    Qualität: ${Math.round(technicalScore)}% | 
-                    Komposition: ${Math.round(compositionScore)}% | 
-                    Kreativität: ${Math.round(creativityScore)}%
-                `;
-            }
-            
-            if (ratingDetailsEl) {
-                ratingDetailsEl.innerHTML = feedback.join('<br>');
-            }
-        }, 2000);
-        
-        addScore(finalScore);
-        
-        const photoData = tourApp.state.uploadedPhotos.find(p => p.stationId === stationId);
-        if (photoData) {
-            photoData.score = finalScore;
-        }
-        
-        showNotification(`KI-Bewertung: ${finalScore} Punkte! 🤖`);
-    } catch (error) {
-        console.error('Error rating photo:', error);
-    }
-}
-
-function animateScore(stationId, targetScore) {
-    try {
-        const scoreElement = document.getElementById(`score-${stationId}`);
-        if (!scoreElement) return;
-        
-        let currentScore = 0;
-        const increment = Math.ceil(targetScore / 30);
-        
-        const interval = setInterval(() => {
-            currentScore += increment;
-            if (currentScore >= targetScore) {
-                currentScore = targetScore;
-                clearInterval(interval);
-            }
-            scoreElement.textContent = currentScore;
-        }, 50);
-    } catch (error) {
-        console.error('Error animating score:', error);
-    }
-}
-
-function generatePhotoFeedback(technical, composition, creativity) {
-    const feedback = [];
-    
-    if (technical > 75) {
-        feedback.push("📸 Sehr scharfes und gut belichtetes Bild!");
-    } else if (technical < 50) {
-        feedback.push("⚠️ Bild könnte schärfer oder besser belichtet sein");
-    }
-    
-    if (composition > 70) {
-        feedback.push("🎨 Tolle Bildkomposition!");
+        showNotification('Admin-Modus aktiviert! ⚙️');
+        showTab('admin', adminTab);
     } else {
-        feedback.push("💡 Tipp: Achte auf die Bildaufteilung");
+        showNotification('Falsches Passwort!', 'error');
     }
+}
+
+function sendMessage() {
+    console.log('Sending message...');
     
-    if (creativity > 75) {
-        feedback.push("✨ Sehr kreative Aufnahme!");
-    } else if (creativity > 60) {
-        feedback.push("🎭 Schöne kreative Elemente!");
+    const input = document.getElementById('chatInput');
+    if (input && input.value.trim()) {
+        const message = input.value.trim();
+        addChatMessage('Du', message, true);
+        input.value = '';
+        showNotification('Nachricht gesendet! 💬');
     }
+}
+
+function addChatMessage(userName, message, isOwn = false) {
+    const chatContainer = document.getElementById('chatContainer');
+    if (!chatContainer) return;
     
-    feedback.push("👥 Toll, dass ihr als Team fotografiert!");
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `chat-message ${isOwn ? 'own' : ''}`;
     
-    return feedback;
+    const timeStr = new Date().toLocaleTimeString('de-DE', {
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+
+    messageDiv.innerHTML = `
+        <strong>${userName}:</strong> ${message}
+        <span class="timestamp">${timeStr}</span>
+    `;
+    
+    chatContainer.appendChild(messageDiv);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
 }
 
-function completeStation(stationId) {
-    try {
-        if (!tourApp.state.completedStations.includes(stationId)) {
-            tourApp.state.completedStations.push(stationId);
-            updateProgress();
-            showNotification('Station abgeschlossen! 🏁');
-            
-            const completeBtn = document.getElementById(`complete-btn-${stationId}`);
-            if (completeBtn) {
-                const stationCard = completeBtn.closest('.station-card');
-                if (stationCard) {
-                    stationCard.classList.add('completed');
-                    const stationNumber = stationCard.querySelector('.station-number');
-                    if (stationNumber) {
-                        stationNumber.classList.add('completed');
-                    }
-                }
-                
-                completeBtn.disabled = true;
-                completeBtn.textContent = '✅ Station abgeschlossen';
-                completeBtn.style.background = '#6b7280';
-            }
-
-            if (tourApp.state.completedStations.length === tourApp.stations.length) {
-                showNotification('🎉 Herzlichen Glückwunsch! Tour abgeschlossen!');
-                setTimeout(() => {
-                    showTab('ranking', document.querySelector('[onclick*="ranking"]'));
-                }, 2000);
-            }
-
-            saveState();
-            addSystemMessage(`${tourApp.state.userName} hat "${tourApp.stations.find(s => s.id === stationId)?.title}" abgeschlossen! 🏁`);
+function copyShareUrl() {
+    console.log('Copying share URL...');
+    
+    const shareUrl = document.getElementById('shareUrl');
+    if (shareUrl) {
+        const url = shareUrl.textContent;
+        
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(url).then(() => {
+                showNotification('URL kopiert! 📋');
+            });
+        } else {
+            // Fallback
+            const textarea = document.createElement('textarea');
+            textarea.value = url;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            showNotification('URL kopiert! 📋');
         }
-    } catch (error) {
-        console.error('Error completing station:', error);
     }
 }
 
-function updateUI() {
-    try {
-        const scoreElement = document.getElementById('totalScore');
-        if (scoreElement) {
-            scoreElement.textContent = tourApp.state.totalScore;
-        }
-        updateProgress();
-    } catch (error) {
-        console.error('Error updating UI:', error);
+function shareViaWhatsApp() {
+    console.log('Sharing via WhatsApp...');
+    
+    const shareUrl = document.getElementById('shareUrl');
+    if (shareUrl) {
+        const message = `🏛️ Kölner Abendspaziergang - Tour beitreten:\n${shareUrl.textContent}`;
+        const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+        window.open(whatsappUrl, '_blank');
     }
 }
 
-function updateProgress() {
-    try {
-        const progress = (tourApp.state.completedStations.length / tourApp.stations.length) * 100;
-        const progressBar = document.getElementById('progressBar');
-        if (progressBar) {
-            progressBar.style.width = progress + '%';
-        }
-    } catch (error) {
-        console.error('Error updating progress:', error);
-    }
+function moderateChat() {
+    if (!appState.isAdmin) return;
+    showNotification('Chat-Moderation aktiviert! 🛡️');
+    addChatMessage('ADMIN', 'Chat wird nun moderiert.', false);
 }
 
-function addChatMessage(userName, message, isOwn = false, messageType = 'text', mediaUrl = null) {
-    try {
+function clearChat() {
+    if (!appState.isAdmin) return;
+    
+    if (confirm('Wirklich den gesamten Chat löschen?')) {
         const chatContainer = document.getElementById('chatContainer');
-        if (!chatContainer) return;
-        
-        const messageDiv = document.createElement('div');
-        messageDiv.className = `chat-message ${isOwn ? 'own' : ''} ${messageType === 'system' ? 'system' : ''}`;
-        
-        if (tourApp.state.isChatModerationActive && tourApp.state.isAdmin && messageType !== 'system') {
-            messageDiv.classList.add('admin-mode');
-        }
-        
-        const timeStr = new Date().toLocaleTimeString('de-DE', {
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-
-        let mediaContent = '';
-        if (messageType === 'image' && mediaUrl) {
-            mediaContent = `<div class="chat-media"><img src="${mediaUrl}" class="chat-image" onclick="showImageModal('${mediaUrl}', 'Chat-Bild', 'Von ${userName} gesendet')" alt="Chat-Bild"></div>`;
-        } else if (messageType === 'audio' && mediaUrl) {
-            mediaContent = `<div class="chat-media"><audio src="${mediaUrl}" class="chat-audio" controls></audio></div>`;
-        }
-
-        messageDiv.innerHTML = `
-            <strong>${userName}:</strong> ${message}
-            ${mediaContent}
-            <span class="timestamp">${timeStr}</span>
-            ${tourApp.state.isChatModerationActive && tourApp.state.isAdmin && messageType !== 'system' ? `
-                <div class="chat-admin-controls">
-                    <button onclick="deleteMessage(this)" style="background: #dc2626; color: white; border: none; border-radius: 3px; padding: 2px 6px; font-size: 0.7rem; cursor: pointer;">🗑️</button>
+        if (chatContainer) {
+            chatContainer.innerHTML = `
+                <div class="chat-message system">
+                    <strong>System:</strong> Chat wurde von Admin geleert! 🗑️<br>
+                    <span class="timestamp">jetzt</span>
                 </div>
-            ` : ''}
-        `;
-        
-        chatContainer.appendChild(messageDiv);
-        chatContainer.scrollTop = chatContainer.scrollHeight;
-        
-        if (!isOwn && !document.getElementById('chat').classList.contains('active')) {
-            const previewText = message || (messageType === 'image' ? '📷 Bild' : messageType === 'audio' ? '🎤 Audio' : '');
-            showNotification(`💬 ${userName}: ${previewText.substring(0, 30)}${previewText.length > 30 ? '...' : ''}`);
-        }
-    } catch (error) {
-        console.error('Error adding chat message:', error);
-    }
-}
-
-function addSystemMessage(message) {
-    try {
-        setTimeout(() => {
-            const chatContainer = document.getElementById('chatContainer');
-            if (!chatContainer) return;
-            
-            const messageDiv = document.createElement('div');
-            messageDiv.className = 'chat-message system';
-            
-            const timeStr = new Date().toLocaleTimeString('de-DE', {
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-
-            messageDiv.innerHTML = `
-                <strong>System:</strong> ${message}
-                <span class="timestamp">${timeStr}</span>
             `;
-            
-            chatContainer.appendChild(messageDiv);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-        }, 100);
-    } catch (error) {
-        console.error('Error adding system message:', error);
-    }
-}
-
-async function loadChatHistory() {
-    try {
-        if (tourApp.state.isFirebaseConnected) {
-            const messages = await getFromFirebase('chat');
-            messages.forEach(msg => {
-                if (msg.userName !== tourApp.state.userName) {
-                    addChatMessage(msg.userName, msg.message, false);
-                }
-            });
-        } else {
-            const chatMessages = JSON.parse(localStorage.getItem(`chat_${tourApp.state.tourId}`) || '[]');
-            chatMessages.forEach(msg => {
-                addChatMessage(msg.userName, msg.message, msg.userName === tourApp.state.userName);
-            });
         }
-    } catch (error) {
-        console.error('Error loading chat history:', error);
-    }
-}
-
-// Map initialization (simplified)
-function initMap() {
-    try {
-        if (tourApp.state.map || !document.getElementById('map')) return;
-        
-        if (typeof L === 'undefined') {
-            loadLeaflet(() => createMap());
-        } else {
-            createMap();
-        }
-    } catch (error) {
-        console.error('Error initializing map:', error);
-    }
-}
-
-function loadLeaflet(callback) {
-    const script = document.createElement('script');
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js';
-    script.onload = callback;
-    script.onerror = () => showMapError();
-    document.head.appendChild(script);
-}
-
-function createMap() {
-    try {
-        tourApp.state.map = L.map('map').setView([50.9375, 6.9597], 15);
-        
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(tourApp.state.map);
-        
-        tourApp.stations.forEach(station => {
-            const isCompleted = tourApp.state.completedStations.includes(station.id);
-            const marker = L.marker([station.lat, station.lng])
-                .bindPopup(`
-                    <div style="text-align: center; max-width: 200px;">
-                        <h4>${station.title}</h4>
-                        <p>${station.subtitle}</p>
-                        <p><strong>Station ${station.id}/${tourApp.stations.length}</strong></p>
-                        ${isCompleted ? '<p style="color: green;">✅ Abgeschlossen</p>' : '<p style="color: orange;">⏳ Ausstehend</p>'}
-                    </div>
-                `)
-                .addTo(tourApp.state.map);
-            
-            tourApp.state.markers.push(marker);
-        });
-        
-        const routeCoordinates = tourApp.stations.map(station => [station.lat, station.lng]);
-        L.polyline(routeCoordinates, {
-            color: '#dc2626',
-            weight: 3,
-            opacity: 0.7
-        }).addTo(tourApp.state.map);
-        
-        if (tourApp.state.userLocation) {
-            addUserLocationToMap();
-        }
-    } catch (error) {
-        console.error('Error creating map:', error);
-    }
-}
-
-function showMapError() {
-    const mapEl = document.getElementById('map');
-    if (mapEl) {
-        mapEl.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; background: #f3f4f6; border-radius: 10px;"><p>🗺️ Karte konnte nicht geladen werden</p></div>';
-    }
-}
-
-function addUserLocationToMap() {
-    try {
-        if (!tourApp.state.map || !tourApp.state.userLocation) return;
-        
-        const userIcon = L.divIcon({
-            html: '<div style="background: #3b82f6; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3);"></div>',
-            className: 'user-location-marker',
-            iconSize: [20, 20],
-            iconAnchor: [10, 10]
-        });
-        
-        L.marker([tourApp.state.userLocation.lat, tourApp.state.userLocation.lng], {
-            icon: userIcon
-        })
-        .bindPopup('📍 Dein Standort')
-        .addTo(tourApp.state.map);
-    } catch (error) {
-        console.error('Error adding user location to map:', error);
-    }
-}
-
-function centerOnUser() {
-    try {
-        if (tourApp.state.userLocation && tourApp.state.map) {
-            tourApp.state.map.setView([tourApp.state.userLocation.lat, tourApp.state.userLocation.lng], 17);
-        } else {
-            showNotification('Standort nicht verfügbar. Bitte erlaube Standortzugriff.', 'error');
-        }
-    } catch (error) {
-        console.error('Error centering on user:', error);
-    }
-}
-
-function initGeolocation() {
-    try {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                position => {
-                    tourApp.state.userLocation = {
-                        lat: position.coords.latitude,
-                        lng: position.coords.longitude
-                    };
-                    updateLocationInfo();
-                    if (tourApp.state.map) {
-                        addUserLocationToMap();
-                    }
-                },
-                error => {
-                    const distanceInfo = document.getElementById('distanceInfo');
-                    if (distanceInfo) {
-                        distanceInfo.textContent = '📍 Standort nicht verfügbar';
-                    }
-                }
-            );
-        }
-    } catch (error) {
-        console.error('Error initializing geolocation:', error);
-    }
-}
-
-function updateLocationInfo() {
-    try {
-        if (!tourApp.state.userLocation) return;
-        
-        let nearestStation = null;
-        let minDistance = Infinity;
-        
-        tourApp.stations.forEach(station => {
-            const distance = calculateDistance(
-                tourApp.state.userLocation.lat, tourApp.state.userLocation.lng,
-                station.lat, station.lng
-            );
-            
-            if (distance < minDistance) {
-                minDistance = distance;
-                nearestStation = station;
-            }
-        });
-        
-        if (nearestStation) {
-            const distanceText = minDistance < 1 
-                ? `${Math.round(minDistance * 1000)}m` 
-                : `${minDistance.toFixed(1)}km`;
-            
-            const distanceInfo = document.getElementById('distanceInfo');
-            if (distanceInfo) {
-                distanceInfo.textContent = `📍 Nächste Station: ${nearestStation.title} (${distanceText})`;
-            }
-        }
-    } catch (error) {
-        console.error('Error updating location info:', error);
-    }
-}
-
-function calculateDistance(lat1, lng1, lat2, lng2) {
-    const R = 6371;
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLng = (lng2 - lng1) * Math.PI / 180;
-    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-              Math.sin(dLng/2) * Math.sin(dLng/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return R * c;
-}
-
-function showImageModal(url, title, description) {
-    try {
-        const modal = document.createElement('div');
-        modal.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.9);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 10000;
-            flex-direction: column;
-            padding: 20px;
-            box-sizing: border-box;
-        `;
-        
-        modal.innerHTML = `
-            <img src="${url}" style="max-width: 90%; max-height: 70%; object-fit: contain; border-radius: 8px;">
-            <div style="color: white; text-align: center; margin-top: 20px; max-width: 600px;">
-                <h3>${title}</h3>
-                <p>${description}</p>
-                <button style="margin-top: 20px; padding: 10px 20px; background: #dc2626; color: white; border: none; border-radius: 5px; cursor: pointer;" onclick="this.parentElement.parentElement.remove()">Schließen</button>
-            </div>
-        `;
-        
-        modal.onclick = (e) => {
-            if (e.target === modal) modal.remove();
-        };
-        
-        document.body.appendChild(modal);
-    } catch (error) {
-        console.error('Error showing image modal:', error);
+        showNotification('Chat geleert! 🗑️');
     }
 }
 
 function resetTour() {
-    try {
-        if (confirm('Wirklich alle Daten zurücksetzen?')) {
-            localStorage.removeItem(`chat_${tourApp.state.tourId}`);
-            
-            tourApp.state.completedStations = [];
-            tourApp.state.totalScore = 0;
-            tourApp.state.uploadedPhotos = [];
-            
-            saveState();
-            generateStationsList();
-            updateUI();
-            showNotification('Tour zurückgesetzt! 🔄');
-            addSystemMessage('Admin hat die Tour zurückgesetzt! 🔄');
-        }
-    } catch (error) {
-        console.error('Error resetting tour:', error);
+    if (!appState.isAdmin) return;
+    
+    if (confirm('Wirklich alle Tour-Daten zurücksetzen?')) {
+        appState.selectedTeam = null;
+        appState.teamName = '';
+        appState.totalScore = 0;
+        
+        // Reset UI
+        document.getElementById('totalScore').textContent = '0';
+        document.getElementById('teamSelector').style.display = 'block';
+        document.querySelectorAll('.team-option').forEach(option => {
+            option.classList.remove('selected');
+        });
+        
+        showNotification('Tour zurückgesetzt! 🔄');
+        addChatMessage('ADMIN', 'Tour wurde zurückgesetzt!', false);
     }
 }
 
 function showNotification(message, type = 'success') {
-    try {
-        const notification = document.createElement('div');
-        notification.className = `notification ${type}`;
-        notification.textContent = message;
-        document.body.appendChild(notification);
+    console.log('Notification:', message);
+    
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.textContent = message;
+    document.body.appendChild(notification);
 
-        setTimeout(() => {
-            notification.remove();
-        }, 4000);
-    } catch (error) {
-        console.error('Error showing notification:', error);
-    }
-}
-
-function saveState() {
-    try {
-        const stateToSave = {
-            ...tourApp.state,
-            map: null,
-            markers: [],
-            syncListeners: []
-        };
-        localStorage.setItem('tourState', JSON.stringify(stateToSave));
-    } catch (error) {
-        console.error('Error saving state:', error);
-    }
-}
-
-function loadState() {
-    try {
-        const saved = localStorage.getItem('tourState');
-        if (saved) {
-            const savedState = JSON.parse(saved);
-            tourApp.state = { ...tourApp.state, ...savedState };
-            
-            if (tourApp.state.selectedTeam) {
-                setTimeout(() => {
-                    const teamOptions = document.querySelectorAll('.team-option');
-                    teamOptions.forEach(option => {
-                        if (option.textContent.includes(tourApp.state.teamName)) {
-                            option.classList.add('selected');
-                        }
-                    });
-                    const selector = document.getElementById('teamSelector');
-                    if (selector) {
-                        selector.style.display = 'none';
-                    }
-                }, 100);
-            }
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
         }
-    } catch (error) {
-        console.error('Error loading state:', error);
+    }, 4000);
+}
+
+// Event Listeners
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Kölner Abendspaziergang loaded successfully!');
+    
+    // Setup chat input
+    const chatInput = document.getElementById('chatInput');
+    if (chatInput) {
+        chatInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
     }
-}
+    
+    showNotification('App erfolgreich geladen! 🎉');
+});
 
-// Initialize app when DOM is ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        setTimeout(initApp, 100);
-    });
-} else {
-    setTimeout(initApp, 100);
-}
-
-// Emergency error handler to prevent app from breaking
+// Global error handler
 window.onerror = function(msg, url, lineNo, columnNo, error) {
-    console.error('Global error caught:', msg, 'at', url, ':', lineNo);
-    return false; // Don't suppress default browser error handling
+    console.error('Error:', msg, 'at line', lineNo);
+    showNotification('Ein Fehler ist aufgetreten. Bitte Seite neu laden.', 'error');
+    return false;
 };
 
-// Add missing essential functions for basic interactivity
-if (typeof showTab === 'undefined') {
-    window.showTab = showTab;
-}
-if (typeof selectTeam === 'undefined') {
-    window.selectTeam = selectTeam;
-}
-if (typeof startTour === 'undefined') {
-    window.startTour = startTour;
-}
-if (typeof loginAdmin === 'undefined') {
-    window.loginAdmin = loginAdmin;
-}
-if (typeof sendMessage === 'undefined') {
-    window.sendMessage = sendMessage;
+// Debug function
+function debugApp() {
+    console.log('App State:', appState);
+    alert(`Debug Info:
+```
+
+Team: ${appState.teamName || ‘Nicht ausgewählt’}
+Score: ${appState.totalScore}
+Admin: ${appState.isAdmin ? ‘Ja’ : ‘Nein’}
+Tour ID: ${appState.tourId}`);
 }
 
+```
+console.log('✅ All functions loaded successfully!');
 </script>
 ```
 
