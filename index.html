@@ -1183,32 +1183,45 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             const urlParams = new URLSearchParams(window.location.search);
             const urlTourId = urlParams.get('tour');
             
-            if (urlTourId) {
-                tourApp.state.tourId = urlTourId;
-                setTimeout(() => addSystemMessage(`Automatisch der Tour "${urlTourId}" beigetreten! 🎉`), 2000);
+            console.log('🔍 URL Tour ID:', urlTourId);
+            console.log('🔍 Current URL:', window.location.href);
+            
+            if (urlTourId && urlTourId.trim()) {
+                // Use URL parameter
+                tourApp.state.tourId = urlTourId.trim();
+                localStorage.setItem('tourId', tourApp.state.tourId);
+                setTimeout(() => addSystemMessage(`Der Tour "${urlTourId}" beigetreten! 🎉`), 2000);
+                console.log('✅ Using URL Tour ID:', tourApp.state.tourId);
             } else {
-                tourApp.state.tourId = localStorage.getItem('tourId') || generateTourId();
+                // Check localStorage first
+                const savedTourId = localStorage.getItem('tourId');
+                if (savedTourId) {
+                    tourApp.state.tourId = savedTourId;
+                    console.log('✅ Using saved Tour ID:', tourApp.state.tourId);
+                } else {
+                    // Generate new fixed tour ID (same for everyone)
+                    tourApp.state.tourId = generateFixedTourId();
+                    localStorage.setItem('tourId', tourApp.state.tourId);
+                    console.log('✅ Generated new Tour ID:', tourApp.state.tourId);
+                }
             }
             
-            localStorage.setItem('tourId', tourApp.state.tourId);
             updateTourDisplay();
             generateShareUrl();
+            
+            console.log('🎯 Final Tour ID:', tourApp.state.tourId);
         } catch (error) {
             console.error('Error loading tour ID:', error);
-            tourApp.state.tourId = 'koeln-tour-' + Math.random().toString(36).substr(2, 8);
+            tourApp.state.tourId = 'koeln-main-tour';
             updateTourDisplay();
             generateShareUrl();
         }
     }
 
-    function generateTourId() {
-        try {
-            const today = new Date().toISOString().split('T')[0];
-            const random = Math.random().toString(36).substr(2, 5);
-            return `koeln-${today}-${random}`;
-        } catch (error) {
-            return 'koeln-tour-' + Math.random().toString(36).substr(2, 8);
-        }
+    function generateFixedTourId() {
+        // Generate a predictable daily tour ID - same for everyone on the same day
+        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+        return `koeln-tour-${today}`;
     }
 
     function updateTourDisplay() {
@@ -1408,6 +1421,63 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             window.open(whatsappUrl, '_blank');
         } catch (error) {
             console.error('Error sharing via WhatsApp:', error);
+        }
+    }
+
+    function setManualTourId() {
+        try {
+            const input = document.getElementById('manualTourId');
+            const newTourId = input.value.trim();
+            
+            if (newTourId && newTourId.length >= 3) {
+                // Stop current sync listeners
+                if (tourApp.state.syncListeners) {
+                    tourApp.state.syncListeners.forEach(unsubscribe => {
+                        if (typeof unsubscribe === 'function') unsubscribe();
+                    });
+                    tourApp.state.syncListeners = [];
+                }
+                
+                // Set new tour ID
+                tourApp.state.tourId = newTourId;
+                localStorage.setItem('tourId', newTourId);
+                
+                // Update UI
+                updateTourDisplay();
+                generateShareUrl();
+                
+                // Restart real-time sync with new tour ID
+                if (tourApp.state.isFirebaseConnected) {
+                    enableRealtimeSync();
+                }
+                
+                // Clear and reload chat
+                const chatContainer = document.getElementById('chatContainer');
+                if (chatContainer) {
+                    chatContainer.innerHTML = `
+                        <div class="chat-message system">
+                            <strong>System:</strong> Tour-ID geändert zu "${newTourId}" 🎯<br>
+                            <small>Chat wird neu synchronisiert...</small>
+                            <span class="timestamp">jetzt</span>
+                        </div>
+                    `;
+                }
+                
+                // Reload chat history
+                setTimeout(() => loadChatHistory(), 1000);
+                
+                showNotification(`Tour-ID geändert zu: ${newTourId} 🎯`);
+                addSystemMessage(`${tourApp.state.userName} hat die Tour-ID zu "${newTourId}" geändert!`);
+                
+                input.value = '';
+                
+                console.log('🎯 Manual Tour ID set:', newTourId);
+            } else {
+                showNotification('Bitte gib eine gültige Tour-ID ein (mindestens 3 Zeichen)', 'error');
+            }
+        } catch (error) {
+            console.error('Error setting manual tour ID:', error);
+            showNotification('Fehler beim Setzen der Tour-ID', 'error');
         }
     }
 
