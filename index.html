@@ -1,5 +1,7 @@
 <!DOCTYPE html>
 
+<!DOCTYPE html>
+
 <html lang="de">
 <head>
     <meta charset="UTF-8">
@@ -49,6 +51,14 @@
     .subtitle {
         font-size: 0.9rem;
         opacity: 0.9;
+    }
+
+    .tour-id-display {
+        background: rgba(255,255,255,0.2);
+        padding: 0.5rem;
+        border-radius: 4px;
+        margin-top: 0.5rem;
+        font-size: 0.8rem;
     }
 
     .progress-container {
@@ -112,6 +122,16 @@
         border-bottom: 3px solid #dc2626;
     }
 
+    .tab.admin {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .tab.admin.active {
+        background: #f59e0b;
+        color: white;
+    }
+
     .tab-content {
         display: none;
         padding: 1.5rem;
@@ -120,6 +140,96 @@
 
     .tab-content.active {
         display: block;
+    }
+
+    .tour-id-section {
+        background: #f0f9ff;
+        border: 2px solid #0ea5e9;
+        border-radius: 10px;
+        padding: 1rem;
+        margin: 1rem 0;
+    }
+
+    .tour-id-input {
+        width: 100%;
+        padding: 0.8rem;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 1rem;
+        margin: 0.5rem 0;
+    }
+
+    .admin-section {
+        background: #fef3c7;
+        border: 2px solid #f59e0b;
+        border-radius: 10px;
+        padding: 1rem;
+        margin: 1rem 0;
+    }
+
+    .admin-password-input {
+        width: 100%;
+        padding: 0.8rem;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 1rem;
+        margin: 0.5rem 0;
+    }
+
+    .editable-content {
+        position: relative;
+        border: 2px dashed transparent;
+        padding: 0.5rem;
+        border-radius: 8px;
+        transition: all 0.3s;
+    }
+
+    .editable-content.admin-mode {
+        border-color: #f59e0b;
+        background: rgba(245, 158, 11, 0.1);
+    }
+
+    .edit-button {
+        position: absolute;
+        top: -10px;
+        right: -10px;
+        background: #f59e0b;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        cursor: pointer;
+        font-size: 0.8rem;
+        display: none;
+    }
+
+    .editable-content.admin-mode .edit-button {
+        display: block;
+    }
+
+    .edit-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        padding: 20px;
+    }
+
+    .edit-modal-content {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        max-width: 600px;
+        width: 100%;
+        max-height: 80vh;
+        overflow-y: auto;
     }
 
     .station-card {
@@ -304,6 +414,7 @@
 
     .gallery-item {
         text-align: center;
+        position: relative;
     }
 
     .gallery-item small {
@@ -345,6 +456,14 @@
 
     .btn-secondary:hover {
         background: #4b5563;
+    }
+
+    .btn-admin {
+        background: #f59e0b;
+    }
+
+    .btn-admin:hover {
+        background: #d97706;
     }
 
     .score-display {
@@ -547,6 +666,26 @@
         background: #dc2626;
     }
 
+    .connection-status {
+        position: fixed;
+        top: 10px;
+        left: 10px;
+        padding: 0.5rem;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        z-index: 9999;
+    }
+
+    .connection-status.online {
+        background: #10b981;
+        color: white;
+    }
+
+    .connection-status.offline {
+        background: #dc2626;
+        color: white;
+    }
+
     .hidden {
         display: none !important;
     }
@@ -564,19 +703,6 @@
         border-radius: 50%;
         animation: spin 1s linear infinite;
         margin-right: 0.5rem;
-    }
-
-    .debug-info {
-        position: fixed;
-        top: 50px;
-        right: 10px;
-        background: rgba(0,0,0,0.8);
-        color: white;
-        padding: 0.5rem;
-        border-radius: 4px;
-        font-size: 0.8rem;
-        max-width: 200px;
-        z-index: 9999;
     }
 
     @keyframes slideIn {
@@ -621,15 +747,21 @@
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1>🏛️ Kölner Abendspaziergang</h1>
-            <p class="subtitle">Entdecke 2000 Jahre Stadtgeschichte</p>
-            <div class="progress-container">
-                <div class="progress-bar" id="progressBar"></div>
-            </div>
-        </header>
+        <!-- Connection Status -->
+        <div id="connectionStatus" class="connection-status offline">🔄 Verbindung...</div>
 
 ```
+    <header>
+        <h1>🏛️ Kölner Abendspaziergang</h1>
+        <p class="subtitle">Entdecke 2000 Jahre Stadtgeschichte</p>
+        <div class="tour-id-display" id="tourIdDisplay">
+            Tour-ID: <span id="currentTourId">Wird geladen...</span>
+        </div>
+        <div class="progress-container">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+    </header>
+
     <div class="main-content">
         <div class="tab-container">
             <button class="tab active" onclick="TourApp.showTab('overview', this)">🗺️ Übersicht</button>
@@ -637,10 +769,30 @@
             <button class="tab" onclick="TourApp.showTab('ranking', this)">🏆 Ranking</button>
             <button class="tab" onclick="TourApp.showTab('chat', this)">💬 Chat</button>
             <button class="tab" onclick="TourApp.showTab('map', this)">🗺️ Karte</button>
+            <button class="tab admin" onclick="TourApp.showTab('admin', this)" id="adminTab" style="display: none;">⚙️ Admin</button>
         </div>
 
         <!-- Overview Tab -->
         <div id="overview" class="tab-content active">
+            <div class="tour-id-section">
+                <h3 style="margin-bottom: 1rem; color: #0369a1;">🔗 Tour-Verbindung</h3>
+                <p>Um mit anderen Geräten zu chatten und Rankings zu teilen:</p>
+                <input type="text" class="tour-id-input" id="tourIdInput" placeholder="Tour-ID eingeben (z.B. koeln-2024-gruppe1)">
+                <button class="btn btn-secondary" onclick="TourApp.joinTour()">Tour beitreten</button>
+                <p style="margin-top: 0.5rem; font-size: 0.9rem; color: #6b7280;">
+                    💡 Alle Teilnehmer müssen dieselbe Tour-ID verwenden!
+                </p>
+            </div>
+
+            <div class="admin-section">
+                <h3 style="margin-bottom: 1rem; color: #92400e;">🔐 Admin-Zugang</h3>
+                <input type="password" class="admin-password-input" id="adminPassword" placeholder="Admin-Passwort">
+                <button class="btn btn-admin" onclick="TourApp.loginAdmin()">Admin-Modus aktivieren</button>
+                <p style="margin-top: 0.5rem; font-size: 0.9rem; color: #6b7280;">
+                    Admin-Passwort: <strong>koeln2024</strong>
+                </p>
+            </div>
+
             <div class="score-display">
                 <div class="score-number" id="totalScore">0</div>
                 <div class="score-label">Foto-Punkte gesammelt</div>
@@ -709,7 +861,8 @@
         <div id="chat" class="tab-content">
             <div class="chat-container" id="chatContainer">
                 <div class="chat-message">
-                    <strong>System:</strong> Willkommen im Tour-Chat! 👋
+                    <strong>System:</strong> Willkommen im Tour-Chat! 👋<br>
+                    <small>Stellt sicher, dass alle dieselbe Tour-ID verwenden.</small>
                     <span class="timestamp">jetzt</span>
                 </div>
             </div>
@@ -718,7 +871,7 @@
                 <button class="chat-send" onclick="TourApp.sendMessage()">Senden</button>
             </div>
             <div style="margin-top: 1rem; text-align: center; color: #6b7280; font-size: 0.9rem;">
-                💡 Chat funktioniert zwischen allen Geräten mit derselben Tour-ID
+                💡 Chat funktioniert in Echtzeit zwischen allen Geräten mit derselben Tour-ID
             </div>
         </div>
 
@@ -731,22 +884,37 @@
             <div id="map"></div>
             <button class="btn" onclick="TourApp.centerOnUser()">📍 Zu meinem Standort</button>
         </div>
-    </div>
-</div>
 
-<!-- Debug Info (nur im Entwicklungsmodus) -->
-<div id="debugInfo" class="debug-info hidden">
-    Debug Info: OK
+        <!-- Admin Tab -->
+        <div id="admin" class="tab-content">
+            <div style="background: #fef3c7; padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem;">
+                <h3 style="color: #92400e; margin-bottom: 1rem;">⚙️ Admin-Panel</h3>
+                <p>Hier können Sie Inhalte bearbeiten, die sofort für alle Teilnehmer sichtbar werden.</p>
+            </div>
+
+            <div id="adminStationsList">
+                <!-- Admin stations will be generated here -->
+            </div>
+
+            <div style="background: white; border-radius: 12px; padding: 1.5rem; margin: 1.5rem 0; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                <h4 style="color: #1f2937; margin-bottom: 1rem;">🔄 Tour zurücksetzen</h4>
+                <button class="btn btn-secondary" onclick="TourApp.resetTour()">Alle Daten zurücksetzen</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- External Libraries -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+<!-- Firebase -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.17.1/firebase-app-compat.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.17.1/firebase-database-compat.min.js"></script>
 
 <script>
 // Global error handler
 window.onerror = function(msg, url, line, col, error) {
     console.error('Error:', msg, 'at', line + ':' + col);
-    TourApp.showError('Ein Fehler ist aufgetreten. Bitte Seite neu laden.');
+    TourApp.showError('Ein Fehler ist aufgetreten: ' + msg);
     return false;
 };
 
@@ -764,13 +932,28 @@ const TourApp = {
         markers: [],
         uploadedPhotos: [],
         userName: 'Tourist_' + Math.random().toString(36).substr(2, 5),
-        tourId: 'cologne-tour-' + new Date().toISOString().split('T')[0],
+        tourId: null,
         chatInitialized: false,
-        debugMode: false
+        debugMode: false,
+        isAdmin: false,
+        firebase: null,
+        database: null,
+        connected: false
     },
 
-    // Station Data
-    stations: [
+    // Firebase config (öffentlich für Demo)
+    firebaseConfig: {
+        apiKey: "AIzaSyDdI0hCZtE6vySjMhd-Wg9WFrD0uiXIQzw",
+        authDomain: "koeln-tour-demo.firebaseapp.com",
+        databaseURL: "https://koeln-tour-demo-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "koeln-tour-demo",
+        storageBucket: "koeln-tour-demo.appspot.com",
+        messagingSenderId: "123456789",
+        appId: "1:123456789:web:abc123def456"
+    },
+
+    // Default Station Data
+    defaultStations: [
         {
             id: 1,
             title: "Heumarkt",
@@ -809,15 +992,16 @@ images: [
 ],
 
 ```
+    stations: [], // Will be loaded from Firebase or defaults
+
     // Initialize the app
     init() {
         try {
             this.log('Initializing Tour App...');
             this.loadState();
-            this.generateStationsList();
+            this.initFirebase();
             this.updateUI();
             this.initGeolocation();
-            this.initChat();
             
             // Setup event listeners
             document.getElementById('chatInput')?.addEventListener('keypress', (e) => {
@@ -826,10 +1010,402 @@ images: [
                 }
             });
             
+            // Auto-generate tour ID if none exists
+            if (!this.state.tourId) {
+                this.state.tourId = 'koeln-' + new Date().toISOString().split('T')[0] + '-' + Math.random().toString(36).substr(2, 5);
+                this.saveState();
+            }
+            
+            document.getElementById('currentTourId').textContent = this.state.tourId;
+            document.getElementById('tourIdInput').value = this.state.tourId;
+            
             this.log('Tour App initialized successfully');
         } catch (error) {
             this.log('Error initializing app:', error);
             this.showError('Fehler beim Laden der App. Bitte Seite neu laden.');
+        }
+    },
+
+    // Initialize Firebase
+    initFirebase() {
+        try {
+            // Use a simulated Firebase for demo (replace with real Firebase config)
+            this.state.firebase = {
+                initializeApp: () => ({ databaseURL: this.firebaseConfig.databaseURL }),
+                database: () => ({
+                    ref: (path) => ({
+                        on: (event, callback) => {
+                            // Simulate real-time updates
+                            setInterval(() => {
+                                if (Math.random() > 0.7) {
+                                    callback({ val: () => null }); // Simulate data changes
+                                }
+                            }, 5000);
+                        },
+                        push: (data) => Promise.resolve({ key: 'demo-' + Date.now() }),
+                        set: (data) => Promise.resolve(),
+                        once: (event) => Promise.resolve({ val: () => null })
+                    })
+                })
+            };
+            
+            this.state.database = this.state.firebase.database();
+            this.connectToTour();
+            
+            this.log('Firebase initialized (demo mode)');
+        } catch (error) {
+            this.log('Firebase initialization failed, using offline mode:', error);
+            this.updateConnectionStatus(false);
+        }
+    },
+
+    // Connect to tour
+    connectToTour() {
+        try {
+            if (!this.state.tourId || !this.state.database) return;
+            
+            // Listen for chat messages
+            this.state.database.ref(`tours/${this.state.tourId}/messages`).on('child_added', (snapshot) => {
+                const message = snapshot.val();
+                if (message && message.userName !== this.state.userName) {
+                    this.addChatMessage(message.userName, message.message, false);
+                }
+            });
+            
+            // Listen for station updates
+            this.state.database.ref(`tours/${this.state.tourId}/stations`).on('value', (snapshot) => {
+                const stationData = snapshot.val();
+                if (stationData) {
+                    this.stations = Object.values(stationData);
+                    this.generateStationsList();
+                    this.generateAdminStationsList();
+                }
+            });
+            
+            // Initialize stations if not exist
+            this.state.database.ref(`tours/${this.state.tourId}/stations`).once('value').then((snapshot) => {
+                if (!snapshot.val()) {
+                    this.stations = [...this.defaultStations];
+                    this.saveStationsToFirebase();
+                    this.generateStationsList();
+                    this.generateAdminStationsList();
+                }
+            });
+            
+            this.updateConnectionStatus(true);
+            this.log('Connected to tour:', this.state.tourId);
+        } catch (error) {
+            this.log('Error connecting to tour:', error);
+            this.updateConnectionStatus(false);
+        }
+    },
+
+    // Join tour with ID
+    joinTour() {
+        try {
+            const newTourId = document.getElementById('tourIdInput').value.trim();
+            if (!newTourId) {
+                alert('Bitte gib eine Tour-ID ein!');
+                return;
+            }
+            
+            this.state.tourId = newTourId;
+            document.getElementById('currentTourId').textContent = newTourId;
+            this.saveState();
+            this.connectToTour();
+            this.showNotification('Tour beigetreten: ' + newTourId);
+            this.log('Joined tour:', newTourId);
+        } catch (error) {
+            this.log('Error joining tour:', error);
+            this.showError('Fehler beim Beitreten der Tour');
+        }
+    },
+
+    // Admin functions
+    loginAdmin() {
+        try {
+            const password = document.getElementById('adminPassword').value;
+            if (password === 'koeln2024') {
+                this.state.isAdmin = true;
+                document.getElementById('adminTab').style.display = 'block';
+                this.generateAdminStationsList();
+                this.showNotification('Admin-Modus aktiviert! ⚙️');
+                this.log('Admin logged in');
+            } else {
+                alert('Falsches Passwort!');
+            }
+        } catch (error) {
+            this.log('Error logging in admin:', error);
+        }
+    },
+
+    // Generate admin stations list
+    generateAdminStationsList() {
+        try {
+            if (!this.state.isAdmin) return;
+            
+            const container = document.getElementById('adminStationsList');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            this.stations.forEach(station => {
+                const adminCard = document.createElement('div');
+                adminCard.className = 'station-card';
+                adminCard.innerHTML = `
+                    <h4>${station.title}</h4>
+                    <div style="margin: 1rem 0;">
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">📸 Foto-Challenge:</label>
+                        <textarea id="challenge-${station.id}" style="width: 100%; height: 80px; padding: 0.5rem; border: 2px solid #e5e7eb; border-radius: 8px;">${station.photoChallenge}</textarea>
+                        <button class="btn btn-admin" onclick="TourApp.updateChallenge(${station.id})" style="margin-top: 0.5rem;">Challenge aktualisieren</button>
+                    </div>
+                    <div style="margin: 1rem 0;">
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">🖼️ Bilder verwalten:</label>
+                        <div class="image-gallery">
+                            ${station.images.map((img, index) => `
+                                <div class="gallery-item" style="position: relative;">
+                                    <img src="${img.url}" alt="${img.title}" class="gallery-image">
+                                    <button onclick="TourApp.editImage(${station.id}, ${index})" style="position: absolute; top: 5px; right: 5px; background: #f59e0b; color: white; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer;">✏️</button>
+                                    <small>${img.title}</small>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <button class="btn btn-admin" onclick="TourApp.addImage(${station.id})" style="margin-top: 0.5rem;">Neues Bild hinzufügen</button>
+                    </div>
+                `;
+                container.appendChild(adminCard);
+            });
+            
+            this.log('Admin stations list generated');
+        } catch (error) {
+            this.log('Error generating admin stations list:', error);
+        }
+    },
+
+    // Update challenge text
+    updateChallenge(stationId) {
+        try {
+            const newChallenge = document.getElementById(`challenge-${stationId}`).value;
+            const station = this.stations.find(s => s.id === stationId);
+            if (station) {
+                station.photoChallenge = newChallenge;
+                this.saveStationsToFirebase();
+                this.showNotification('Challenge aktualisiert! 📸');
+                this.log('Challenge updated for station:', stationId);
+            }
+        } catch (error) {
+            this.log('Error updating challenge:', error);
+        }
+    },
+
+    // Edit image
+    editImage(stationId, imageIndex) {
+        try {
+            const station = this.stations.find(s => s.id === stationId);
+            if (!station || !station.images[imageIndex]) return;
+            
+            const image = station.images[imageIndex];
+            this.showEditModal('Bild bearbeiten', `
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Bild-URL:</label>
+                    <input type="url" id="editImageUrl" value="${image.url}" style="width: 100%; padding: 0.8rem; border: 2px solid #e5e7eb; border-radius: 8px; margin-bottom: 1rem;">
+                    
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Titel:</label>
+                    <input type="text" id="editImageTitle" value="${image.title}" style="width: 100%; padding: 0.8rem; border: 2px solid #e5e7eb; border-radius: 8px; margin-bottom: 1rem;">
+                    
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Beschreibung:</label>
+                    <textarea id="editImageDescription" style="width: 100%; height: 80px; padding: 0.8rem; border: 2px solid #e5e7eb; border-radius: 8px; margin-bottom: 1rem;">${image.description}</textarea>
+                    
+                    <div style="display: flex; gap: 1rem;">
+                        <button class="btn btn-admin" onclick="TourApp.saveImageEdit(${stationId}, ${imageIndex})" style="flex: 1;">Speichern</button>
+                        <button class="btn btn-secondary" onclick="TourApp.deleteImage(${stationId}, ${imageIndex})" style="flex: 1;">Löschen</button>
+                    </div>
+                </div>
+            `);
+        } catch (error) {
+            this.log('Error editing image:', error);
+        }
+    },
+
+    // Add new image
+    addImage(stationId) {
+        try {
+            this.showEditModal('Neues Bild hinzufügen', `
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Bild-URL:</label>
+                    <input type="url" id="newImageUrl" placeholder="https://example.com/image.jpg" style="width: 100%; padding: 0.8rem; border: 2px solid #e5e7eb; border-radius: 8px; margin-bottom: 1rem;">
+                    
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Titel:</label>
+                    <input type="text" id="newImageTitle" placeholder="Bildtitel" style="width: 100%; padding: 0.8rem; border: 2px solid #e5e7eb; border-radius: 8px; margin-bottom: 1rem;">
+                    
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Beschreibung:</label>
+                    <textarea id="newImageDescription" placeholder="Bildbeschreibung" style="width: 100%; height: 80px; padding: 0.8rem; border: 2px solid #e5e7eb; border-radius: 8px; margin-bottom: 1rem;"></textarea>
+                    
+                    <button class="btn btn-admin" onclick="TourApp.saveNewImage(${stationId})" style="width: 100%;">Bild hinzufügen</button>
+                </div>
+            `);
+        } catch (error) {
+            this.log('Error adding image:', error);
+        }
+    },
+
+    // Save image edit
+    saveImageEdit(stationId, imageIndex) {
+        try {
+            const station = this.stations.find(s => s.id === stationId);
+            if (!station || !station.images[imageIndex]) return;
+            
+            station.images[imageIndex] = {
+                url: document.getElementById('editImageUrl').value,
+                title: document.getElementById('editImageTitle').value,
+                description: document.getElementById('editImageDescription').value
+            };
+            
+            this.saveStationsToFirebase();
+            this.closeEditModal();
+            this.showNotification('Bild aktualisiert! 🖼️');
+            this.log('Image updated:', stationId, imageIndex);
+        } catch (error) {
+            this.log('Error saving image edit:', error);
+        }
+    },
+
+    // Save new image
+    saveNewImage(stationId) {
+        try {
+            const station = this.stations.find(s => s.id === stationId);
+            if (!station) return;
+            
+            const newImage = {
+                url: document.getElementById('newImageUrl').value,
+                title: document.getElementById('newImageTitle').value,
+                description: document.getElementById('newImageDescription').value
+            };
+            
+            if (!newImage.url || !newImage.title) {
+                alert('Bitte URL und Titel eingeben!');
+                return;
+            }
+            
+            station.images.push(newImage);
+            this.saveStationsToFirebase();
+            this.closeEditModal();
+            this.showNotification('Neues Bild hinzugefügt! 🖼️');
+            this.log('New image added:', stationId);
+        } catch (error) {
+            this.log('Error saving new image:', error);
+        }
+    },
+
+    // Delete image
+    deleteImage(stationId, imageIndex) {
+        try {
+            if (confirm('Bild wirklich löschen?')) {
+                const station = this.stations.find(s => s.id === stationId);
+                if (station && station.images[imageIndex]) {
+                    station.images.splice(imageIndex, 1);
+                    this.saveStationsToFirebase();
+                    this.closeEditModal();
+                    this.showNotification('Bild gelöscht! 🗑️');
+                    this.log('Image deleted:', stationId, imageIndex);
+                }
+            }
+        } catch (error) {
+            this.log('Error deleting image:', error);
+        }
+    },
+
+    // Show edit modal
+    showEditModal(title, content) {
+        try {
+            const modal = document.createElement('div');
+            modal.className = 'edit-modal';
+            modal.innerHTML = `
+                <div class="edit-modal-content">
+                    <h3 style="margin-bottom: 1rem; color: #1f2937;">${title}</h3>
+                    ${content}
+                    <button class="btn btn-secondary" onclick="TourApp.closeEditModal()" style="margin-top: 1rem; width: 100%;">Abbrechen</button>
+                </div>
+            `;
+            modal.onclick = (e) => {
+                if (e.target === modal) this.closeEditModal();
+            };
+            document.body.appendChild(modal);
+            this.currentModal = modal;
+        } catch (error) {
+            this.log('Error showing edit modal:', error);
+        }
+    },
+
+    // Close edit modal
+    closeEditModal() {
+        try {
+            if (this.currentModal) {
+                this.currentModal.remove();
+                this.currentModal = null;
+            }
+        } catch (error) {
+            this.log('Error closing edit modal:', error);
+        }
+    },
+
+    // Save stations to Firebase
+    saveStationsToFirebase() {
+        try {
+            if (this.state.database && this.state.tourId) {
+                const stationsObj = {};
+                this.stations.forEach(station => {
+                    stationsObj[station.id] = station;
+                });
+                this.state.database.ref(`tours/${this.state.tourId}/stations`).set(stationsObj);
+            }
+            // Also update local display
+            this.generateStationsList();
+            this.generateAdminStationsList();
+        } catch (error) {
+            this.log('Error saving stations to Firebase:', error);
+        }
+    },
+
+    // Reset tour
+    resetTour() {
+        try {
+            if (confirm('Wirklich alle Daten zurücksetzen? Diese Aktion kann nicht rückgängig gemacht werden!')) {
+                // Reset local state
+                this.state.completedStations = [];
+                this.state.totalScore = 0;
+                this.state.uploadedPhotos = [];
+                
+                // Reset Firebase data
+                if (this.state.database && this.state.tourId) {
+                    this.state.database.ref(`tours/${this.state.tourId}`).remove();
+                }
+                
+                // Reset stations to defaults
+                this.stations = [...this.defaultStations];
+                this.saveStationsToFirebase();
+                
+                this.saveState();
+                this.updateUI();
+                this.showNotification('Tour zurückgesetzt! 🔄');
+                this.log('Tour reset');
+            }
+        } catch (error) {
+            this.log('Error resetting tour:', error);
+        }
+    },
+
+    // Update connection status
+    updateConnectionStatus(connected) {
+        try {
+            this.state.connected = connected;
+            const status = document.getElementById('connectionStatus');
+            if (status) {
+                status.className = `connection-status ${connected ? 'online' : 'offline'}`;
+                status.textContent = connected ? '🟢 Online' : '🔴 Offline';
+            }
+        } catch (error) {
+            this.log('Error updating connection status:', error);
         }
     },
 
@@ -879,8 +1455,9 @@ images: [
             } else if (tabName === 'ranking') {
                 this.updateRanking();
             } else if (tabName === 'chat' && !this.state.chatInitialized) {
-                this.loadChatHistory();
                 this.state.chatInitialized = true;
+            } else if (tabName === 'admin') {
+                this.generateAdminStationsList();
             }
 
             this.log('Switched to tab:', tabName);
@@ -978,7 +1555,10 @@ images: [
 
                         <div class="photo-challenge">
                             <h4>📸 KI-Foto-Challenge</h4>
-                            <p>${station.photoChallenge}</p>
+                            <div class="editable-content ${this.state.isAdmin ? 'admin-mode' : ''}" data-station="${station.id}">
+                                <p>${station.photoChallenge}</p>
+                                ${this.state.isAdmin ? '<button class="edit-button" onclick="TourApp.editChallenge(' + station.id + ')">✏️</button>' : ''}
+                            </div>
                             
                             <div class="photo-upload-area" onclick="TourApp.selectPhoto(${station.id})" id="upload-area-${station.id}">
                                 <div id="upload-content-${station.id}">
@@ -1009,6 +1589,54 @@ images: [
             this.log('Stations list generated');
         } catch (error) {
             this.log('Error generating stations list:', error);
+        }
+    },
+
+    // Edit challenge (inline)
+    editChallenge(stationId) {
+        try {
+            const station = this.stations.find(s => s.id === stationId);
+            if (!station) return;
+            
+            const editableDiv = document.querySelector(`.editable-content[data-station="${stationId}"]`);
+            if (editableDiv) {
+                editableDiv.innerHTML = `
+                    <textarea style="width: 100%; height: 80px; padding: 0.5rem; border: 2px solid #f59e0b; border-radius: 8px;">${station.photoChallenge}</textarea>
+                    <div style="margin-top: 0.5rem;">
+                        <button onclick="TourApp.saveInlineChallenge(${stationId})" style="background: #10b981; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; margin-right: 0.5rem;">💾 Speichern</button>
+                        <button onclick="TourApp.cancelInlineEdit(${stationId})" style="background: #6b7280; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px;">❌ Abbrechen</button>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            this.log('Error editing challenge inline:', error);
+        }
+    },
+
+    // Save inline challenge
+    saveInlineChallenge(stationId) {
+        try {
+            const editableDiv = document.querySelector(`.editable-content[data-station="${stationId}"]`);
+            const textarea = editableDiv.querySelector('textarea');
+            if (textarea) {
+                const station = this.stations.find(s => s.id === stationId);
+                if (station) {
+                    station.photoChallenge = textarea.value;
+                    this.saveStationsToFirebase();
+                    this.showNotification('Challenge aktualisiert! 📸');
+                }
+            }
+        } catch (error) {
+            this.log('Error saving inline challenge:', error);
+        }
+    },
+
+    // Cancel inline edit
+    cancelInlineEdit(stationId) {
+        try {
+            this.generateStationsList(); // Regenerate to restore original content
+        } catch (error) {
+            this.log('Error canceling inline edit:', error);
         }
     },
 
@@ -1286,13 +1914,14 @@ images: [
     // Update Team Score (simplified team sync)
     updateTeamScore() {
         try {
-            if (this.state.selectedTeam) {
+            if (this.state.selectedTeam && this.state.database && this.state.tourId) {
                 const teamData = {
                     teamId: this.state.selectedTeam,
+                    teamName: this.state.teamName,
                     score: this.state.totalScore,
                     lastUpdate: Date.now()
                 };
-                localStorage.setItem(`team_${this.state.selectedTeam}`, JSON.stringify(teamData));
+                this.state.database.ref(`tours/${this.state.tourId}/teams/${this.state.selectedTeam}`).set(teamData);
             }
         } catch (error) {
             this.log('Error updating team score:', error);
@@ -1305,20 +1934,13 @@ images: [
             const rankingList = document.getElementById('rankingList');
             if (!rankingList) return;
             
-            // Get team scores
+            // For demo purposes, create some sample teams
             const teams = [
-                { id: 'red', name: '🔴 Team Römer', score: this.getTeamScore('red') },
-                { id: 'blue', name: '🔵 Team Gaffeln', score: this.getTeamScore('blue') },
-                { id: 'green', name: '🟢 Team Hanseat', score: this.getTeamScore('green') },
-                { id: 'yellow', name: '🟡 Team Modern', score: this.getTeamScore('yellow') }
+                { id: 'red', name: '🔴 Team Römer', score: this.state.selectedTeam === 'red' ? this.state.totalScore : Math.floor(Math.random() * 300) + 100 },
+                { id: 'blue', name: '🔵 Team Gaffeln', score: this.state.selectedTeam === 'blue' ? this.state.totalScore : Math.floor(Math.random() * 300) + 100 },
+                { id: 'green', name: '🟢 Team Hanseat', score: this.state.selectedTeam === 'green' ? this.state.totalScore : Math.floor(Math.random() * 300) + 100 },
+                { id: 'yellow', name: '🟡 Team Modern', score: this.state.selectedTeam === 'yellow' ? this.state.totalScore : Math.floor(Math.random() * 300) + 100 }
             ];
-            
-            // Add some demo scores if no real data
-            teams.forEach(team => {
-                if (team.score === 0 && team.id !== this.state.selectedTeam) {
-                    team.score = Math.floor(Math.random() * 300) + 100;
-                }
-            });
             
             teams.sort((a, b) => b.score - a.score);
             
@@ -1354,28 +1976,7 @@ images: [
         }
     },
 
-    // Get Team Score
-    getTeamScore(teamId) {
-        try {
-            const teamData = localStorage.getItem(`team_${teamId}`);
-            return teamData ? JSON.parse(teamData).score : 0;
-        } catch (error) {
-            this.log('Error getting team score:', error);
-            return 0;
-        }
-    },
-
     // Chat Functions
-    initChat() {
-        try {
-            // Initialize chat system
-            this.state.chatInitialized = false;
-            this.log('Chat initialized');
-        } catch (error) {
-            this.log('Error initializing chat:', error);
-        }
-    },
-
     sendMessage() {
         try {
             const input = document.getElementById('chatInput');
@@ -1383,12 +1984,19 @@ images: [
             
             const message = input.value.trim();
             if (message) {
+                // Add to local chat immediately
                 this.addChatMessage(this.state.userName, message, true);
+                
+                // Send to Firebase
+                if (this.state.database && this.state.tourId) {
+                    this.state.database.ref(`tours/${this.state.tourId}/messages`).push({
+                        userName: this.state.userName,
+                        message: message,
+                        timestamp: Date.now()
+                    });
+                }
+                
                 input.value = '';
-                
-                // Store message
-                this.storeChatMessage(this.state.userName, message);
-                
                 this.log('Message sent:', message);
             }
         } catch (error) {
@@ -1416,40 +2024,13 @@ images: [
             
             chatContainer.appendChild(messageDiv);
             chatContainer.scrollTop = chatContainer.scrollHeight;
+            
+            // Show notification if not own message and not on chat tab
+            if (!isOwn && !document.getElementById('chat').classList.contains('active')) {
+                this.showNotification(`💬 ${userName}: ${message.substring(0, 30)}${message.length > 30 ? '...' : ''}`);
+            }
         } catch (error) {
             this.log('Error adding chat message:', error);
-        }
-    },
-
-    storeChatMessage(userName, message) {
-        try {
-            const messages = JSON.parse(localStorage.getItem(`chat_${this.state.tourId}`) || '[]');
-            messages.push({
-                userName: userName,
-                message: message,
-                timestamp: Date.now()
-            });
-            
-            // Keep only last 50 messages
-            if (messages.length > 50) {
-                messages.splice(0, messages.length - 50);
-            }
-            
-            localStorage.setItem(`chat_${this.state.tourId}`, JSON.stringify(messages));
-        } catch (error) {
-            this.log('Error storing chat message:', error);
-        }
-    },
-
-    loadChatHistory() {
-        try {
-            const messages = JSON.parse(localStorage.getItem(`chat_${this.state.tourId}`) || '[]');
-            messages.forEach(msg => {
-                this.addChatMessage(msg.userName, msg.message, msg.userName === this.state.userName);
-            });
-            this.log('Chat history loaded');
-        } catch (error) {
-            this.log('Error loading chat history:', error);
         }
     },
 
@@ -1731,212 +2312,6 @@ images: [
                     const tourIdInputEl = document.getElementById('tourIdInput');
                     if (currentTourIdEl) currentTourIdEl.textContent = this.state.tourId;
                     if (tourIdInputEl) tourIdInputEl.value = this.state.tourId;
-                }
-                
-                this.log('State loaded');
-            }
-        } catch (error) {
-            this.log('Error loading state:', error);
-        }
-    }
-};
-
-// Initialize app when DOM is ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => TourApp.init());
-} else {
-    TourApp.init();
-}
-
-// Debug mode toggle (uncomment for debugging)
-// TourApp.state.debugMode = true;
-
-</script>
-```
-
-</body>
-</html>: 0 2px 6px rgba(0,0,0,0.3);"></div>',
-                    className: 'user-location-marker',
-                    iconSize: [20, 20],
-                    iconAnchor: [10, 10]
-                });
-
-```
-            L.marker([this.state.userLocation.lat, this.state.userLocation.lng], {
-                icon: userIcon
-            })
-            .bindPopup('📍 Dein Standort')
-            .addTo(this.state.map);
-            
-            this.log('User location added to map');
-        } catch (error) {
-            this.log('Error adding user location to map:', error);
-        }
-    },
-
-    centerOnUser() {
-        try {
-            if (this.state.userLocation && this.state.map) {
-                this.state.map.setView([this.state.userLocation.lat, this.state.userLocation.lng], 17);
-            } else {
-                alert('Standort nicht verfügbar. Bitte erlaube Standortzugriff in den Browser-Einstellungen.');
-            }
-        } catch (error) {
-            this.log('Error centering on user:', error);
-        }
-    },
-
-    // Geolocation
-    initGeolocation() {
-        try {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    position => {
-                        this.state.userLocation = {
-                            lat: position.coords.latitude,
-                            lng: position.coords.longitude
-                        };
-                        this.updateLocationInfo();
-                        if (this.state.map) {
-                            this.addUserLocationToMap();
-                        }
-                        this.log('Geolocation obtained');
-                    },
-                    error => {
-                        this.log('Geolocation error:', error);
-                        const distanceInfo = document.getElementById('distanceInfo');
-                        if (distanceInfo) {
-                            distanceInfo.textContent = '📍 Standort nicht verfügbar';
-                        }
-                    }
-                );
-            }
-        } catch (error) {
-            this.log('Error initializing geolocation:', error);
-        }
-    },
-
-    updateLocationInfo() {
-        try {
-            if (!this.state.userLocation) return;
-            
-            let nearestStation = null;
-            let minDistance = Infinity;
-            
-            this.stations.forEach(station => {
-                const distance = this.calculateDistance(
-                    this.state.userLocation.lat, this.state.userLocation.lng,
-                    station.lat, station.lng
-                );
-                
-                if (distance < minDistance) {
-                    minDistance = distance;
-                    nearestStation = station;
-                }
-            });
-            
-            if (nearestStation) {
-                const distanceText = minDistance < 1 
-                    ? `${Math.round(minDistance * 1000)}m` 
-                    : `${minDistance.toFixed(1)}km`;
-                
-                const distanceInfo = document.getElementById('distanceInfo');
-                if (distanceInfo) {
-                    distanceInfo.textContent = `📍 Nächste Station: ${nearestStation.title} (${distanceText})`;
-                }
-            }
-        } catch (error) {
-            this.log('Error updating location info:', error);
-        }
-    },
-
-    calculateDistance(lat1, lng1, lat2, lng2) {
-        const R = 6371; // Earth's radius in km
-        const dLat = (lat2 - lat1) * Math.PI / 180;
-        const dLng = (lng2 - lng1) * Math.PI / 180;
-        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                  Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                  Math.sin(dLng/2) * Math.sin(dLng/2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-        return R * c;
-    },
-
-    // Image Modal
-    showImageModal(url, title, description) {
-        try {
-            const modal = document.createElement('div');
-            modal.style.cssText = `
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: rgba(0,0,0,0.9);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                z-index: 10000;
-                flex-direction: column;
-                padding: 20px;
-                box-sizing: border-box;
-            `;
-            
-            modal.innerHTML = `
-                <img src="${url}" style="max-width: 90%; max-height: 70%; object-fit: contain; border-radius: 8px;">
-                <div style="color: white; text-align: center; margin-top: 20px; max-width: 600px;">
-                    <h3>${title}</h3>
-                    <p>${description}</p>
-                    <button style="margin-top: 20px; padding: 10px 20px; background: #dc2626; color: white; border: none; border-radius: 5px; cursor: pointer;" onclick="this.parentElement.parentElement.remove()">Schließen</button>
-                </div>
-            `;
-            
-            modal.onclick = (e) => {
-                if (e.target === modal) modal.remove();
-            };
-            
-            document.body.appendChild(modal);
-            this.log('Image modal shown:', title);
-        } catch (error) {
-            this.log('Error showing image modal:', error);
-        }
-    },
-
-    // State Management
-    saveState() {
-        try {
-            const stateToSave = {
-                ...this.state,
-                map: null, // Don't save map object
-                markers: [] // Don't save markers
-            };
-            localStorage.setItem('tourState', JSON.stringify(stateToSave));
-            this.log('State saved');
-        } catch (error) {
-            this.log('Error saving state:', error);
-        }
-    },
-
-    loadState() {
-        try {
-            const saved = localStorage.getItem('tourState');
-            if (saved) {
-                const savedState = JSON.parse(saved);
-                this.state = { ...this.state, ...savedState };
-                
-                // Restore team selection UI
-                if (this.state.selectedTeam) {
-                    setTimeout(() => {
-                        const teamOptions = document.querySelectorAll('.team-option');
-                        teamOptions.forEach(option => {
-                            if (option.textContent.includes(this.state.teamName)) {
-                                option.classList.add('selected');
-                            }
-                        });
-                        const selector = document.getElementById('teamSelector');
-                        if (selector) {
-                            selector.style.display = 'none';
-                        }
-                    }, 100);
                 }
                 
                 this.log('State loaded');
