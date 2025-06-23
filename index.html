@@ -1041,8 +1041,8 @@ Das "Stapelrecht" von 1259 bis 1804 war ein 545 Jahre gültiges Handelsprivileg.
                     { title: "Rheinufer", description: "Blick auf den historischen Handelsweg", url: "" }
                 ],
                 audio: [
-                    { title: "Heumarkt Atmosphäre", description: "Originalaufnahme vom historischen Platz", url: "", type: "file" },
-                    { title: "Geschichte Audio-Guide", description: "Gesprochene Führung zur Stadtgeschichte", url: "", type: "file" }
+                    { title: "Heumarkt Atmosphäre", description: "Originalaufnahme vom historischen Platz", url: "", type: "audio" },
+                    { title: "Geschichte Audio-Guide", description: "Gesprochene Führung zur Stadtgeschichte", url: "", type: "podcast" }
                 ]
             },
             {
@@ -1063,8 +1063,8 @@ Erst die Romantik des 19. Jahrhunderts und preußisches Geld vollendeten den Dom
                     { title: "Dom bei Nacht", description: "Beleuchtetes Wahrzeichen", url: "" }
                 ],
                 audio: [
-                    { title: "Domglocken", description: "Originalaufnahme der berühmten Domglocken", url: "", type: "file" },
-                    { title: "Audio-Guide Dom", description: "Gesprochene Führung durch die Geschichte", url: "", type: "file" }
+                    { title: "Domglocken", description: "Originalaufnahme der berühmten Domglocken", url: "", type: "youtube" },
+                    { title: "Audio-Guide Dom", description: "Gesprochene Führung durch die Geschichte", url: "", type: "podcast" }
                 ]
             },
             {
@@ -1085,8 +1085,8 @@ Die Altstadt erzählt eine der größten deutschen Liebesgeschichten: Jan ist ei
                     { title: "Historisches Rathaus", description: "Gotisches Bauwerk", url: "" }
                 ],
                 audio: [
-                    { title: "Altstadt Atmosphäre", description: "Straßengeräusche der historischen Altstadt", url: "", type: "file" },
-                    { title: "Jan und Griet", description: "Die Liebesgeschichte als Hörspiel", url: "", type: "file" }
+                    { title: "Altstadt Atmosphäre", description: "Straßengeräusche der historischen Altstadt", url: "", type: "soundcloud" },
+                    { title: "Jan und Griet", description: "Die Liebesgeschichte als Hörspiel", url: "", type: "spotify" }
                 ]
             },
             {
@@ -1107,8 +1107,8 @@ Der Turm diente auch als Orientierungspunkt für Rheinschiffe und Händler - ein
                     { title: "Rheinufer", description: "Blick auf die Kirchen", url: "" }
                 ],
                 audio: [
-                    { title: "Kirchenglocken", description: "Glockengeläut von Groß St. Martin", url: "", type: "file" },
-                    { title: "Gregorianischer Gesang", description: "Historische Klostermusik", url: "", type: "file" }
+                    { title: "Kirchenglocken", description: "Glockengeläut von Groß St. Martin", url: "", type: "audio" },
+                    { title: "Gregorianischer Gesang", description: "Historische Klostermusik", url: "", type: "youtube" }
                 ]
             },
             {
@@ -1129,8 +1129,8 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     { title: "Rheinischer Markt", description: "Handelstradition", url: "" }
                 ],
                 audio: [
-                    { title: "Marktgeräusche", description: "Atmosphäre des historischen Marktes", url: "", type: "file" },
-                    { title: "Händlerrufe", description: "Nachstellung mittelalterlicher Marktrufe", url: "", type: "file" }
+                    { title: "Marktgeräusche", description: "Atmosphäre des historischen Marktes", url: "", type: "soundcloud" },
+                    { title: "Händlerrufe", description: "Nachstellung mittelalterlicher Marktrufe", url: "", type: "audio" }
                 ]
             }
         ]
@@ -1836,7 +1836,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
         }
     }
 
-    // Audio Management Functions - NEW!
+    // Audio Management Functions - ENHANCED IN-APP PLAY!
     function generateAudioEditor(station) {
         try {
             if (!station.audio || station.audio.length === 0) {
@@ -1868,42 +1868,40 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     <div style="margin-bottom: 0.5rem;">
                         <label style="display: block; font-size: 0.9rem; font-weight: bold; margin-bottom: 0.25rem;">Audio-Typ:</label>
                         <select onchange="updateAudioData(${station.id}, ${index}, 'type', this.value)" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; font-size: 0.9rem;">
-                            <option value="file" ${audio.type === 'file' ? 'selected' : ''}>📁 Audio-Datei (Upload)</option>
-                            <option value="youtube" ${audio.type === 'youtube' ? 'selected' : ''}>📺 YouTube</option>
-                            <option value="soundcloud" ${audio.type === 'soundcloud' ? 'selected' : ''}>☁️ SoundCloud</option>
-                            <option value="spotify" ${audio.type === 'spotify' ? 'selected' : ''}>🟢 Spotify</option>
-                            <option value="external" ${audio.type === 'external' ? 'selected' : ''}>🔗 Externe URL</option>
+                            <option value="youtube" ${audio.type === 'youtube' ? 'selected' : ''}>📺 YouTube (in-app)</option>
+                            <option value="soundcloud" ${audio.type === 'soundcloud' ? 'selected' : ''}>☁️ SoundCloud (in-app)</option>
+                            <option value="spotify" ${audio.type === 'spotify' ? 'selected' : ''}>🟢 Spotify (in-app)</option>
+                            <option value="audio" ${audio.type === 'audio' ? 'selected' : ''}>🎵 Audio-URL (in-app)</option>
+                            <option value="podcast" ${audio.type === 'podcast' ? 'selected' : ''}>🎙️ Podcast-URL (in-app)</option>
                         </select>
                     </div>
                     
                     <div style="margin-bottom: 0.5rem;">
                         <label style="display: block; font-size: 0.9rem; font-weight: bold; margin-bottom: 0.25rem;">
-                            ${audio.type === 'file' ? 'Audio-Datei hochladen:' : 
-                              audio.type === 'youtube' ? 'YouTube-URL:' :
+                            ${audio.type === 'youtube' ? 'YouTube-URL:' :
                               audio.type === 'soundcloud' ? 'SoundCloud-URL:' :
-                              audio.type === 'spotify' ? 'Spotify-URL:' : 'Audio-URL:'}
+                              audio.type === 'spotify' ? 'Spotify-URL:' :
+                              audio.type === 'podcast' ? 'Podcast-URL:' : 'Audio-URL:'}
                         </label>
-                        ${audio.type === 'file' ? `
-                            <input type="file" accept="audio/*" onchange="uploadAudioFile(${station.id}, ${index}, this)" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; font-size: 0.9rem;">
-                        ` : `
-                            <input type="url" value="${audio.url || ''}" onchange="updateAudioData(${station.id}, ${index}, 'url', this.value)" 
-                                   placeholder="${audio.type === 'youtube' ? 'https://www.youtube.com/watch?v=...' :
-                                                audio.type === 'soundcloud' ? 'https://soundcloud.com/...' :
-                                                audio.type === 'spotify' ? 'https://open.spotify.com/...' : 'https://example.com/audio.mp3'}" 
-                                   style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; font-size: 0.9rem;">
-                        `}
+                        <input type="url" value="${audio.url || ''}" onchange="updateAudioData(${station.id}, ${index}, 'url', this.value)" 
+                               placeholder="${audio.type === 'youtube' ? 'https://www.youtube.com/watch?v=...' :
+                                            audio.type === 'soundcloud' ? 'https://soundcloud.com/user/track-name' :
+                                            audio.type === 'spotify' ? 'https://open.spotify.com/track/...' :
+                                            audio.type === 'podcast' ? 'https://example.com/podcast.mp3' : 'https://example.com/audio.mp3'}" 
+                               style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; font-size: 0.9rem;">
                     </div>
                     
-                    ${audio.url && audio.type === 'file' ? `
+                    ${audio.url ? `
                         <div style="margin-top: 0.5rem;">
-                            <audio controls style="width: 100%;">
-                                <source src="${audio.url}" type="audio/mpeg">
-                                Ihr Browser unterstützt das Audio-Element nicht.
-                            </audio>
+                            <button onclick="previewAudio('${audio.url}', '${audio.type}', '${audio.title}')" style="background: #059669; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">
+                                ▶️ Vorschau (in-app)
+                            </button>
                         </div>
-                    ` : audio.url && audio.type !== 'file' ? `
+                    ` : ''}
+                    
+                    ${audio.url ? `
                         <div style="margin-top: 0.5rem; font-size: 0.8rem; color: #059669;">
-                            ✅ ${audio.type.charAt(0).toUpperCase() + audio.type.slice(1)}-Link gesetzt
+                            ✅ ${audio.type.charAt(0).toUpperCase() + audio.type.slice(1)}-Link gesetzt - wird in-app abgespielt
                         </div>
                     ` : ''}
                 </div>
@@ -1927,7 +1925,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 title: `Neue Audio-Datei ${station.audio.length + 1}`,
                 description: "Beschreibung der Audio-Datei",
                 url: "",
-                type: "file"
+                type: "youtube"
             });
             
             // Regenerate audio editor
@@ -1984,22 +1982,9 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
         }
     }
 
-    function uploadAudioFile(stationId, audioIndex, fileInput) {
-        try {
-            const file = fileInput.files[0];
-            if (!file) return;
-            
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const dataUrl = e.target.result;
-                updateAudioData(stationId, audioIndex, 'url', dataUrl);
-                showNotification('Audio-Datei hochgeladen! 🎵');
-            };
-            reader.readAsDataURL(file);
-        } catch (error) {
-            console.error('Error uploading audio file:', error);
-            showNotification('Fehler beim Hochladen der Audio-Datei', 'error');
-        }
+    // Preview function for admin
+    function previewAudio(url, type, title) {
+        playAudio(url, type, title);
     }
 
     // Image Management Functions - NEW!
@@ -2193,7 +2178,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     { title: "Bild 2", description: "Beschreibung des zweiten Bildes", url: "" }
                 ],
                 audio: [
-                    { title: "Audio 1", description: "Beschreibung der ersten Audio-Datei", url: "", type: "file" }
+                    { title: "Audio 1", description: "Beschreibung der ersten Audio-Datei", url: "", type: "youtube" }
                 ]
             };
             
@@ -2617,14 +2602,33 @@ Siehe Console (F12) für mehr Details!`);
                     </div>
                 `).join('');
                 
-                const audioHtml = station.audio && station.audio.length > 0 ? station.audio.map(audio => `
-                    <div class="gallery-item">
-                        <div class="gallery-image" onclick="playAudio('${audio.url}', '${audio.type}', '${audio.title}')" style="background: linear-gradient(135deg, #fef3c7 0%, #f59e0b 100%); color: white; font-size: 1.5rem;">
-                            🎵
+                const audioHtml = station.audio && station.audio.length > 0 ? station.audio.map(audio => {
+                    const typeIcons = {
+                        'youtube': '📺',
+                        'soundcloud': '☁️', 
+                        'spotify': '🟢',
+                        'audio': '🎵',
+                        'podcast': '🎙️'
+                    };
+                    const typeColors = {
+                        'youtube': 'linear-gradient(135deg, #ff0000 0%, #cc0000 100%)',
+                        'soundcloud': 'linear-gradient(135deg, #ff5500 0%, #ff3300 100%)',
+                        'spotify': 'linear-gradient(135deg, #1db954 0%, #1ed760 100%)',
+                        'audio': 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+                        'podcast': 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'
+                    };
+                    return `
+                        <div class="gallery-item">
+                            <div class="gallery-image" onclick="playAudio('${audio.url}', '${audio.type}', '${audio.title}')" 
+                                 style="background: ${typeColors[audio.type] || typeColors.audio}; color: white; font-size: 1.8rem; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; justify-content: center;"
+                                 onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 8px 25px rgba(0,0,0,0.2)'"
+                                 onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.1)'">
+                                ${typeIcons[audio.type] || '🎵'}
+                            </div>
+                            <small>${audio.title}</small>
                         </div>
-                        <small>${audio.title}</small>
-                    </div>
-                `).join('') : '';
+                    `;
+                }).join('') : '';
                 
                 stationCard.innerHTML = `
                     <div class="station-header">
@@ -3114,7 +3118,7 @@ Siehe Console (F12) für mehr Details!`);
                 return;
             }
             
-            // Create audio modal
+            // Create fullscreen audio modal
             const modal = document.createElement('div');
             modal.style.cssText = `
                 position: fixed;
@@ -3122,7 +3126,7 @@ Siehe Console (F12) für mehr Details!`);
                 left: 0;
                 width: 100%;
                 height: 100%;
-                background: rgba(0,0,0,0.9);
+                background: rgba(0,0,0,0.95);
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -3135,62 +3139,129 @@ Siehe Console (F12) für mehr Details!`);
             let audioContent = '';
             
             switch(type) {
-                case 'file':
-                    audioContent = `
-                        <div style="background: white; border-radius: 12px; padding: 2rem; max-width: 500px; width: 100%; text-align: center;">
-                            <h3 style="color: #1f2937; margin-bottom: 1rem;">🎵 ${title}</h3>
-                            <audio controls style="width: 100%; margin-bottom: 1rem;">
-                                <source src="${url}" type="audio/mpeg">
-                                Ihr Browser unterstützt das Audio-Element nicht.
-                            </audio>
-                        </div>
-                    `;
-                    break;
-                    
                 case 'youtube':
                     const youtubeId = extractYouTubeId(url);
                     if (youtubeId) {
                         audioContent = `
-                            <div style="background: white; border-radius: 12px; padding: 2rem; max-width: 600px; width: 100%; text-align: center;">
-                                <h3 style="color: #1f2937; margin-bottom: 1rem;">📺 ${title}</h3>
-                                <iframe width="100%" height="315" src="https://www.youtube.com/embed/${youtubeId}" 
-                                        frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                                        allowfullscreen style="border-radius: 8px;"></iframe>
+                            <div style="background: white; border-radius: 16px; padding: 1.5rem; max-width: 90vw; width: 100%; max-width: 800px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+                                <h3 style="color: #1f2937; margin-bottom: 1rem; font-size: 1.3rem;">📺 ${title}</h3>
+                                <div style="position: relative; width: 100%; height: 0; padding-bottom: 56.25%; margin-bottom: 1rem;">
+                                    <iframe 
+                                        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 12px;" 
+                                        src="https://www.youtube.com/embed/${youtubeId}?autoplay=1&rel=0" 
+                                        frameborder="0" 
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                                        allowfullscreen>
+                                    </iframe>
+                                </div>
+                                <p style="color: #6b7280; font-size: 0.9rem;">🎬 In-App YouTube Player</p>
                             </div>
                         `;
                     } else {
-                        audioContent = `<div style="color: white; text-align: center;"><h3>❌ Ungültige YouTube-URL</h3></div>`;
+                        audioContent = `
+                            <div style="background: white; border-radius: 16px; padding: 2rem; text-align: center;">
+                                <h3 style="color: #dc2626;">❌ Ungültige YouTube-URL</h3>
+                                <p style="color: #6b7280; margin-top: 1rem;">Bitte überprüfen Sie die URL</p>
+                            </div>
+                        `;
                     }
                     break;
                     
                 case 'soundcloud':
-                case 'spotify':
-                case 'external':
+                    const soundcloudEmbedUrl = generateSoundCloudEmbed(url);
                     audioContent = `
-                        <div style="background: white; border-radius: 12px; padding: 2rem; max-width: 500px; width: 100%; text-align: center;">
-                            <h3 style="color: #1f2937; margin-bottom: 1rem;">🎵 ${title}</h3>
-                            <p style="color: #6b7280; margin-bottom: 1rem;">Link wird in neuem Fenster geöffnet:</p>
-                            <a href="${url}" target="_blank" style="background: #059669; color: white; padding: 1rem 2rem; border-radius: 8px; text-decoration: none; display: inline-block;">
-                                🔗 ${type.charAt(0).toUpperCase() + type.slice(1)} öffnen
-                            </a>
+                        <div style="background: white; border-radius: 16px; padding: 1.5rem; max-width: 90vw; width: 100%; max-width: 600px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+                            <h3 style="color: #1f2937; margin-bottom: 1rem; font-size: 1.3rem;">☁️ ${title}</h3>
+                            <iframe 
+                                width="100%" 
+                                height="166" 
+                                scrolling="no" 
+                                frameborder="no" 
+                                src="${soundcloudEmbedUrl}"
+                                style="border-radius: 12px; margin-bottom: 1rem;">
+                            </iframe>
+                            <p style="color: #6b7280; font-size: 0.9rem;">🎵 In-App SoundCloud Player</p>
                         </div>
                     `;
-                    // Auto-open the link
-                    setTimeout(() => window.open(url, '_blank'), 500);
+                    break;
+                    
+                case 'spotify':
+                    const spotifyEmbedUrl = generateSpotifyEmbed(url);
+                    if (spotifyEmbedUrl) {
+                        audioContent = `
+                            <div style="background: white; border-radius: 16px; padding: 1.5rem; max-width: 90vw; width: 100%; max-width: 500px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+                                <h3 style="color: #1f2937; margin-bottom: 1rem; font-size: 1.3rem;">🟢 ${title}</h3>
+                                <iframe 
+                                    style="border-radius: 12px; margin-bottom: 1rem;" 
+                                    src="${spotifyEmbedUrl}" 
+                                    width="100%" 
+                                    height="352" 
+                                    frameborder="0" 
+                                    allowtransparency="true" 
+                                    allow="encrypted-media">
+                                </iframe>
+                                <p style="color: #6b7280; font-size: 0.9rem;">🎶 In-App Spotify Player</p>
+                            </div>
+                        `;
+                    } else {
+                        audioContent = `
+                            <div style="background: white; border-radius: 16px; padding: 2rem; text-align: center;">
+                                <h3 style="color: #dc2626;">❌ Ungültige Spotify-URL</h3>
+                                <p style="color: #6b7280; margin-top: 1rem;">Bitte überprüfen Sie die URL</p>
+                            </div>
+                        `;
+                    }
+                    break;
+                    
+                case 'audio':
+                case 'podcast':
+                    audioContent = `
+                        <div style="background: white; border-radius: 16px; padding: 2rem; max-width: 90vw; width: 100%; max-width: 500px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+                            <h3 style="color: #1f2937; margin-bottom: 1.5rem; font-size: 1.3rem;">🎵 ${title}</h3>
+                            <audio controls style="width: 100%; margin-bottom: 1.5rem; border-radius: 8px;" autoplay>
+                                <source src="${url}" type="audio/mpeg">
+                                <source src="${url}" type="audio/ogg">
+                                <source src="${url}" type="audio/wav">
+                                Ihr Browser unterstützt das Audio-Element nicht.
+                            </audio>
+                            <p style="color: #6b7280; font-size: 0.9rem;">🎧 In-App Audio Player</p>
+                        </div>
+                    `;
                     break;
                     
                 default:
-                    audioContent = `<div style="color: white; text-align: center;"><h3>❌ Unbekannter Audio-Typ</h3></div>`;
+                    audioContent = `
+                        <div style="background: white; border-radius: 16px; padding: 2rem; text-align: center;">
+                            <h3 style="color: #dc2626;">❌ Unbekannter Audio-Typ</h3>
+                            <p style="color: #6b7280; margin-top: 1rem;">Typ "${type}" wird nicht unterstützt</p>
+                        </div>
+                    `;
             }
             
             modal.innerHTML = `
                 ${audioContent}
-                <button style="margin-top: 20px; padding: 10px 20px; background: #dc2626; color: white; border: none; border-radius: 5px; cursor: pointer;" onclick="this.parentElement.remove()">Schließen</button>
+                <button 
+                    style="margin-top: 30px; padding: 12px 24px; background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); color: white; border: none; border-radius: 25px; cursor: pointer; font-size: 1rem; font-weight: bold; box-shadow: 0 4px 15px rgba(220, 38, 38, 0.3); transition: all 0.3s;" 
+                    onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 25px rgba(220, 38, 38, 0.4)'" 
+                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(220, 38, 38, 0.3)'"
+                    onclick="this.parentElement.remove()">
+                    ✕ Schließen
+                </button>
             `;
             
-            modal.onclick = (e) => {
+            // Close on background click
+            modal.addEventListener('click', (e) => {
                 if (e.target === modal) modal.remove();
+            });
+            
+            // Close on ESC key
+            const escapeHandler = (e) => {
+                if (e.key === 'Escape') {
+                    modal.remove();
+                    document.removeEventListener('keydown', escapeHandler);
+                }
             };
+            document.addEventListener('keydown', escapeHandler);
             
             document.body.appendChild(modal);
             
@@ -3205,6 +3276,34 @@ Siehe Console (F12) für mehr Details!`);
             const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
             const match = url.match(regex);
             return match ? match[1] : null;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    function generateSoundCloudEmbed(url) {
+        try {
+            // SoundCloud oEmbed API würde normalerweise verwendet, aber für Einfachheit
+            // konvertieren wir die URL direkt zu einem embed
+            const encodedUrl = encodeURIComponent(url);
+            return `https://w.soundcloud.com/player/?url=${encodedUrl}&color=%23ff5500&auto_play=true&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true`;
+        } catch (error) {
+            return url;
+        }
+    }
+
+    function generateSpotifyEmbed(url) {
+        try {
+            // Convert Spotify URL to embed format
+            // https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh -> spotify:track:4iV5W9uYEdYUVa79Axb7Rh
+            const spotifyRegex = /https:\/\/open\.spotify\.com\/(track|album|playlist|episode|show)\/([a-zA-Z0-9]+)/;
+            const match = url.match(spotifyRegex);
+            
+            if (match) {
+                const [, type, id] = match;
+                return `https://open.spotify.com/embed/${type}/${id}?utm_source=generator&theme=0`;
+            }
+            return null;
         } catch (error) {
             return null;
         }
