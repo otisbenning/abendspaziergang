@@ -275,37 +275,6 @@
             font-size: 1.2rem;
         }
 
-        .editable-challenge {
-            position: relative;
-            padding: 0.5rem;
-            border-radius: 8px;
-            transition: all 0.3s;
-        }
-
-        .editable-challenge.admin-mode {
-            border: 2px dashed #f59e0b;
-            background: rgba(245, 158, 11, 0.1);
-        }
-
-        .edit-button {
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            background: #f59e0b;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            padding: 4px 8px;
-            cursor: pointer;
-            font-size: 0.8rem;
-            display: none;
-            touch-action: manipulation;
-        }
-
-        .editable-challenge.admin-mode .edit-button {
-            display: block;
-        }
-
         .photo-upload-area {
             border: 3px dashed #a5b4fc;
             border-radius: 10px;
@@ -654,45 +623,20 @@
             background: #dc2626;
         }
 
-        .edit-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.8);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 10000;
-            padding: 20px;
+        .connection-status {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-left: 8px;
         }
 
-        .edit-modal-content {
-            background: white;
-            border-radius: 12px;
-            padding: 2rem;
-            max-width: 600px;
-            width: 100%;
-            max-height: 80vh;
-            overflow-y: auto;
+        .connection-status.online {
+            background: #10b981;
         }
 
-        .inline-edit {
-            background: #fff9c4;
-            border: 2px solid #f59e0b;
-            border-radius: 8px;
-            padding: 1rem;
-        }
-
-        .inline-edit textarea {
-            width: 100%;
-            height: 80px;
-            padding: 0.5rem;
-            border: 2px solid #f59e0b;
-            border-radius: 8px;
-            font-family: inherit;
-            resize: vertical;
+        .connection-status.offline {
+            background: #dc2626;
         }
 
         .hidden {
@@ -743,6 +687,7 @@
             <p class="subtitle">Entdecke 2000 Jahre Stadtgeschichte</p>
             <div class="tour-id-display">
                 Tour: <span id="currentTourId">Lädt...</span>
+                <span class="connection-status offline" id="connectionStatus"></span>
             </div>
             <div class="progress-container">
                 <div class="progress-bar" id="progressBar"></div>
@@ -860,7 +805,7 @@
                     <button class="chat-send" onclick="sendMessage()">Senden</button>
                 </div>
                 <div style="margin-top: 1rem; text-align: center; color: #6b7280; font-size: 0.9rem;">
-                    💡 Nachrichten werden alle 3 Sekunden synchronisiert
+                    💡 Nachrichten werden live synchronisiert
                 </div>
             </div>
 
@@ -881,10 +826,6 @@
                     <p>Hier können Sie Inhalte bearbeiten, die sofort für alle Teilnehmer sichtbar werden.</p>
                 </div>
 
-                <div id="adminStationsList">
-                    <!-- Admin stations will be generated here -->
-                </div>
-
                 <div style="background: white; border-radius: 12px; padding: 1.5rem; margin: 1.5rem 0; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
                     <h4 style="color: #1f2937; margin-bottom: 1rem;">🔄 Tour zurücksetzen</h4>
                     <button class="btn btn-secondary" onclick="resetTour()">Alle Daten zurücksetzen</button>
@@ -893,10 +834,59 @@
         </div>
     </div>
 
-    <!-- External Libraries -->
+    <!-- Firebase CDN -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+    
+    <!-- Leaflet for Map -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
 
     <script>
+    // Firebase Configuration
+    const firebaseConfig = {
+        apiKey: "AIzaSyDKb6yVlFKpyXnRkUp5l8qKHzGDyAU3B98",
+        authDomain: "abendspaziergang-99228.firebaseapp.com",
+        databaseURL: "https://abendspaziergang-99228-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "abendspaziergang-99228",
+        storageBucket: "abendspaziergang-99228.firebasestorage.app",
+        messagingSenderId: "830228367117",
+        appId: "1:830228367117:web:9bb7c3c04cc72b9e041244",
+        measurementId: "G-BHCB7QFP6J"
+    };
+
+    // Initialize Firebase
+    let db = null;
+    let isFirebaseEnabled = false;
+
+    function initFirebase() {
+        try {
+            if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
+                firebase.initializeApp(firebaseConfig);
+                db = firebase.firestore();
+                isFirebaseEnabled = true;
+                updateConnectionStatus(true);
+                console.log('✅ Firebase initialized successfully');
+                
+                // Enable real-time sync
+                enableRealtimeSync();
+            } else {
+                console.log('⚠️ Firebase not configured, using offline mode');
+                updateConnectionStatus(false);
+            }
+        } catch (error) {
+            console.error('❌ Firebase initialization error:', error);
+            updateConnectionStatus(false);
+        }
+    }
+
+    function updateConnectionStatus(isOnline) {
+        const statusEl = document.getElementById('connectionStatus');
+        if (statusEl) {
+            statusEl.className = `connection-status ${isOnline ? 'online' : 'offline'}`;
+            statusEl.title = isOnline ? 'Online - Daten werden synchronisiert' : 'Offline - Nur lokale Daten';
+        }
+    }
+
     // Global variables
     let tourApp = {
         state: {
@@ -911,9 +901,8 @@
             uploadedPhotos: [],
             userName: 'Tourist_' + Math.random().toString(36).substr(2, 5),
             tourId: null,
-            chatInitialized: false,
             isAdmin: false,
-            chatSyncInterval: null
+            syncListeners: []
         },
         
         stations: [
@@ -1010,40 +999,227 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
         ]
     };
 
-    // Simple error handling
-    function safeCall(func, ...args) {
+    // Firebase Real-time Functions
+    function enableRealtimeSync() {
+        if (!isFirebaseEnabled) return;
+
         try {
-            return func(...args);
+            // Listen to tour data changes
+            const tourRef = db.collection('tours').doc(tourApp.state.tourId);
+            
+            // Listen to chat messages
+            const chatRef = db.collection('tours').doc(tourApp.state.tourId).collection('chat');
+            const chatUnsubscribe = chatRef.orderBy('timestamp', 'asc').onSnapshot((snapshot) => {
+                snapshot.docChanges().forEach((change) => {
+                    if (change.type === 'added' && change.doc.data().userName !== tourApp.state.userName) {
+                        const messageData = change.doc.data();
+                        addChatMessage(messageData.userName, messageData.message, false);
+                    }
+                });
+            });
+
+            // Listen to team scores
+            const scoresRef = db.collection('tours').doc(tourApp.state.tourId).collection('scores');
+            const scoresUnsubscribe = scoresRef.onSnapshot(() => {
+                updateRanking(); // Refresh ranking when scores change
+            });
+
+            tourApp.state.syncListeners.push(chatUnsubscribe, scoresUnsubscribe);
         } catch (error) {
-            console.error('Error in function call:', error);
-            showNotification('Ein Fehler ist aufgetreten: ' + error.message, 'error');
-            return null;
+            console.error('Error setting up real-time sync:', error);
         }
     }
 
-    // Initialize app
+    // Firebase Data Functions
+    async function saveToFirebase(collection, docId, data) {
+        if (!isFirebaseEnabled) return;
+
+        try {
+            await db.collection('tours').doc(tourApp.state.tourId)
+                .collection(collection).doc(docId).set(data, { merge: true });
+        } catch (error) {
+            console.error('Firebase save error:', error);
+        }
+    }
+
+    async function getFromFirebase(collection) {
+        if (!isFirebaseEnabled) return [];
+
+        try {
+            const snapshot = await db.collection('tours').doc(tourApp.state.tourId)
+                .collection(collection).get();
+            return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        } catch (error) {
+            console.error('Firebase get error:', error);
+            return [];
+        }
+    }
+
+    // Chat Functions with Firebase
+    async function sendMessage() {
+        try {
+            const input = document.getElementById('chatInput');
+            if (!input) return;
+            
+            const message = input.value.trim();
+            if (message) {
+                // Add to local chat immediately
+                addChatMessage(tourApp.state.userName, message, true);
+                
+                // Save to Firebase if available
+                if (isFirebaseEnabled) {
+                    await saveToFirebase('chat', Date.now().toString(), {
+                        userName: tourApp.state.userName,
+                        message: message,
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                } else {
+                    // Fallback to localStorage
+                    const chatMessages = JSON.parse(localStorage.getItem(`chat_${tourApp.state.tourId}`) || '[]');
+                    chatMessages.push({
+                        userName: tourApp.state.userName,
+                        message: message,
+                        timestamp: Date.now()
+                    });
+                    if (chatMessages.length > 50) {
+                        chatMessages.splice(0, chatMessages.length - 50);
+                    }
+                    localStorage.setItem(`chat_${tourApp.state.tourId}`, JSON.stringify(chatMessages));
+                }
+                
+                input.value = '';
+            }
+        } catch (error) {
+            console.error('Error sending message:', error);
+            showNotification('Fehler beim Senden der Nachricht', 'error');
+        }
+    }
+
+    // Score Functions with Firebase
+    async function addScore(points) {
+        try {
+            tourApp.state.totalScore += Math.round(points);
+            updateUI();
+            
+            // Save to Firebase if available
+            if (isFirebaseEnabled && tourApp.state.selectedTeam) {
+                await saveToFirebase('scores', tourApp.state.selectedTeam, {
+                    teamId: tourApp.state.selectedTeam,
+                    teamName: tourApp.state.teamName,
+                    score: tourApp.state.totalScore,
+                    lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            }
+            
+            saveState();
+        } catch (error) {
+            console.error('Error adding score:', error);
+        }
+    }
+
+    // Ranking with Firebase
+    async function updateRanking() {
+        try {
+            const rankingList = document.getElementById('rankingList');
+            if (!rankingList) return;
+            
+            let teams;
+            
+            if (isFirebaseEnabled) {
+                // Get real scores from Firebase
+                teams = await getFromFirebase('scores');
+                
+                // Add current user's team if not in Firebase yet
+                if (tourApp.state.selectedTeam && !teams.find(t => t.teamId === tourApp.state.selectedTeam)) {
+                    teams.push({
+                        teamId: tourApp.state.selectedTeam,
+                        teamName: tourApp.state.teamName,
+                        score: tourApp.state.totalScore
+                    });
+                }
+                
+                // Fill missing teams with dummy data
+                const allTeamIds = ['red', 'blue', 'green', 'yellow'];
+                const teamNames = {
+                    'red': '🔴 Team Römer',
+                    'blue': '🔵 Team Gaffeln', 
+                    'green': '🟢 Team Hanseat',
+                    'yellow': '🟡 Team Modern'
+                };
+                
+                allTeamIds.forEach(teamId => {
+                    if (!teams.find(t => t.teamId === teamId)) {
+                        teams.push({
+                            teamId: teamId,
+                            teamName: teamNames[teamId],
+                            score: Math.floor(Math.random() * 200) + 50
+                        });
+                    }
+                });
+            } else {
+                // Fallback to demo data
+                teams = [
+                    { teamId: 'red', teamName: '🔴 Team Römer', score: tourApp.state.selectedTeam === 'red' ? tourApp.state.totalScore : Math.floor(Math.random() * 300) + 100 },
+                    { teamId: 'blue', teamName: '🔵 Team Gaffeln', score: tourApp.state.selectedTeam === 'blue' ? tourApp.state.totalScore : Math.floor(Math.random() * 300) + 100 },
+                    { teamId: 'green', teamName: '🟢 Team Hanseat', score: tourApp.state.selectedTeam === 'green' ? tourApp.state.totalScore : Math.floor(Math.random() * 300) + 100 },
+                    { teamId: 'yellow', teamName: '🟡 Team Modern', score: tourApp.state.selectedTeam === 'yellow' ? tourApp.state.totalScore : Math.floor(Math.random() * 300) + 100 }
+                ];
+            }
+            
+            teams.sort((a, b) => b.score - a.score);
+            
+            rankingList.innerHTML = '';
+            
+            teams.forEach((team, index) => {
+                const rankItem = document.createElement('div');
+                const isUserTeam = team.teamId === tourApp.state.selectedTeam;
+                rankItem.className = `team-rank-item ${isUserTeam ? 'highlight' : ''}`;
+                
+                let rankClass = '';
+                if (index === 0) rankClass = 'gold';
+                else if (index === 1) rankClass = 'silver';
+                else if (index === 2) rankClass = 'bronze';
+                
+                rankItem.innerHTML = `
+                    <div class="rank-position ${rankClass}">${index + 1}</div>
+                    <div style="flex: 1;">
+                        <strong>${team.teamName}</strong>
+                        <div style="color: #6b7280; font-size: 0.9rem;">
+                            ${team.score} Punkte
+                        </div>
+                    </div>
+                    ${isUserTeam ? '<div style="color: #f59e0b;">👤</div>' : ''}
+                `;
+                
+                rankingList.appendChild(rankItem);
+            });
+        } catch (error) {
+            console.error('Error updating ranking:', error);
+        }
+    }
+
+    // Standard Functions (same as before, but with Firebase integration)
     function initApp() {
         console.log('🚀 Starting Tour App...');
         
         try {
+            // Initialize Firebase first
+            initFirebase();
+            
             // Set loading indicators
             const statusEl = document.getElementById('currentTourId');
             if (statusEl) statusEl.textContent = 'Lädt...';
             const shareEl = document.getElementById('shareUrl');
             if (shareEl) shareEl.textContent = 'App wird initialisiert...';
             
-            // Set a simple fallback tour ID first
+            // Set tour ID
             if (!tourApp.state.tourId) {
                 tourApp.state.tourId = 'koeln-tour-' + Math.random().toString(36).substr(2, 8);
-                console.log('Generated tour ID:', tourApp.state.tourId);
             }
             
-            // Load URL parameters and saved state
             loadTourId();
             loadState();
             
-            // Generate UI
-            console.log('Generating stations...');
             generateStationsList();
             updateUI();
             
@@ -1059,30 +1235,25 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             
             console.log('✅ Tour App initialized successfully');
             
-            // Initialize optional features with delay
             setTimeout(() => {
-                console.log('Loading optional features...');
                 initGeolocation();
-                initChatSync();
+                loadChatHistory();
             }, 1000);
             
         } catch (error) {
             console.error('❌ Error initializing app:', error);
-            // Emergency fallback
             tourApp.state.tourId = 'koeln-emergency-' + Date.now();
             const el = document.getElementById('currentTourId');
             if (el) el.textContent = tourApp.state.tourId;
             const shareEl = document.getElementById('shareUrl');
             if (shareEl) shareEl.textContent = window.location.href + '?tour=' + tourApp.state.tourId;
             
-            // Show error notification
             setTimeout(() => {
                 showNotification('App geladen, aber mit Fehlern. Bitte Seite neu laden falls Probleme auftreten.', 'error');
             }, 2000);
         }
     }
 
-    // Load or generate tour ID
     function loadTourId() {
         try {
             const urlParams = new URLSearchParams(window.location.search);
@@ -1100,14 +1271,12 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             generateShareUrl();
         } catch (error) {
             console.error('Error loading tour ID:', error);
-            // Fallback: use simple tour ID
             tourApp.state.tourId = 'koeln-tour-' + Math.random().toString(36).substr(2, 8);
             updateTourDisplay();
             generateShareUrl();
         }
     }
 
-    // Generate unique tour ID
     function generateTourId() {
         try {
             const today = new Date().toISOString().split('T')[0];
@@ -1118,7 +1287,6 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
         }
     }
 
-    // Update tour display
     function updateTourDisplay() {
         try {
             const el = document.getElementById('currentTourId');
@@ -1130,7 +1298,6 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
         }
     }
 
-    // Generate share URL
     function generateShareUrl() {
         try {
             if (!tourApp.state.tourId) return;
@@ -1150,16 +1317,14 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
         }
     }
 
-    // Copy share URL
     function copyShareUrl() {
-        safeCall(() => {
+        try {
             const shareUrl = document.getElementById('shareUrl').textContent;
             if (navigator.clipboard) {
                 navigator.clipboard.writeText(shareUrl).then(() => {
                     showNotification('URL kopiert! 📋');
                 });
             } else {
-                // Fallback for older browsers
                 const textarea = document.createElement('textarea');
                 textarea.value = shareUrl;
                 document.body.appendChild(textarea);
@@ -1168,70 +1333,67 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 document.body.removeChild(textarea);
                 showNotification('URL kopiert! 📋');
             }
-        });
+        } catch (error) {
+            console.error('Error copying URL:', error);
+        }
     }
 
-    // Share via WhatsApp
     function shareViaWhatsApp() {
-        safeCall(() => {
+        try {
             const shareUrl = document.getElementById('shareUrl').textContent;
             const message = `🏛️ Kölner Abendspaziergang - Tour beitreten:\n${shareUrl}`;
             const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
             window.open(whatsappUrl, '_blank');
-        });
+        } catch (error) {
+            console.error('Error sharing via WhatsApp:', error);
+        }
     }
 
-    // Admin login
     function loginAdmin() {
-        safeCall(() => {
+        try {
             const password = document.getElementById('adminPassword').value;
             if (password === 'koeln2024') {
                 tourApp.state.isAdmin = true;
                 document.getElementById('adminTab').classList.remove('hidden');
-                generateStationsList(); // Refresh to show edit buttons
-                generateAdminStationsList();
+                generateStationsList();
                 showNotification('Admin-Modus aktiviert! ⚙️');
                 showTab('admin', document.getElementById('adminTab'));
             } else {
                 showNotification('Falsches Passwort!', 'error');
             }
-        });
+        } catch (error) {
+            console.error('Error logging in admin:', error);
+        }
     }
 
-    // Show tab
     function showTab(tabName, tabElement) {
-        safeCall(() => {
-            // Update tab buttons
+        try {
             document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
             if (tabElement) {
                 tabElement.classList.add('active');
             }
 
-            // Update tab content
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
             const targetTab = document.getElementById(tabName === 'map' ? 'map-tab' : tabName);
             if (targetTab) {
                 targetTab.classList.add('active');
             }
 
-            // Tab-specific actions
             if (tabName === 'map') {
                 setTimeout(() => initMap(), 100);
             } else if (tabName === 'ranking') {
                 updateRanking();
-            } else if (tabName === 'admin') {
-                generateAdminStationsList();
             }
-        });
+        } catch (error) {
+            console.error('Error showing tab:', error);
+        }
     }
 
-    // Team selection
     function selectTeam(teamId, teamName, element) {
-        safeCall(() => {
+        try {
             tourApp.state.selectedTeam = teamId;
             tourApp.state.teamName = teamName;
             
-            // Update UI
             document.querySelectorAll('.team-option').forEach(option => {
                 option.classList.remove('selected');
             });
@@ -1239,7 +1401,6 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 element.classList.add('selected');
             }
             
-            // Hide team selector
             const selector = document.getElementById('teamSelector');
             if (selector) {
                 selector.style.display = 'none';
@@ -1248,12 +1409,13 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             showNotification('Team ausgewählt! 🎉');
             saveState();
             addSystemMessage(`${tourApp.state.userName} ist ${teamName} beigetreten! 🎊`);
-        });
+        } catch (error) {
+            console.error('Error selecting team:', error);
+        }
     }
 
-    // Start tour
     function startTour() {
-        safeCall(() => {
+        try {
             if (!tourApp.state.selectedTeam) {
                 showNotification('Bitte wähle zuerst ein Team aus!', 'error');
                 return;
@@ -1261,12 +1423,13 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             
             showTab('stations', document.querySelector('[onclick*="stations"]'));
             showNotification('Tour gestartet! Viel Erfolg! 🚀');
-        });
+        } catch (error) {
+            console.error('Error starting tour:', error);
+        }
     }
 
-    // Generate stations list
     function generateStationsList() {
-        safeCall(() => {
+        try {
             const container = document.getElementById('stationsList');
             if (!container) return;
             
@@ -1309,10 +1472,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
 
                         <div class="photo-challenge">
                             <h4>📸 KI-Foto-Challenge</h4>
-                            <div class="editable-challenge ${tourApp.state.isAdmin ? 'admin-mode' : ''}" id="challenge-${station.id}">
-                                <p>${station.photoChallenge}</p>
-                                ${tourApp.state.isAdmin ? `<button class="edit-button" onclick="editChallenge(${station.id})">✏️</button>` : ''}
-                            </div>
+                            <p>${station.photoChallenge}</p>
                             
                             <div class="photo-upload-area" onclick="selectPhoto(${station.id})" id="upload-area-${station.id}">
                                 <div id="upload-content-${station.id}">
@@ -1339,190 +1499,35 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 
                 container.appendChild(stationCard);
             });
-        });
-    }
-
-    // Generate admin stations list
-    function generateAdminStationsList() {
-        safeCall(() => {
-            if (!tourApp.state.isAdmin) return;
-            
-            const container = document.getElementById('adminStationsList');
-            if (!container) return;
-            
-            container.innerHTML = '';
-            
-            tourApp.stations.forEach(station => {
-                const adminCard = document.createElement('div');
-                adminCard.className = 'station-card';
-                adminCard.innerHTML = `
-                    <h4>${station.title}</h4>
-                    <div style="margin: 1rem 0;">
-                        <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">📸 Foto-Challenge:</label>
-                        <textarea id="admin-challenge-${station.id}" style="width: 100%; height: 80px; padding: 0.5rem; border: 2px solid #e5e7eb; border-radius: 8px;">${station.photoChallenge}</textarea>
-                        <button class="btn btn-admin btn-small" onclick="updateChallenge(${station.id})" style="margin-top: 0.5rem;">Challenge aktualisieren</button>
-                    </div>
-                    <div style="margin: 1rem 0;">
-                        <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">🖼️ Bilder verwalten:</label>
-                        <div class="image-gallery">
-                            ${station.images.map((img, index) => `
-                                <div class="gallery-item" style="position: relative;">
-                                    <img src="${img.url}" alt="${img.title}" class="gallery-image">
-                                    <button onclick="editImage(${station.id}, ${index})" style="position: absolute; top: 5px; right: 5px; background: #f59e0b; color: white; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer;">✏️</button>
-                                    <small>${img.title}</small>
-                                </div>
-                            `).join('')}
-                        </div>
-                        <button class="btn btn-admin btn-small" onclick="addImage(${station.id})" style="margin-top: 0.5rem;">Neues Bild hinzufügen</button>
-                    </div>
-                `;
-                container.appendChild(adminCard);
-            });
-        });
-    }
-
-    // Edit challenge
-    function editChallenge(stationId) {
-        safeCall(() => {
-            const challengeDiv = document.getElementById(`challenge-${stationId}`);
-            const station = tourApp.stations.find(s => s.id === stationId);
-            if (!challengeDiv || !station) return;
-            
-            challengeDiv.innerHTML = `
-                <div class="inline-edit">
-                    <textarea id="edit-challenge-${stationId}" style="width: 100%; height: 80px; padding: 0.5rem; border: 2px solid #f59e0b; border-radius: 8px; font-family: inherit;">${station.photoChallenge}</textarea>
-                    <div style="margin-top: 0.5rem;">
-                        <button class="btn btn-admin btn-small" onclick="saveChallenge(${stationId})">💾 Speichern</button>
-                        <button class="btn btn-secondary btn-small" onclick="cancelEditChallenge(${stationId})">❌ Abbrechen</button>
-                    </div>
-                </div>
-            `;
-        });
-    }
-
-    // Save challenge
-    function saveChallenge(stationId) {
-        safeCall(() => {
-            const textarea = document.getElementById(`edit-challenge-${stationId}`);
-            const station = tourApp.stations.find(s => s.id === stationId);
-            if (!textarea || !station) return;
-            
-            station.photoChallenge = textarea.value;
-            saveStations();
-            generateStationsList();
-            generateAdminStationsList();
-            showNotification('Challenge aktualisiert! 📸');
-            addSystemMessage(`Admin hat die Challenge für "${station.title}" aktualisiert! 📝`);
-        });
-    }
-
-    // Cancel edit challenge
-    function cancelEditChallenge(stationId) {
-        safeCall(() => {
-            generateStationsList();
-        });
-    }
-
-    // Update challenge (from admin panel)
-    function updateChallenge(stationId) {
-        safeCall(() => {
-            const textarea = document.getElementById(`admin-challenge-${stationId}`);
-            const station = tourApp.stations.find(s => s.id === stationId);
-            if (!textarea || !station) return;
-            
-            station.photoChallenge = textarea.value;
-            saveStations();
-            generateStationsList();
-            showNotification('Challenge aktualisiert! 📸');
-            addSystemMessage(`Admin hat die Challenge für "${station.title}" aktualisiert! 📝`);
-        });
-    }
-
-    // Add/Edit/Delete images (simplified versions)
-    function addImage(stationId) {
-        safeCall(() => {
-            const url = prompt('Bild-URL eingeben:');
-            const title = prompt('Bildtitel eingeben:');
-            const description = prompt('Beschreibung eingeben:') || '';
-            
-            if (url && title) {
-                const station = tourApp.stations.find(s => s.id === stationId);
-                if (station) {
-                    station.images.push({ url, title, description });
-                    saveStations();
-                    generateStationsList();
-                    generateAdminStationsList();
-                    showNotification('Bild hinzugefügt! 🖼️');
-                    addSystemMessage(`Admin hat ein neues Bild zu "${station.title}" hinzugefügt! 🖼️`);
-                }
-            }
-        });
-    }
-
-    function editImage(stationId, imageIndex) {
-        safeCall(() => {
-            const station = tourApp.stations.find(s => s.id === stationId);
-            if (!station || !station.images[imageIndex]) return;
-            
-            const image = station.images[imageIndex];
-            const newUrl = prompt('Neue Bild-URL:', image.url);
-            const newTitle = prompt('Neuer Titel:', image.title);
-            const newDescription = prompt('Neue Beschreibung:', image.description);
-            
-            if (newUrl && newTitle) {
-                station.images[imageIndex] = {
-                    url: newUrl,
-                    title: newTitle,
-                    description: newDescription || ''
-                };
-                saveStations();
-                generateStationsList();
-                generateAdminStationsList();
-                showNotification('Bild aktualisiert! 🖼️');
-                addSystemMessage(`Admin hat ein Bild bei "${station.title}" aktualisiert! 🖼️`);
-            }
-        });
-    }
-
-    // Save stations to localStorage
-    function saveStations() {
-        localStorage.setItem(`stations_${tourApp.state.tourId}`, JSON.stringify(tourApp.stations));
-    }
-
-    // Load stations from localStorage
-    function loadStations() {
-        const saved = localStorage.getItem(`stations_${tourApp.state.tourId}`);
-        if (saved) {
-            try {
-                tourApp.stations = JSON.parse(saved);
-            } catch (error) {
-                console.error('Error loading stations:', error);
-            }
+        } catch (error) {
+            console.error('Error generating stations list:', error);
         }
     }
 
-    // Toggle station details
     function toggleStationDetails(stationId) {
-        safeCall(() => {
+        try {
             const details = document.getElementById(`station-${stationId}`);
             if (details) {
                 details.classList.toggle('active');
             }
-        });
+        } catch (error) {
+            console.error('Error toggling station details:', error);
+        }
     }
 
-    // Photo functions
     function selectPhoto(stationId) {
-        safeCall(() => {
+        try {
             const input = document.getElementById(`photo-input-${stationId}`);
             if (input) {
                 input.click();
             }
-        });
+        } catch (error) {
+            console.error('Error selecting photo:', error);
+        }
     }
 
     function handlePhotoUpload(stationId, event) {
-        safeCall(() => {
+        try {
             const file = event.target.files[0];
             if (!file) return;
 
@@ -1530,7 +1535,6 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             reader.onload = (e) => {
                 const imageUrl = e.target.result;
                 
-                // Update upload area
                 const uploadArea = document.getElementById(`upload-area-${stationId}`);
                 if (uploadArea) {
                     uploadArea.classList.add('has-photo');
@@ -1541,7 +1545,6 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     `;
                 }
 
-                // Store photo
                 const photoData = {
                     stationId: stationId,
                     imageUrl: imageUrl,
@@ -1556,24 +1559,23 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     tourApp.state.uploadedPhotos.push(photoData);
                 }
 
-                // Rate photo after delay
                 setTimeout(() => ratePhoto(stationId, imageUrl), 1000);
                 saveState();
             };
             
             reader.readAsDataURL(file);
-        });
+        } catch (error) {
+            console.error('Error handling photo upload:', error);
+        }
     }
 
-    // AI Photo Rating (simplified)
     function ratePhoto(stationId, imageUrl) {
-        safeCall(() => {
+        try {
             const ratingDiv = document.getElementById(`rating-${stationId}`);
             if (ratingDiv) {
                 ratingDiv.classList.remove('hidden');
             }
             
-            // Simulate AI analysis
             const baseScore = 50 + Math.random() * 40;
             const technicalScore = 70 + Math.random() * 25;
             const compositionScore = 60 + Math.random() * 30;
@@ -1581,10 +1583,8 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             
             const finalScore = Math.round(baseScore);
             
-            // Animate score
             animateScore(stationId, finalScore);
             
-            // Generate feedback
             const feedback = generatePhotoFeedback(technicalScore, compositionScore, creativityScore);
             
             setTimeout(() => {
@@ -1605,21 +1605,21 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 }
             }, 2000);
             
-            // Add score
             addScore(finalScore);
             
-            // Store rating
             const photoData = tourApp.state.uploadedPhotos.find(p => p.stationId === stationId);
             if (photoData) {
                 photoData.score = finalScore;
             }
             
             showNotification(`KI-Bewertung: ${finalScore} Punkte! 🤖`);
-        });
+        } catch (error) {
+            console.error('Error rating photo:', error);
+        }
     }
 
     function animateScore(stationId, targetScore) {
-        safeCall(() => {
+        try {
             const scoreElement = document.getElementById(`score-${stationId}`);
             if (!scoreElement) return;
             
@@ -1634,7 +1634,9 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 }
                 scoreElement.textContent = currentScore;
             }, 50);
-        });
+        } catch (error) {
+            console.error('Error animating score:', error);
+        }
     }
 
     function generatePhotoFeedback(technical, composition, creativity) {
@@ -1663,15 +1665,13 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
         return feedback;
     }
 
-    // Complete station
     function completeStation(stationId) {
-        safeCall(() => {
+        try {
             if (!tourApp.state.completedStations.includes(stationId)) {
                 tourApp.state.completedStations.push(stationId);
                 updateProgress();
                 showNotification('Station abgeschlossen! 🏁');
                 
-                // Update UI
                 const completeBtn = document.getElementById(`complete-btn-${stationId}`);
                 if (completeBtn) {
                     const stationCard = completeBtn.closest('.station-card');
@@ -1688,7 +1688,6 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     completeBtn.style.background = '#6b7280';
                 }
 
-                // Check if tour complete
                 if (tourApp.state.completedStations.length === tourApp.stations.length) {
                     showNotification('🎉 Herzlichen Glückwunsch! Tour abgeschlossen!');
                     setTimeout(() => {
@@ -1699,144 +1698,37 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 saveState();
                 addSystemMessage(`${tourApp.state.userName} hat "${tourApp.stations.find(s => s.id === stationId)?.title}" abgeschlossen! 🏁`);
             }
-        });
+        } catch (error) {
+            console.error('Error completing station:', error);
+        }
     }
 
-    // Add score
-    function addScore(points) {
-        safeCall(() => {
-            tourApp.state.totalScore += Math.round(points);
-            updateUI();
-            saveState();
-        });
-    }
-
-    // Update UI
     function updateUI() {
-        safeCall(() => {
+        try {
             const scoreElement = document.getElementById('totalScore');
             if (scoreElement) {
                 scoreElement.textContent = tourApp.state.totalScore;
             }
             updateProgress();
-        });
+        } catch (error) {
+            console.error('Error updating UI:', error);
+        }
     }
 
-    // Update progress
     function updateProgress() {
-        safeCall(() => {
+        try {
             const progress = (tourApp.state.completedStations.length / tourApp.stations.length) * 100;
             const progressBar = document.getElementById('progressBar');
             if (progressBar) {
                 progressBar.style.width = progress + '%';
             }
-        });
-    }
-
-    // Update ranking
-    function updateRanking() {
-        safeCall(() => {
-            const rankingList = document.getElementById('rankingList');
-            if (!rankingList) return;
-            
-            // For demo, create sample teams
-            const teams = [
-                { id: 'red', name: '🔴 Team Römer', score: tourApp.state.selectedTeam === 'red' ? tourApp.state.totalScore : Math.floor(Math.random() * 300) + 100 },
-                { id: 'blue', name: '🔵 Team Gaffeln', score: tourApp.state.selectedTeam === 'blue' ? tourApp.state.totalScore : Math.floor(Math.random() * 300) + 100 },
-                { id: 'green', name: '🟢 Team Hanseat', score: tourApp.state.selectedTeam === 'green' ? tourApp.state.totalScore : Math.floor(Math.random() * 300) + 100 },
-                { id: 'yellow', name: '🟡 Team Modern', score: tourApp.state.selectedTeam === 'yellow' ? tourApp.state.totalScore : Math.floor(Math.random() * 300) + 100 }
-            ];
-            
-            teams.sort((a, b) => b.score - a.score);
-            
-            rankingList.innerHTML = '';
-            
-            teams.forEach((team, index) => {
-                const rankItem = document.createElement('div');
-                const isUserTeam = team.id === tourApp.state.selectedTeam;
-                rankItem.className = `team-rank-item ${isUserTeam ? 'highlight' : ''}`;
-                
-                let rankClass = '';
-                if (index === 0) rankClass = 'gold';
-                else if (index === 1) rankClass = 'silver';
-                else if (index === 2) rankClass = 'bronze';
-                
-                rankItem.innerHTML = `
-                    <div class="rank-position ${rankClass}">${index + 1}</div>
-                    <div style="flex: 1;">
-                        <strong>${team.name}</strong>
-                        <div style="color: #6b7280; font-size: 0.9rem;">
-                            ${team.score} Punkte
-                        </div>
-                    </div>
-                    ${isUserTeam ? '<div style="color: #f59e0b;">👤</div>' : ''}
-                `;
-                
-                rankingList.appendChild(rankItem);
-            });
-        });
-    }
-
-    // Chat functions
-    function initChatSync() {
-        safeCall(() => {
-            // Sync chat every 3 seconds
-            tourApp.state.chatSyncInterval = setInterval(syncChat, 3000);
-            loadChatHistory();
-        });
-    }
-
-    function syncChat() {
-        safeCall(() => {
-            // Simple sync via localStorage - in production you'd use a real backend
-            const allMessages = JSON.parse(localStorage.getItem(`chat_${tourApp.state.tourId}`) || '[]');
-            const lastSyncTime = parseInt(localStorage.getItem(`lastChatSync_${tourApp.state.tourId}`) || '0');
-            
-            const newMessages = allMessages.filter(msg => 
-                msg.timestamp > lastSyncTime && msg.userName !== tourApp.state.userName
-            );
-            
-            newMessages.forEach(msg => {
-                addChatMessage(msg.userName, msg.message, false);
-            });
-            
-            if (newMessages.length > 0) {
-                localStorage.setItem(`lastChatSync_${tourApp.state.tourId}`, Date.now().toString());
-            }
-        });
-    }
-
-    function sendMessage() {
-        safeCall(() => {
-            const input = document.getElementById('chatInput');
-            if (!input) return;
-            
-            const message = input.value.trim();
-            if (message) {
-                // Add to local chat
-                addChatMessage(tourApp.state.userName, message, true);
-                
-                // Store in shared chat
-                const chatMessages = JSON.parse(localStorage.getItem(`chat_${tourApp.state.tourId}`) || '[]');
-                chatMessages.push({
-                    userName: tourApp.state.userName,
-                    message: message,
-                    timestamp: Date.now()
-                });
-                
-                // Keep only last 50 messages
-                if (chatMessages.length > 50) {
-                    chatMessages.splice(0, chatMessages.length - 50);
-                }
-                
-                localStorage.setItem(`chat_${tourApp.state.tourId}`, JSON.stringify(chatMessages));
-                input.value = '';
-            }
-        });
+        } catch (error) {
+            console.error('Error updating progress:', error);
+        }
     }
 
     function addChatMessage(userName, message, isOwn = false) {
-        safeCall(() => {
+        try {
             const chatContainer = document.getElementById('chatContainer');
             if (!chatContainer) return;
             
@@ -1856,11 +1748,12 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             chatContainer.appendChild(messageDiv);
             chatContainer.scrollTop = chatContainer.scrollHeight;
             
-            // Show notification for new messages (not own)
             if (!isOwn && !document.getElementById('chat').classList.contains('active')) {
                 showNotification(`💬 ${userName}: ${message.substring(0, 30)}${message.length > 30 ? '...' : ''}`);
             }
-        });
+        } catch (error) {
+            console.error('Error adding chat message:', error);
+        }
     }
 
     function addSystemMessage(message) {
@@ -1890,19 +1783,28 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
         }
     }
 
-    function loadChatHistory() {
-        safeCall(() => {
-            const chatMessages = JSON.parse(localStorage.getItem(`chat_${tourApp.state.tourId}`) || '[]');
-            chatMessages.forEach(msg => {
-                addChatMessage(msg.userName, msg.message, msg.userName === tourApp.state.userName);
-            });
-            localStorage.setItem(`lastChatSync_${tourApp.state.tourId}`, Date.now().toString());
-        });
+    async function loadChatHistory() {
+        try {
+            if (isFirebaseEnabled) {
+                const messages = await getFromFirebase('chat');
+                messages.forEach(msg => {
+                    if (msg.userName !== tourApp.state.userName) {
+                        addChatMessage(msg.userName, msg.message, false);
+                    }
+                });
+            } else {
+                const chatMessages = JSON.parse(localStorage.getItem(`chat_${tourApp.state.tourId}`) || '[]');
+                chatMessages.forEach(msg => {
+                    addChatMessage(msg.userName, msg.message, msg.userName === tourApp.state.userName);
+                });
+            }
+        } catch (error) {
+            console.error('Error loading chat history:', error);
+        }
     }
 
-    // Map functions
     function initMap() {
-        safeCall(() => {
+        try {
             if (tourApp.state.map || !document.getElementById('map')) return;
             
             if (typeof L === 'undefined') {
@@ -1910,7 +1812,9 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             } else {
                 createMap();
             }
-        });
+        } catch (error) {
+            console.error('Error initializing map:', error);
+        }
     }
 
     function loadLeaflet(callback) {
@@ -1922,14 +1826,13 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
     }
 
     function createMap() {
-        safeCall(() => {
+        try {
             tourApp.state.map = L.map('map').setView([50.9375, 6.9597], 15);
             
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '© OpenStreetMap contributors'
             }).addTo(tourApp.state.map);
             
-            // Add station markers
             tourApp.stations.forEach(station => {
                 const isCompleted = tourApp.state.completedStations.includes(station.id);
                 const marker = L.marker([station.lat, station.lng])
@@ -1946,7 +1849,6 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 tourApp.state.markers.push(marker);
             });
             
-            // Add route
             const routeCoordinates = tourApp.stations.map(station => [station.lat, station.lng]);
             L.polyline(routeCoordinates, {
                 color: '#dc2626',
@@ -1957,7 +1859,9 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             if (tourApp.state.userLocation) {
                 addUserLocationToMap();
             }
-        });
+        } catch (error) {
+            console.error('Error creating map:', error);
+        }
     }
 
     function showMapError() {
@@ -1968,7 +1872,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
     }
 
     function addUserLocationToMap() {
-        safeCall(() => {
+        try {
             if (!tourApp.state.map || !tourApp.state.userLocation) return;
             
             const userIcon = L.divIcon({
@@ -1983,22 +1887,25 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             })
             .bindPopup('📍 Dein Standort')
             .addTo(tourApp.state.map);
-        });
+        } catch (error) {
+            console.error('Error adding user location to map:', error);
+        }
     }
 
     function centerOnUser() {
-        safeCall(() => {
+        try {
             if (tourApp.state.userLocation && tourApp.state.map) {
                 tourApp.state.map.setView([tourApp.state.userLocation.lat, tourApp.state.userLocation.lng], 17);
             } else {
                 showNotification('Standort nicht verfügbar. Bitte erlaube Standortzugriff.', 'error');
             }
-        });
+        } catch (error) {
+            console.error('Error centering on user:', error);
+        }
     }
 
-    // Geolocation
     function initGeolocation() {
-        safeCall(() => {
+        try {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     position => {
@@ -2019,11 +1926,13 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     }
                 );
             }
-        });
+        } catch (error) {
+            console.error('Error initializing geolocation:', error);
+        }
     }
 
     function updateLocationInfo() {
-        safeCall(() => {
+        try {
             if (!tourApp.state.userLocation) return;
             
             let nearestStation = null;
@@ -2051,7 +1960,9 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     distanceInfo.textContent = `📍 Nächste Station: ${nearestStation.title} (${distanceText})`;
                 }
             }
-        });
+        } catch (error) {
+            console.error('Error updating location info:', error);
+        }
     }
 
     function calculateDistance(lat1, lng1, lat2, lng2) {
@@ -2065,9 +1976,8 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
         return R * c;
     }
 
-    // Image modal
     function showImageModal(url, title, description) {
-        safeCall(() => {
+        try {
             const modal = document.createElement('div');
             modal.style.cssText = `
                 position: fixed;
@@ -2099,19 +2009,16 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             };
             
             document.body.appendChild(modal);
-        });
+        } catch (error) {
+            console.error('Error showing image modal:', error);
+        }
     }
 
-    // Reset tour
     function resetTour() {
-        safeCall(() => {
+        try {
             if (confirm('Wirklich alle Daten zurücksetzen?')) {
-                // Clear localStorage for this tour
                 localStorage.removeItem(`chat_${tourApp.state.tourId}`);
-                localStorage.removeItem(`stations_${tourApp.state.tourId}`);
-                localStorage.removeItem(`lastChatSync_${tourApp.state.tourId}`);
                 
-                // Reset state
                 tourApp.state.completedStations = [];
                 tourApp.state.totalScore = 0;
                 tourApp.state.uploadedPhotos = [];
@@ -2122,12 +2029,13 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 showNotification('Tour zurückgesetzt! 🔄');
                 addSystemMessage('Admin hat die Tour zurückgesetzt! 🔄');
             }
-        });
+        } catch (error) {
+            console.error('Error resetting tour:', error);
+        }
     }
 
-    // Notifications
     function showNotification(message, type = 'success') {
-        safeCall(() => {
+        try {
             const notification = document.createElement('div');
             notification.className = `notification ${type}`;
             notification.textContent = message;
@@ -2136,30 +2044,32 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             setTimeout(() => {
                 notification.remove();
             }, 4000);
-        });
+        } catch (error) {
+            console.error('Error showing notification:', error);
+        }
     }
 
-    // State management
     function saveState() {
-        safeCall(() => {
+        try {
             const stateToSave = {
                 ...tourApp.state,
                 map: null,
                 markers: [],
-                chatSyncInterval: null
+                syncListeners: []
             };
             localStorage.setItem('tourState', JSON.stringify(stateToSave));
-        });
+        } catch (error) {
+            console.error('Error saving state:', error);
+        }
     }
 
     function loadState() {
-        safeCall(() => {
+        try {
             const saved = localStorage.getItem('tourState');
             if (saved) {
                 const savedState = JSON.parse(saved);
                 tourApp.state = { ...tourApp.state, ...savedState };
                 
-                // Restore team selection UI
                 if (tourApp.state.selectedTeam) {
                     setTimeout(() => {
                         const teamOptions = document.querySelectorAll('.team-option');
@@ -2175,16 +2085,15 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     }, 100);
                 }
             }
-            
-            // Load stations for this tour
-            loadStations();
-        });
+        } catch (error) {
+            console.error('Error loading state:', error);
+        }
     }
 
     // Initialize app when DOM is ready
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
-            setTimeout(initApp, 100); // Small delay to ensure DOM is fully ready
+            setTimeout(initApp, 100);
         });
     } else {
         setTimeout(initApp, 100);
