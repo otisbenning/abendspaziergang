@@ -791,6 +791,15 @@
                     <div class="score-label">Foto-Punkte gesammelt</div>
                 </div>
 
+                <div style="background: white; border: 2px solid #e5e7eb; border-radius: 10px; padding: 1rem; margin: 1rem 0;">
+                    <h3 style="margin-bottom: 1rem; color: #374151;">👤 Dein Name:</h3>
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <input type="text" id="userNameInput" placeholder="Dein Name..." style="flex: 1; padding: 0.8rem; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 1rem;" maxlength="20">
+                        <button class="btn btn-secondary btn-small" onclick="changeUserName()">💾 Speichern</button>
+                    </div>
+                    <p style="font-size: 0.8rem; color: #6b7280; margin-top: 0.5rem;">Aktuell: <span id="currentUserName">Tourist_xyz</span></p>
+                </div>
+
                 <div class="team-selector" id="teamSelector">
                     <h3 style="margin-bottom: 1rem; color: #374151;">📸 Wähle dein Team:</h3>
                     <div class="team-option" onclick="selectTeam('red', '🔴 Team Römer', this)">
@@ -882,7 +891,39 @@
             <div id="admin" class="tab-content">
                 <div style="background: #fef3c7; padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem;">
                     <h3 style="color: #92400e; margin-bottom: 1rem;">⚙️ Admin-Panel</h3>
-                    <p>Hier können Sie Inhalte bearbeiten, die sofort für alle Teilnehmer sichtbar werden.</p>
+                    <p>Vollständiges Content-Management. Alle Änderungen werden sofort für alle Teilnehmer sichtbar.</p>
+                </div>
+
+                <!-- Content Management -->
+                <div style="background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; padding: 1rem; margin: 1rem 0;">
+                    <h4 style="color: #856404; margin-bottom: 1rem;">📝 Stationen-Content bearbeiten</h4>
+                    <div id="adminContentEditor">
+                        <!-- Content editor will be generated here -->
+                    </div>
+                </div>
+
+                <!-- Chat Moderation -->
+                <div style="background: white; border-radius: 12px; padding: 1.5rem; margin: 1.5rem 0; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                    <h4 style="color: #1f2937; margin-bottom: 1rem;">💬 Chat-Moderation</h4>
+                    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                        <button class="btn btn-admin btn-small" onclick="toggleChatModeration()">
+                            <span id="chatModerationText">🛡️ Moderations-Modus aktivieren</span>
+                        </button>
+                        <button class="btn btn-secondary btn-small" onclick="clearAllChatMessages()">🗑️ Alle Nachrichten löschen</button>
+                        <button class="btn btn-secondary btn-small" onclick="sendAdminAnnouncement()">📢 Ankündigung senden</button>
+                    </div>
+                </div>
+
+                <!-- Live Statistics -->
+                <div style="background: white; border-radius: 12px; padding: 1.5rem; margin: 1.5rem 0; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                    <h4 style="color: #1f2937; margin-bottom: 1rem;">📊 Live-Statistiken</h4>
+                    <div id="adminStats">
+                        <p>Aktive Teilnehmer: <span id="activeUsers">-</span></p>
+                        <p>Gesendete Nachrichten: <span id="totalMessages">-</span></p>
+                        <p>Abgeschlossene Stationen: <span id="completedStations">-</span></p>
+                        <p>Hochgeladene Fotos: <span id="uploadedPhotos">-</span></p>
+                    </div>
+                    <button class="btn btn-secondary btn-small" onclick="refreshAdminStats()">🔄 Statistiken aktualisieren</button>
                 </div>
 
                 <div style="background: white; border-radius: 12px; padding: 1.5rem; margin: 1.5rem 0; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
@@ -1204,19 +1245,34 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             const urlParams = new URLSearchParams(window.location.search);
             const urlTourId = urlParams.get('tour');
             
-            if (urlTourId) {
-                tourApp.state.tourId = urlTourId;
+            console.log('🔍 URL Tour ID from parameter:', urlTourId);
+            console.log('🔍 Full URL:', window.location.href);
+            console.log('🔍 Search params:', window.location.search);
+            
+            if (urlTourId && urlTourId.trim().length > 0) {
+                tourApp.state.tourId = urlTourId.trim();
+                localStorage.setItem('tourId', tourApp.state.tourId);
+                console.log('✅ Using URL Tour ID:', tourApp.state.tourId);
                 setTimeout(() => addSystemMessage(`Der Tour "${urlTourId}" beigetreten! 🎉`), 2000);
             } else {
-                tourApp.state.tourId = localStorage.getItem('tourId') || generateTourId();
+                const savedTourId = localStorage.getItem('tourId');
+                if (savedTourId) {
+                    tourApp.state.tourId = savedTourId;
+                    console.log('✅ Using saved Tour ID:', tourApp.state.tourId);
+                } else {
+                    tourApp.state.tourId = generateTourId();
+                    localStorage.setItem('tourId', tourApp.state.tourId);
+                    console.log('✅ Generated new Tour ID:', tourApp.state.tourId);
+                }
             }
             
-            localStorage.setItem('tourId', tourApp.state.tourId);
             updateTourDisplay();
             generateShareUrl();
+            
+            console.log('🎯 Final Tour ID set to:', tourApp.state.tourId);
         } catch (error) {
-            console.error('Error loading tour ID:', error);
-            tourApp.state.tourId = 'koeln-tour-' + Math.random().toString(36).substr(2, 8);
+            console.error('❌ Error loading tour ID:', error);
+            tourApp.state.tourId = 'koeln-tour-fallback';
             updateTourDisplay();
             generateShareUrl();
         }
