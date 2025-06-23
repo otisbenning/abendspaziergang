@@ -1039,6 +1039,10 @@ Das "Stapelrecht" von 1259 bis 1804 war ein 545 Jahre gültiges Handelsprivileg.
                     { title: "Heumarkt heute", description: "Moderne Aufnahme des historischen Platzes", url: "" },
                     { title: "Kölner Architektur", description: "Typische Rheinische Bauweise", url: "" },
                     { title: "Rheinufer", description: "Blick auf den historischen Handelsweg", url: "" }
+                ],
+                audio: [
+                    { title: "Heumarkt Atmosphäre", description: "Originalaufnahme vom historischen Platz", url: "", type: "file" },
+                    { title: "Geschichte Audio-Guide", description: "Gesprochene Führung zur Stadtgeschichte", url: "", type: "file" }
                 ]
             },
             {
@@ -1057,6 +1061,10 @@ Erst die Romantik des 19. Jahrhunderts und preußisches Geld vollendeten den Dom
                     { title: "Kölner Dom", description: "Die berühmten Zwillingstürme", url: "" },
                     { title: "Dom Innenraum", description: "Gotische Architektur", url: "" },
                     { title: "Dom bei Nacht", description: "Beleuchtetes Wahrzeichen", url: "" }
+                ],
+                audio: [
+                    { title: "Domglocken", description: "Originalaufnahme der berühmten Domglocken", url: "", type: "file" },
+                    { title: "Audio-Guide Dom", description: "Gesprochene Führung durch die Geschichte", url: "", type: "file" }
                 ]
             },
             {
@@ -1075,6 +1083,10 @@ Die Altstadt erzählt eine der größten deutschen Liebesgeschichten: Jan ist ei
                     { title: "Kölner Altstadt", description: "Historische Gassen", url: "" },
                     { title: "Rheinpromenade", description: "Spazierweg mit Domblick", url: "" },
                     { title: "Historisches Rathaus", description: "Gotisches Bauwerk", url: "" }
+                ],
+                audio: [
+                    { title: "Altstadt Atmosphäre", description: "Straßengeräusche der historischen Altstadt", url: "", type: "file" },
+                    { title: "Jan und Griet", description: "Die Liebesgeschichte als Hörspiel", url: "", type: "file" }
                 ]
             },
             {
@@ -1093,6 +1105,10 @@ Der Turm diente auch als Orientierungspunkt für Rheinschiffe und Händler - ein
                     { title: "Groß St. Martin", description: "Romanischer Kirchenbau", url: "" },
                     { title: "Altstadt Panorama", description: "Kirchtürme der Altstadt", url: "" },
                     { title: "Rheinufer", description: "Blick auf die Kirchen", url: "" }
+                ],
+                audio: [
+                    { title: "Kirchenglocken", description: "Glockengeläut von Groß St. Martin", url: "", type: "file" },
+                    { title: "Gregorianischer Gesang", description: "Historische Klostermusik", url: "", type: "file" }
                 ]
             },
             {
@@ -1111,6 +1127,10 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     { title: "Alter Markt Köln", description: "Historischer Marktplatz", url: "" },
                     { title: "Kölner Häuser", description: "Typische Architektur", url: "" },
                     { title: "Rheinischer Markt", description: "Handelstradition", url: "" }
+                ],
+                audio: [
+                    { title: "Marktgeräusche", description: "Atmosphäre des historischen Marktes", url: "", type: "file" },
+                    { title: "Händlerrufe", description: "Nachstellung mittelalterlicher Marktrufe", url: "", type: "file" }
                 ]
             }
         ]
@@ -1382,12 +1402,39 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             console.log('🔍 Full URL:', window.location.href);
             console.log('🔍 Search params:', window.location.search);
             
+            // URL-Parameter haben IMMER Vorrang über Cache!
             if (urlTourId && urlTourId.trim().length > 0) {
-                tourApp.state.tourId = urlTourId.trim();
-                localStorage.setItem('tourId', tourApp.state.tourId);
-                console.log('✅ Using URL Tour ID:', tourApp.state.tourId);
-                setTimeout(() => addSystemMessage(`Der Tour "${urlTourId}" beigetreten! 🎉`), 2000);
+                const cleanTourId = urlTourId.trim();
+                const savedTourId = localStorage.getItem('tourId');
+                
+                // Nur aktualisieren wenn sich Tour-ID geändert hat
+                if (savedTourId !== cleanTourId) {
+                    console.log('🔄 Tour-ID changed from', savedTourId, 'to', cleanTourId);
+                    
+                    // Clear old tour data to prevent cache conflicts
+                    if (savedTourId) {
+                        localStorage.removeItem(`chat_${savedTourId}`);
+                        localStorage.removeItem(`tourState`);
+                    }
+                    
+                    tourApp.state.tourId = cleanTourId;
+                    localStorage.setItem('tourId', cleanTourId);
+                    
+                    // Reset app state for new tour
+                    tourApp.state.completedStations = [];
+                    tourApp.state.totalScore = 0;
+                    tourApp.state.uploadedPhotos = [];
+                    tourApp.state.selectedTeam = null;
+                    tourApp.state.teamName = '';
+                    
+                    console.log('✅ Switched to URL Tour ID:', cleanTourId);
+                    setTimeout(() => addSystemMessage(`Der Tour "${cleanTourId}" beigetreten! 🎉`), 2000);
+                } else {
+                    tourApp.state.tourId = cleanTourId;
+                    console.log('✅ Using same URL Tour ID:', cleanTourId);
+                }
             } else {
+                // Kein URL-Parameter: verwende gespeicherte Tour-ID oder erstelle neue
                 const savedTourId = localStorage.getItem('tourId');
                 if (savedTourId) {
                     tourApp.state.tourId = savedTourId;
@@ -1701,6 +1748,14 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                         <button class="btn btn-secondary btn-small" onclick="addNewImage(${station.id})" style="margin-top: 0.5rem;">➕ Neues Bild hinzufügen</button>
                     </div>
                     
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; font-weight: bold; margin-bottom: 0.5rem;">Audio-Dateien bearbeiten:</label>
+                        <div id="audio-editor-${station.id}" style="border: 2px solid #e5e7eb; border-radius: 8px; padding: 1rem; background: #f0f9ff;">
+                            ${generateAudioEditor(station)}
+                        </div>
+                        <button class="btn btn-secondary btn-small" onclick="addNewAudio(${station.id})" style="margin-top: 0.5rem;">🎵 Neue Audio-Datei hinzufügen</button>
+                    </div>
+                    
                     <div style="display: flex; gap: 1rem;">
                         <button class="btn btn-admin btn-small" onclick="saveStationChanges(${station.id})">💾 Änderungen speichern</button>
                         <button class="btn btn-secondary btn-small" onclick="resetStationEditor(${station.id})">🔄 Zurücksetzen</button>
@@ -1737,7 +1792,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             station.lat = parseFloat(document.getElementById(`edit-lat-${stationId}`).value);
             station.lng = parseFloat(document.getElementById(`edit-lng-${stationId}`).value);
             
-            // Images are already updated in station.images through updateImageData function
+            // Images and audio are already updated in station.images/audio through update functions
             
             // Save to Firebase if connected - THIS WILL SYNC TO ALL USERS!
             if (tourApp.state.isFirebaseConnected) {
@@ -1752,8 +1807,8 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 updateMapMarkers();
             }
             
-            showNotification(`Station ${stationId} mit Bildern gespeichert und synchronisiert! ✅`);
-            addSystemMessage(`Admin hat Station "${station.title}" und Bilder aktualisiert! 📝📷`);
+            showNotification(`Station ${stationId} mit Bildern & Audio gespeichert! ✅`);
+            addSystemMessage(`Admin hat Station "${station.title}" mit Medien aktualisiert! 📝📷🎵`);
             
             saveState();
         } catch (error) {
@@ -1778,6 +1833,172 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             showNotification('Editor zurückgesetzt! 🔄');
         } catch (error) {
             console.error('Error resetting station editor:', error);
+        }
+    }
+
+    // Audio Management Functions - NEW!
+    function generateAudioEditor(station) {
+        try {
+            if (!station.audio || station.audio.length === 0) {
+                return `
+                    <p style="color: #6b7280; text-align: center; padding: 2rem;">
+                        🎵 Noch keine Audio-Dateien vorhanden<br>
+                        <small>Klicke auf "Neue Audio-Datei hinzufügen" um Audio zur Station hinzuzufügen</small>
+                    </p>
+                `;
+            }
+            
+            return station.audio.map((audio, index) => `
+                <div style="border: 1px solid #d1d5db; border-radius: 6px; padding: 1rem; margin-bottom: 1rem; background: white;" id="audio-item-${station.id}-${index}">
+                    <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 0.5rem;">
+                        <strong style="color: #374151;">🎵 Audio ${index + 1}</strong>
+                        <button onclick="removeAudio(${station.id}, ${index})" style="background: #dc2626; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">🗑️ Löschen</button>
+                    </div>
+                    
+                    <div style="margin-bottom: 0.5rem;">
+                        <label style="display: block; font-size: 0.9rem; font-weight: bold; margin-bottom: 0.25rem;">Titel:</label>
+                        <input type="text" value="${audio.title || ''}" onchange="updateAudioData(${station.id}, ${index}, 'title', this.value)" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; font-size: 0.9rem;">
+                    </div>
+                    
+                    <div style="margin-bottom: 0.5rem;">
+                        <label style="display: block; font-size: 0.9rem; font-weight: bold; margin-bottom: 0.25rem;">Beschreibung:</label>
+                        <input type="text" value="${audio.description || ''}" onchange="updateAudioData(${station.id}, ${index}, 'description', this.value)" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; font-size: 0.9rem;">
+                    </div>
+                    
+                    <div style="margin-bottom: 0.5rem;">
+                        <label style="display: block; font-size: 0.9rem; font-weight: bold; margin-bottom: 0.25rem;">Audio-Typ:</label>
+                        <select onchange="updateAudioData(${station.id}, ${index}, 'type', this.value)" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; font-size: 0.9rem;">
+                            <option value="file" ${audio.type === 'file' ? 'selected' : ''}>📁 Audio-Datei (Upload)</option>
+                            <option value="youtube" ${audio.type === 'youtube' ? 'selected' : ''}>📺 YouTube</option>
+                            <option value="soundcloud" ${audio.type === 'soundcloud' ? 'selected' : ''}>☁️ SoundCloud</option>
+                            <option value="spotify" ${audio.type === 'spotify' ? 'selected' : ''}>🟢 Spotify</option>
+                            <option value="external" ${audio.type === 'external' ? 'selected' : ''}>🔗 Externe URL</option>
+                        </select>
+                    </div>
+                    
+                    <div style="margin-bottom: 0.5rem;">
+                        <label style="display: block; font-size: 0.9rem; font-weight: bold; margin-bottom: 0.25rem;">
+                            ${audio.type === 'file' ? 'Audio-Datei hochladen:' : 
+                              audio.type === 'youtube' ? 'YouTube-URL:' :
+                              audio.type === 'soundcloud' ? 'SoundCloud-URL:' :
+                              audio.type === 'spotify' ? 'Spotify-URL:' : 'Audio-URL:'}
+                        </label>
+                        ${audio.type === 'file' ? `
+                            <input type="file" accept="audio/*" onchange="uploadAudioFile(${station.id}, ${index}, this)" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; font-size: 0.9rem;">
+                        ` : `
+                            <input type="url" value="${audio.url || ''}" onchange="updateAudioData(${station.id}, ${index}, 'url', this.value)" 
+                                   placeholder="${audio.type === 'youtube' ? 'https://www.youtube.com/watch?v=...' :
+                                                audio.type === 'soundcloud' ? 'https://soundcloud.com/...' :
+                                                audio.type === 'spotify' ? 'https://open.spotify.com/...' : 'https://example.com/audio.mp3'}" 
+                                   style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; font-size: 0.9rem;">
+                        `}
+                    </div>
+                    
+                    ${audio.url && audio.type === 'file' ? `
+                        <div style="margin-top: 0.5rem;">
+                            <audio controls style="width: 100%;">
+                                <source src="${audio.url}" type="audio/mpeg">
+                                Ihr Browser unterstützt das Audio-Element nicht.
+                            </audio>
+                        </div>
+                    ` : audio.url && audio.type !== 'file' ? `
+                        <div style="margin-top: 0.5rem; font-size: 0.8rem; color: #059669;">
+                            ✅ ${audio.type.charAt(0).toUpperCase() + audio.type.slice(1)}-Link gesetzt
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('');
+        } catch (error) {
+            console.error('Error generating audio editor:', error);
+            return '<p style="color: #dc2626;">Fehler beim Laden des Audio-Editors</p>';
+        }
+    }
+
+    function addNewAudio(stationId) {
+        try {
+            const station = tourApp.stations.find(s => s.id === stationId);
+            if (!station) return;
+            
+            if (!station.audio) {
+                station.audio = [];
+            }
+            
+            station.audio.push({
+                title: `Neue Audio-Datei ${station.audio.length + 1}`,
+                description: "Beschreibung der Audio-Datei",
+                url: "",
+                type: "file"
+            });
+            
+            // Regenerate audio editor
+            const editorContainer = document.getElementById(`audio-editor-${stationId}`);
+            if (editorContainer) {
+                editorContainer.innerHTML = generateAudioEditor(station);
+            }
+            
+            showNotification('Neue Audio-Datei hinzugefügt! 🎵');
+        } catch (error) {
+            console.error('Error adding new audio:', error);
+        }
+    }
+
+    function removeAudio(stationId, audioIndex) {
+        try {
+            if (!confirm('Diese Audio-Datei wirklich löschen?')) return;
+            
+            const station = tourApp.stations.find(s => s.id === stationId);
+            if (!station || !station.audio) return;
+            
+            station.audio.splice(audioIndex, 1);
+            
+            // Regenerate audio editor
+            const editorContainer = document.getElementById(`audio-editor-${stationId}`);
+            if (editorContainer) {
+                editorContainer.innerHTML = generateAudioEditor(station);
+            }
+            
+            showNotification('Audio-Datei gelöscht! 🗑️');
+        } catch (error) {
+            console.error('Error removing audio:', error);
+        }
+    }
+
+    function updateAudioData(stationId, audioIndex, field, value) {
+        try {
+            const station = tourApp.stations.find(s => s.id === stationId);
+            if (!station || !station.audio || !station.audio[audioIndex]) return;
+            
+            station.audio[audioIndex][field] = value;
+            
+            // If type was updated, refresh the editor to show different input fields
+            if (field === 'type' || field === 'url') {
+                setTimeout(() => {
+                    const editorContainer = document.getElementById(`audio-editor-${stationId}`);
+                    if (editorContainer) {
+                        editorContainer.innerHTML = generateAudioEditor(station);
+                    }
+                }, 100);
+            }
+        } catch (error) {
+            console.error('Error updating audio data:', error);
+        }
+    }
+
+    function uploadAudioFile(stationId, audioIndex, fileInput) {
+        try {
+            const file = fileInput.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const dataUrl = e.target.result;
+                updateAudioData(stationId, audioIndex, 'url', dataUrl);
+                showNotification('Audio-Datei hochgeladen! 🎵');
+            };
+            reader.readAsDataURL(file);
+        } catch (error) {
+            console.error('Error uploading audio file:', error);
+            showNotification('Fehler beim Hochladen der Audio-Datei', 'error');
         }
     }
 
@@ -1970,6 +2191,9 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 images: [
                     { title: "Bild 1", description: "Beschreibung des ersten Bildes", url: "" },
                     { title: "Bild 2", description: "Beschreibung des zweiten Bildes", url: "" }
+                ],
+                audio: [
+                    { title: "Audio 1", description: "Beschreibung der ersten Audio-Datei", url: "", type: "file" }
                 ]
             };
             
@@ -2393,6 +2617,15 @@ Siehe Console (F12) für mehr Details!`);
                     </div>
                 `).join('');
                 
+                const audioHtml = station.audio && station.audio.length > 0 ? station.audio.map(audio => `
+                    <div class="gallery-item">
+                        <div class="gallery-image" onclick="playAudio('${audio.url}', '${audio.type}', '${audio.title}')" style="background: linear-gradient(135deg, #fef3c7 0%, #f59e0b 100%); color: white; font-size: 1.5rem;">
+                            🎵
+                        </div>
+                        <small>${audio.title}</small>
+                    </div>
+                `).join('') : '';
+                
                 stationCard.innerHTML = `
                     <div class="station-header">
                         <div class="station-number ${isCompleted ? 'completed' : ''}">${station.id}</div>
@@ -2413,6 +2646,15 @@ Siehe Console (F12) für mehr Details!`);
                                 ${imagesHtml}
                             </div>
                         </div>
+                        
+                        ${audioHtml ? `
+                        <div class="detail-section">
+                            <h4>🎵 Audio-Dateien</h4>
+                            <div class="image-gallery">
+                                ${audioHtml}
+                            </div>
+                        </div>
+                        ` : ''}
 
                         <div class="photo-challenge">
                             <h4>📸 KI-Foto-Challenge</h4>
@@ -2863,6 +3105,109 @@ Siehe Console (F12) für mehr Details!`);
                   Math.sin(dLng/2) * Math.sin(dLng/2);
         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
         return R * c;
+    }
+
+    function playAudio(url, type, title) {
+        try {
+            if (!url || url.trim() === '') {
+                showNotification('Audio-Datei noch nicht verfügbar', 'warning');
+                return;
+            }
+            
+            // Create audio modal
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.9);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+                flex-direction: column;
+                padding: 20px;
+                box-sizing: border-box;
+            `;
+            
+            let audioContent = '';
+            
+            switch(type) {
+                case 'file':
+                    audioContent = `
+                        <div style="background: white; border-radius: 12px; padding: 2rem; max-width: 500px; width: 100%; text-align: center;">
+                            <h3 style="color: #1f2937; margin-bottom: 1rem;">🎵 ${title}</h3>
+                            <audio controls style="width: 100%; margin-bottom: 1rem;">
+                                <source src="${url}" type="audio/mpeg">
+                                Ihr Browser unterstützt das Audio-Element nicht.
+                            </audio>
+                        </div>
+                    `;
+                    break;
+                    
+                case 'youtube':
+                    const youtubeId = extractYouTubeId(url);
+                    if (youtubeId) {
+                        audioContent = `
+                            <div style="background: white; border-radius: 12px; padding: 2rem; max-width: 600px; width: 100%; text-align: center;">
+                                <h3 style="color: #1f2937; margin-bottom: 1rem;">📺 ${title}</h3>
+                                <iframe width="100%" height="315" src="https://www.youtube.com/embed/${youtubeId}" 
+                                        frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                        allowfullscreen style="border-radius: 8px;"></iframe>
+                            </div>
+                        `;
+                    } else {
+                        audioContent = `<div style="color: white; text-align: center;"><h3>❌ Ungültige YouTube-URL</h3></div>`;
+                    }
+                    break;
+                    
+                case 'soundcloud':
+                case 'spotify':
+                case 'external':
+                    audioContent = `
+                        <div style="background: white; border-radius: 12px; padding: 2rem; max-width: 500px; width: 100%; text-align: center;">
+                            <h3 style="color: #1f2937; margin-bottom: 1rem;">🎵 ${title}</h3>
+                            <p style="color: #6b7280; margin-bottom: 1rem;">Link wird in neuem Fenster geöffnet:</p>
+                            <a href="${url}" target="_blank" style="background: #059669; color: white; padding: 1rem 2rem; border-radius: 8px; text-decoration: none; display: inline-block;">
+                                🔗 ${type.charAt(0).toUpperCase() + type.slice(1)} öffnen
+                            </a>
+                        </div>
+                    `;
+                    // Auto-open the link
+                    setTimeout(() => window.open(url, '_blank'), 500);
+                    break;
+                    
+                default:
+                    audioContent = `<div style="color: white; text-align: center;"><h3>❌ Unbekannter Audio-Typ</h3></div>`;
+            }
+            
+            modal.innerHTML = `
+                ${audioContent}
+                <button style="margin-top: 20px; padding: 10px 20px; background: #dc2626; color: white; border: none; border-radius: 5px; cursor: pointer;" onclick="this.parentElement.remove()">Schließen</button>
+            `;
+            
+            modal.onclick = (e) => {
+                if (e.target === modal) modal.remove();
+            };
+            
+            document.body.appendChild(modal);
+            
+        } catch (error) {
+            console.error('Error playing audio:', error);
+            showNotification('Fehler beim Abspielen der Audio-Datei', 'error');
+        }
+    }
+
+    function extractYouTubeId(url) {
+        try {
+            const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+            const match = url.match(regex);
+            return match ? match[1] : null;
+        } catch (error) {
+            return null;
+        }
     }
 
     function showImageModal(url, title, description) {
