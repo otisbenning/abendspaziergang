@@ -1073,31 +1073,52 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
 
     // Firebase Real-time Functions
     function enableRealtimeSync() {
-        if (!tourApp.state.isFirebaseConnected) return;
+        if (!tourApp.state.isFirebaseConnected) {
+            console.log('⚠️ Firebase not connected, skipping real-time sync');
+            return;
+        }
 
         try {
+            console.log('🔄 Setting up real-time sync for tour:', tourApp.state.tourId);
+            
             // Listen to chat messages
             const chatRef = db.collection('tours').doc(tourApp.state.tourId).collection('chat');
-            const chatUnsubscribe = chatRef.orderBy('timestamp', 'asc').onSnapshot((snapshot) => {
-                snapshot.docChanges().forEach((change) => {
-                    if (change.type === 'added' && change.doc.data().userName !== tourApp.state.userName) {
-                        const messageData = change.doc.data();
-                        addChatMessage(messageData.userName, messageData.message, false);
-                    }
+            const chatUnsubscribe = chatRef.orderBy('timestamp', 'asc')
+                .onSnapshot((snapshot) => {
+                    console.log('📨 Chat snapshot received, changes:', snapshot.docChanges().length);
+                    
+                    snapshot.docChanges().forEach((change) => {
+                        if (change.type === 'added') {
+                            const messageData = change.doc.data();
+                            console.log('📨 New message from:', messageData.userName, 'Content:', messageData.message);
+                            
+                            // Only show messages from other users
+                            if (messageData.userName !== tourApp.state.userName) {
+                                console.log('✅ Adding message from other user');
+                                addChatMessage(messageData.userName, messageData.message, false);
+                            } else {
+                                console.log('⏭️ Skipping own message');
+                            }
+                        }
+                    });
+                }, (error) => {
+                    console.error('❌ Chat listener error:', error);
                 });
-            });
 
             // Listen to team scores
             const scoresRef = db.collection('tours').doc(tourApp.state.tourId).collection('scores');
-            const scoresUnsubscribe = scoresRef.onSnapshot(() => {
+            const scoresUnsubscribe = scoresRef.onSnapshot((snapshot) => {
+                console.log('🏆 Scores updated, refreshing ranking');
                 updateRanking();
+            }, (error) => {
+                console.error('❌ Scores listener error:', error);
             });
 
             tourApp.state.syncListeners.push(chatUnsubscribe, scoresUnsubscribe);
             
             console.log('✅ Real-time sync enabled');
         } catch (error) {
-            console.error('Error setting up real-time sync:', error);
+            console.error('❌ Error setting up real-time sync:', error);
         }
     }
 
@@ -1478,6 +1499,85 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
         } catch (error) {
             console.error('Error setting manual tour ID:', error);
             showNotification('Fehler beim Setzen der Tour-ID', 'error');
+        }
+    }
+
+    function testChatSync() {
+        try {
+            console.log('🔄 Testing chat sync...');
+            
+            // Clear current chat display
+            const chatContainer = document.getElementById('chatContainer');
+            if (chatContainer) {
+                chatContainer.innerHTML = `
+                    <div class="chat-message system">
+                        <strong>System:</strong> Chat wird neu geladen... 🔄<br>
+                        <small>Tour-ID: ${tourApp.state.tourId}</small>
+                        <span class="timestamp">jetzt</span>
+                    </div>
+                `;
+            }
+            
+            // Reload chat history
+            setTimeout(() => {
+                loadChatHistory();
+                showNotification('Chat neu geladen! 🔄');
+            }, 500);
+            
+        } catch (error) {
+            console.error('Error testing chat sync:', error);
+            showNotification('Fehler beim Chat-Test', 'error');
+        }
+    }
+
+    function clearChatHistory() {
+        try {
+            console.log('🗑️ Clearing chat history...');
+            
+            const chatContainer = document.getElementById('chatContainer');
+            if (chatContainer) {
+                chatContainer.innerHTML = `
+                    <div class="chat-message system">
+                        <strong>System:</strong> Chat geleert! 🗑️<br>
+                        <small>Neue Nachrichten werden wieder angezeigt</small>
+                        <span class="timestamp">jetzt</span>
+                    </div>
+                `;
+            }
+            
+            showNotification('Chat geleert! 🗑️');
+            
+        } catch (error) {
+            console.error('Error clearing chat:', error);
+        }
+    }
+
+    function showDebugInfo() {
+        try {
+            const debugInfo = {
+                tourId: tourApp.state.tourId,
+                userName: tourApp.state.userName,
+                isFirebaseConnected: tourApp.state.isFirebaseConnected,
+                selectedTeam: tourApp.state.selectedTeam,
+                totalScore: tourApp.state.totalScore,
+                syncListeners: tourApp.state.syncListeners.length
+            };
+            
+            console.log('📊 Debug Info:', debugInfo);
+            
+            alert(`📊 Debug Info:
+Tour-ID: ${debugInfo.tourId}
+Username: ${debugInfo.userName}
+Firebase: ${debugInfo.isFirebaseConnected ? '✅ Verbunden' : '❌ Nicht verbunden'}
+Team: ${debugInfo.selectedTeam || 'Nicht ausgewählt'}
+Score: ${debugInfo.totalScore}
+Sync Listeners: ${debugInfo.syncListeners}
+
+Siehe Console (F12) für mehr Details!`);
+            
+        } catch (error) {
+            console.error('Error showing debug info:', error);
+            alert('Fehler beim Anzeigen der Debug-Info. Siehe Console (F12).');
         }
     }
 
