@@ -746,7 +746,7 @@
             <h1>🏛️ Kölner Abendspaziergang</h1>
             <p class="subtitle">Entdecke 2000 Jahre Stadtgeschichte</p>
             <div class="tour-id-display">
-                Tour: <span id="currentTourId">Wird generiert...</span>
+                Tour: <span id="currentTourId">Lädt...</span>
             </div>
             <div class="progress-container">
                 <div class="progress-bar" id="progressBar"></div>
@@ -771,7 +771,7 @@
                 
                 <div class="qr-code-area">
                     <p><strong>Teile diese URL mit anderen Teilnehmern:</strong></p>
-                    <div class="share-url" id="shareUrl">Wird generiert...</div>
+                    <div class="share-url" id="shareUrl">Lädt...</div>
                     <button class="btn btn-secondary btn-small" onclick="copyShareUrl()">📋 URL kopieren</button>
                     <button class="btn btn-secondary btn-small" onclick="shareViaWhatsApp()">📱 WhatsApp teilen</button>
                 </div>
@@ -974,16 +974,29 @@ function safeCall(func, ...args) {
 
 // Initialize app
 function initApp() {
-    safeCall(() => {
-        console.log('Initializing Tour App...');
+    console.log('🚀 Starting Tour App...');
+    
+    try {
+        // Set loading indicators
+        const statusEl = document.getElementById('currentTourId');
+        if (statusEl) statusEl.textContent = 'Lädt...';
+        const shareEl = document.getElementById('shareUrl');
+        if (shareEl) shareEl.textContent = 'App wird initialisiert...';
         
-        // Generate or load tour ID
+        // Set a simple fallback tour ID first
+        if (!tourApp.state.tourId) {
+            tourApp.state.tourId = 'koeln-tour-' + Math.random().toString(36).substr(2, 8);
+            console.log('Generated tour ID:', tourApp.state.tourId);
+        }
+        
+        // Load URL parameters and saved state
         loadTourId();
         loadState();
+        
+        // Generate UI
+        console.log('Generating stations...');
         generateStationsList();
         updateUI();
-        initGeolocation();
-        initChatSync();
         
         // Setup event listeners
         const chatInput = document.getElementById('chatInput');
@@ -995,49 +1008,96 @@ function initApp() {
             });
         }
         
-        console.log('Tour App initialized successfully');
-    });
+        console.log('✅ Tour App initialized successfully');
+        
+        // Initialize optional features with delay
+        setTimeout(() => {
+            console.log('Loading optional features...');
+            initGeolocation();
+            initChatSync();
+        }, 1000);
+        
+    } catch (error) {
+        console.error('❌ Error initializing app:', error);
+        // Emergency fallback
+        tourApp.state.tourId = 'koeln-emergency-' + Date.now();
+        const el = document.getElementById('currentTourId');
+        if (el) el.textContent = tourApp.state.tourId;
+        const shareEl = document.getElementById('shareUrl');
+        if (shareEl) shareEl.textContent = window.location.href + '?tour=' + tourApp.state.tourId;
+        
+        // Show error notification
+        setTimeout(() => {
+            showNotification('App geladen, aber mit Fehlern. Bitte Seite neu laden falls Probleme auftreten.', 'error');
+        }, 2000);
+    }
 }
 
 // Load or generate tour ID
 function loadTourId() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const urlTourId = urlParams.get('tour');
-    
-    if (urlTourId) {
-        tourApp.state.tourId = urlTourId;
-        addSystemMessage(`Automatisch der Tour "${urlTourId}" beigetreten! 🎉`);
-    } else {
-        tourApp.state.tourId = localStorage.getItem('tourId') || generateTourId();
+    try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlTourId = urlParams.get('tour');
+        
+        if (urlTourId) {
+            tourApp.state.tourId = urlTourId;
+            setTimeout(() => addSystemMessage(`Automatisch der Tour "${urlTourId}" beigetreten! 🎉`), 1000);
+        } else {
+            tourApp.state.tourId = localStorage.getItem('tourId') || generateTourId();
+        }
+        
+        localStorage.setItem('tourId', tourApp.state.tourId);
+        updateTourDisplay();
+        generateShareUrl();
+    } catch (error) {
+        console.error('Error loading tour ID:', error);
+        // Fallback: use simple tour ID
+        tourApp.state.tourId = 'koeln-tour-' + Math.random().toString(36).substr(2, 8);
+        updateTourDisplay();
+        generateShareUrl();
     }
-    
-    localStorage.setItem('tourId', tourApp.state.tourId);
-    updateTourDisplay();
-    generateShareUrl();
 }
 
 // Generate unique tour ID
 function generateTourId() {
-    const today = new Date().toISOString().split('T')[0];
-    const random = Math.random().toString(36).substr(2, 5);
-    return `koeln-${today}-${random}`;
+    try {
+        const today = new Date().toISOString().split('T')[0];
+        const random = Math.random().toString(36).substr(2, 5);
+        return `koeln-${today}-${random}`;
+    } catch (error) {
+        return 'koeln-tour-' + Math.random().toString(36).substr(2, 8);
+    }
 }
 
 // Update tour display
 function updateTourDisplay() {
-    const el = document.getElementById('currentTourId');
-    if (el) {
-        el.textContent = tourApp.state.tourId;
+    try {
+        const el = document.getElementById('currentTourId');
+        if (el && tourApp.state.tourId) {
+            el.textContent = tourApp.state.tourId;
+        }
+    } catch (error) {
+        console.error('Error updating tour display:', error);
     }
 }
 
 // Generate share URL
 function generateShareUrl() {
-    const baseUrl = window.location.origin + window.location.pathname;
-    const shareUrl = `${baseUrl}?tour=${tourApp.state.tourId}`;
-    const el = document.getElementById('shareUrl');
-    if (el) {
-        el.textContent = shareUrl;
+    try {
+        if (!tourApp.state.tourId) return;
+        
+        const baseUrl = window.location.origin + window.location.pathname;
+        const shareUrl = `${baseUrl}?tour=${tourApp.state.tourId}`;
+        const el = document.getElementById('shareUrl');
+        if (el) {
+            el.textContent = shareUrl;
+        }
+    } catch (error) {
+        console.error('Error generating share URL:', error);
+        const el = document.getElementById('shareUrl');
+        if (el) {
+            el.textContent = 'Fehler beim Generieren der URL';
+        }
     }
 }
 
@@ -1755,26 +1815,30 @@ function addChatMessage(userName, message, isOwn = false) {
 }
 
 function addSystemMessage(message) {
-    safeCall(() => {
-        const chatContainer = document.getElementById('chatContainer');
-        if (!chatContainer) return;
-        
-        const messageDiv = document.createElement('div');
-        messageDiv.className = 'chat-message system';
-        
-        const timeStr = new Date().toLocaleTimeString('de-DE', {
-            hour: '2-digit',
-            minute: '2-digit'
-        });
+    try {
+        setTimeout(() => {
+            const chatContainer = document.getElementById('chatContainer');
+            if (!chatContainer) return;
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'chat-message system';
+            
+            const timeStr = new Date().toLocaleTimeString('de-DE', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
 
-        messageDiv.innerHTML = `
-            <strong>System:</strong> ${message}
-            <span class="timestamp">${timeStr}</span>
-        `;
-        
-        chatContainer.appendChild(messageDiv);
-        chatContainer.scrollTop = chatContainer.scrollHeight;
-    });
+            messageDiv.innerHTML = `
+                <strong>System:</strong> ${message}
+                <span class="timestamp">${timeStr}</span>
+            `;
+            
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }, 100);
+    } catch (error) {
+        console.error('Error adding system message:', error);
+    }
 }
 
 function loadChatHistory() {
@@ -2070,9 +2134,11 @@ function loadState() {
 
 // Initialize app when DOM is ready
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initApp);
+    document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(initApp, 100); // Small delay to ensure DOM is fully ready
+    });
 } else {
-    initApp();
+    setTimeout(initApp, 100);
 }
 
 </script>
