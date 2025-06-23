@@ -1195,7 +1195,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
         initFirebase();
     }
 
-    // Firebase Real-time Functions - FIXED
+    // Firebase Real-time Functions - FIXED with Station Sync
     function enableRealtimeSync() {
         if (!tourApp.state.isFirebaseConnected || !tourApp.state.tourId) return;
 
@@ -1224,7 +1224,49 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 console.error('Scores sync error:', error);
             });
 
-            tourApp.state.syncListeners.push(chatUnsubscribe, scoresUnsubscribe);
+            // Listen to station updates for current tour ID - NEW!
+            const stationsRef = db.collection('tours').doc(tourApp.state.tourId).collection('stations');
+            const stationsUnsubscribe = stationsRef.onSnapshot((snapshot) => {
+                let hasChanges = false;
+                snapshot.docChanges().forEach((change) => {
+                    if (change.type === 'added' || change.type === 'modified') {
+                        const stationData = change.doc.data();
+                        const stationIndex = tourApp.stations.findIndex(s => s.id === stationData.id);
+                        
+                        if (stationIndex >= 0) {
+                            // Update existing station
+                            tourApp.stations[stationIndex] = stationData;
+                            hasChanges = true;
+                        } else {
+                            // Add new station
+                            tourApp.stations.push(stationData);
+                            tourApp.stations.sort((a, b) => a.id - b.id);
+                            hasChanges = true;
+                        }
+                    } else if (change.type === 'removed') {
+                        const stationData = change.doc.data();
+                        const stationIndex = tourApp.stations.findIndex(s => s.id === stationData.id);
+                        if (stationIndex >= 0) {
+                            tourApp.stations.splice(stationIndex, 1);
+                            hasChanges = true;
+                        }
+                    }
+                });
+                
+                if (hasChanges && !tourApp.state.isAdmin) {
+                    // Only non-admin users should auto-update from Firebase changes
+                    generateStationsList();
+                    updateProgress();
+                    if (tourApp.state.map) {
+                        updateMapMarkers();
+                    }
+                    showNotification('🔄 Stationen wurden aktualisiert!');
+                }
+            }, (error) => {
+                console.error('Stations sync error:', error);
+            });
+
+            tourApp.state.syncListeners.push(chatUnsubscribe, scoresUnsubscribe, stationsUnsubscribe);
         } catch (error) {
             console.error('Error setting up real-time sync:', error);
         }
@@ -1258,7 +1300,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
         }
     }
 
-    // App Initialization
+    // App Initialization - Enhanced with Station Loading
     function initApp() {
         console.log('🚀 Starting Tour App...');
         
@@ -1266,8 +1308,13 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             loadTourId();
             initFirebase();
             loadState();
-            generateStationsList();
-            updateUI();
+            
+            // Load stations from Firebase first, then generate UI
+            setTimeout(async () => {
+                await loadStationsFromFirebase();
+                generateStationsList();
+                updateUI();
+            }, 1500);
             
             const chatInput = document.getElementById('chatInput');
             if (chatInput) {
@@ -1300,6 +1347,29 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 updateTourDisplay();
                 generateShareUrl();
             }
+        }
+    }
+
+    // Load Stations from Firebase - NEW!
+    async function loadStationsFromFirebase() {
+        if (!tourApp.state.isFirebaseConnected || !tourApp.state.tourId) return;
+        
+        try {
+            const firebaseStations = await getFromFirebase('stations');
+            if (firebaseStations && firebaseStations.length > 0) {
+                // Update stations with Firebase data
+                tourApp.stations = firebaseStations.sort((a, b) => a.id - b.id);
+                console.log('✅ Loaded stations from Firebase:', firebaseStations.length);
+                showNotification('🔄 Stationen von Server geladen!');
+            } else {
+                // Initialize Firebase with default stations if empty
+                for (const station of tourApp.stations) {
+                    await saveToFirebase('stations', station.id.toString(), station);
+                }
+                console.log('📤 Initialized Firebase with default stations');
+            }
+        } catch (error) {
+            console.error('Error loading stations from Firebase:', error);
         }
     }
 
@@ -1623,6 +1693,14 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                         </div>
                     </div>
                     
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; font-weight: bold; margin-bottom: 0.5rem;">Bildergalerie bearbeiten:</label>
+                        <div id="image-editor-${station.id}" style="border: 2px solid #e5e7eb; border-radius: 8px; padding: 1rem; background: #f9fafb;">
+                            ${generateImageEditor(station)}
+                        </div>
+                        <button class="btn btn-secondary btn-small" onclick="addNewImage(${station.id})" style="margin-top: 0.5rem;">➕ Neues Bild hinzufügen</button>
+                    </div>
+                    
                     <div style="display: flex; gap: 1rem;">
                         <button class="btn btn-admin btn-small" onclick="saveStationChanges(${station.id})">💾 Änderungen speichern</button>
                         <button class="btn btn-secondary btn-small" onclick="resetStationEditor(${station.id})">🔄 Zurücksetzen</button>
@@ -1659,12 +1737,14 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             station.lat = parseFloat(document.getElementById(`edit-lat-${stationId}`).value);
             station.lng = parseFloat(document.getElementById(`edit-lng-${stationId}`).value);
             
-            // Save to Firebase if connected
+            // Images are already updated in station.images through updateImageData function
+            
+            // Save to Firebase if connected - THIS WILL SYNC TO ALL USERS!
             if (tourApp.state.isFirebaseConnected) {
                 saveToFirebase('stations', stationId.toString(), station);
             }
             
-            // Regenerate stations list to reflect changes
+            // Regenerate stations list to reflect changes locally
             generateStationsList();
             
             // Update map if it exists
@@ -1672,8 +1752,8 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 updateMapMarkers();
             }
             
-            showNotification(`Station ${stationId} gespeichert! ✅`);
-            addSystemMessage(`Admin hat Station "${station.title}" aktualisiert! 📝`);
+            showNotification(`Station ${stationId} mit Bildern gespeichert und synchronisiert! ✅`);
+            addSystemMessage(`Admin hat Station "${station.title}" und Bilder aktualisiert! 📝📷`);
             
             saveState();
         } catch (error) {
@@ -1701,6 +1781,145 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
         }
     }
 
+    // Image Management Functions - NEW!
+    function generateImageEditor(station) {
+        try {
+            if (!station.images || station.images.length === 0) {
+                return `
+                    <p style="color: #6b7280; text-align: center; padding: 2rem;">
+                        📷 Noch keine Bilder vorhanden<br>
+                        <small>Klicke auf "Neues Bild hinzufügen" um Bilder zur Galerie hinzuzufügen</small>
+                    </p>
+                `;
+            }
+            
+            return station.images.map((image, index) => `
+                <div style="border: 1px solid #d1d5db; border-radius: 6px; padding: 1rem; margin-bottom: 1rem; background: white;" id="image-item-${station.id}-${index}">
+                    <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 0.5rem;">
+                        <strong style="color: #374151;">Bild ${index + 1}</strong>
+                        <button onclick="removeImage(${station.id}, ${index})" style="background: #dc2626; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">🗑️ Löschen</button>
+                    </div>
+                    
+                    <div style="margin-bottom: 0.5rem;">
+                        <label style="display: block; font-size: 0.9rem; font-weight: bold; margin-bottom: 0.25rem;">Titel:</label>
+                        <input type="text" value="${image.title || ''}" onchange="updateImageData(${station.id}, ${index}, 'title', this.value)" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; font-size: 0.9rem;">
+                    </div>
+                    
+                    <div style="margin-bottom: 0.5rem;">
+                        <label style="display: block; font-size: 0.9rem; font-weight: bold; margin-bottom: 0.25rem;">Beschreibung:</label>
+                        <input type="text" value="${image.description || ''}" onchange="updateImageData(${station.id}, ${index}, 'description', this.value)" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; font-size: 0.9rem;">
+                    </div>
+                    
+                    <div style="margin-bottom: 0.5rem;">
+                        <label style="display: block; font-size: 0.9rem; font-weight: bold; margin-bottom: 0.25rem;">Bild-URL (optional):</label>
+                        <input type="url" value="${image.url || ''}" onchange="updateImageData(${station.id}, ${index}, 'url', this.value)" placeholder="https://example.com/image.jpg" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; font-size: 0.9rem;">
+                    </div>
+                    
+                    <div style="margin-bottom: 0.5rem;">
+                        <label style="display: block; font-size: 0.9rem; font-weight: bold; margin-bottom: 0.25rem;">Oder Bild hochladen:</label>
+                        <input type="file" accept="image/*" onchange="uploadImageFile(${station.id}, ${index}, this)" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; font-size: 0.9rem;">
+                    </div>
+                    
+                    ${image.url ? `
+                        <div style="margin-top: 0.5rem;">
+                            <img src="${image.url}" alt="${image.title}" style="max-width: 150px; max-height: 100px; border-radius: 4px; object-fit: cover;">
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('');
+        } catch (error) {
+            console.error('Error generating image editor:', error);
+            return '<p style="color: #dc2626;">Fehler beim Laden des Bild-Editors</p>';
+        }
+    }
+
+    function addNewImage(stationId) {
+        try {
+            const station = tourApp.stations.find(s => s.id === stationId);
+            if (!station) return;
+            
+            if (!station.images) {
+                station.images = [];
+            }
+            
+            station.images.push({
+                title: `Neues Bild ${station.images.length + 1}`,
+                description: "Beschreibung des Bildes",
+                url: ""
+            });
+            
+            // Regenerate image editor
+            const editorContainer = document.getElementById(`image-editor-${stationId}`);
+            if (editorContainer) {
+                editorContainer.innerHTML = generateImageEditor(station);
+            }
+            
+            showNotification('Neues Bild hinzugefügt! 📷');
+        } catch (error) {
+            console.error('Error adding new image:', error);
+        }
+    }
+
+    function removeImage(stationId, imageIndex) {
+        try {
+            if (!confirm('Dieses Bild wirklich löschen?')) return;
+            
+            const station = tourApp.stations.find(s => s.id === stationId);
+            if (!station || !station.images) return;
+            
+            station.images.splice(imageIndex, 1);
+            
+            // Regenerate image editor
+            const editorContainer = document.getElementById(`image-editor-${stationId}`);
+            if (editorContainer) {
+                editorContainer.innerHTML = generateImageEditor(station);
+            }
+            
+            showNotification('Bild gelöscht! 🗑️');
+        } catch (error) {
+            console.error('Error removing image:', error);
+        }
+    }
+
+    function updateImageData(stationId, imageIndex, field, value) {
+        try {
+            const station = tourApp.stations.find(s => s.id === stationId);
+            if (!station || !station.images || !station.images[imageIndex]) return;
+            
+            station.images[imageIndex][field] = value;
+            
+            // If URL was updated, refresh the preview
+            if (field === 'url') {
+                setTimeout(() => {
+                    const editorContainer = document.getElementById(`image-editor-${stationId}`);
+                    if (editorContainer) {
+                        editorContainer.innerHTML = generateImageEditor(station);
+                    }
+                }, 100);
+            }
+        } catch (error) {
+            console.error('Error updating image data:', error);
+        }
+    }
+
+    function uploadImageFile(stationId, imageIndex, fileInput) {
+        try {
+            const file = fileInput.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const dataUrl = e.target.result;
+                updateImageData(stationId, imageIndex, 'url', dataUrl);
+                showNotification('Bild hochgeladen! 📷');
+            };
+            reader.readAsDataURL(file);
+        } catch (error) {
+            console.error('Error uploading image file:', error);
+            showNotification('Fehler beim Hochladen des Bildes', 'error');
+        }
+    }
+
     function deleteStation(stationId) {
         try {
             if (confirm(`Station ${stationId} wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`)) {
@@ -1712,6 +1931,12 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     // Remove from completed stations
                     tourApp.state.completedStations = tourApp.state.completedStations.filter(id => id !== stationId);
                     
+                    // Delete from Firebase to sync with all users
+                    if (tourApp.state.isFirebaseConnected) {
+                        db.collection('tours').doc(tourApp.state.tourId)
+                            .collection('stations').doc(stationId.toString()).delete();
+                    }
+                    
                     // Regenerate content
                     generateContentEditor();
                     generateStationsList();
@@ -1721,7 +1946,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                         updateMapMarkers();
                     }
                     
-                    showNotification(`Station "${station.title}" gelöscht! 🗑️`);
+                    showNotification(`Station "${station.title}" gelöscht und synchronisiert! 🗑️`);
                     addSystemMessage(`Admin hat Station "${station.title}" entfernt! 🗑️`);
                     saveState();
                 }
@@ -1743,12 +1968,18 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 photoChallenge: "Macht ein kreatives Foto an dieser Station!",
                 mainText: "Hier kommt der Haupttext der neuen Station. Erzähle die Geschichte dieses Ortes...",
                 images: [
-                    { title: "Bild 1", description: "Beschreibung des ersten Bildes" },
-                    { title: "Bild 2", description: "Beschreibung des zweiten Bildes" }
+                    { title: "Bild 1", description: "Beschreibung des ersten Bildes", url: "" },
+                    { title: "Bild 2", description: "Beschreibung des zweiten Bildes", url: "" }
                 ]
             };
             
             tourApp.stations.push(newStation);
+            tourApp.stations.sort((a, b) => a.id - b.id);
+            
+            // Save to Firebase to sync with all users
+            if (tourApp.state.isFirebaseConnected) {
+                saveToFirebase('stations', newId.toString(), newStation);
+            }
             
             // Regenerate everything
             generateContentEditor();
@@ -1758,7 +1989,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 updateMapMarkers();
             }
             
-            showNotification(`Neue Station ${newId} hinzugefügt! ➕`);
+            showNotification(`Neue Station ${newId} hinzugefügt und synchronisiert! ➕`);
             addSystemMessage(`Admin hat neue Station "${newStation.title}" hinzugefügt! ➕`);
             saveState();
         } catch (error) {
@@ -2154,7 +2385,10 @@ Siehe Console (F12) für mehr Details!`);
                 
                 const imagesHtml = station.images.map(img => `
                     <div class="gallery-item">
-                        <div class="gallery-image" onclick="showImageModal('placeholder', '${img.title}', '${img.description}')">📷</div>
+                        <div class="gallery-image" onclick="showImageModal('${img.url || 'placeholder'}', '${img.title}', '${img.description}')" 
+                             style="${img.url ? `background-image: url('${img.url}'); background-size: cover; background-position: center;` : ''}">
+                            ${img.url ? '' : '📷'}
+                        </div>
                         <small>${img.title}</small>
                     </div>
                 `).join('');
@@ -2650,10 +2884,10 @@ Siehe Console (F12) für mehr Details!`);
                 box-sizing: border-box;
             `;
             
-            const imageContent = url === 'placeholder' ? `
+            const imageContent = !url || url === 'placeholder' ? `
                 <div style="width: 300px; height: 200px; background: #f3f4f6; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #6b7280; font-size: 3rem;">📷</div>
             ` : `
-                <img src="${url}" style="max-width: 90%; max-height: 70%; object-fit: contain; border-radius: 8px;">
+                <img src="${url}" style="max-width: 90%; max-height: 70%; object-fit: contain; border-radius: 8px;" alt="${title}">
             `;
             
             modal.innerHTML = `
