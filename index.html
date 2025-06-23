@@ -370,11 +370,16 @@
         .gallery-image {
             width: 100%;
             height: 120px;
-            object-fit: cover;
+            background: #f3f4f6;
             border-radius: 8px;
             cursor: pointer;
             transition: transform 0.3s;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6b7280;
+            font-size: 2rem;
         }
 
         .gallery-image:hover {
@@ -652,6 +657,27 @@
             color: #dc2626;
         }
 
+        .debug-section {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 10px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+
+        .debug-section h4 {
+            color: #856404;
+            margin-bottom: 1rem;
+        }
+
+        .debug-input {
+            width: 100%;
+            padding: 0.5rem;
+            border: 2px solid #ffc107;
+            border-radius: 4px;
+            margin: 0.5rem 0;
+        }
+
         .hidden {
             display: none !important;
         }
@@ -740,6 +766,20 @@
                     </p>
                 </div>
 
+                <div class="debug-section">
+                    <h4>🔧 Problem mit Tour-Synchronisation?</h4>
+                    <p style="color: #856404; font-size: 0.9rem; margin-bottom: 0.5rem;">Falls Chat/Ranking nicht synchronisiert wird, alle Geräte auf dieselbe Tour-ID setzen:</p>
+                    <input type="text" id="manualTourId" placeholder="z.B. koeln-tour-2025-06-23" class="debug-input">
+                    <button class="btn btn-secondary btn-small" onclick="setManualTourId()">🎯 Tour-ID manuell setzen</button>
+                    
+                    <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #ffc107;">
+                        <h5 style="color: #856404; margin-bottom: 0.5rem;">🐛 Debug Chat-Sync:</h5>
+                        <button class="btn btn-secondary btn-small" onclick="testChatSync()">🔄 Chat neu laden</button>
+                        <button class="btn btn-secondary btn-small" onclick="clearChatHistory()">🗑️ Chat leeren</button>
+                        <button class="btn btn-secondary btn-small" onclick="showDebugInfo()">📊 Debug-Info anzeigen</button>
+                    </div>
+                </div>
+
                 <div class="admin-section">
                     <h3 style="margin-bottom: 1rem; color: #92400e;">🔐 Admin-Zugang</h3>
                     <input type="password" class="admin-password-input" id="adminPassword" placeholder="Admin-Passwort eingeben">
@@ -815,7 +855,7 @@
                 <div class="chat-container" id="chatContainer">
                     <div class="chat-message system">
                         <strong>System:</strong> Willkommen im Tour-Chat! 👋<br>
-                        <small>Chat funktioniert automatisch zwischen allen Geräten mit derselben Tour-URL.</small>
+                        <small>Chat funktioniert zwischen allen Geräten mit derselben Tour-URL.</small>
                         <span class="timestamp">jetzt</span>
                     </div>
                 </div>
@@ -907,9 +947,9 @@ Hier auf dem Heumarkt stehen wir an einem der ehemaligen Einfallstore zur Stadt.
 
 Das "Stapelrecht" von 1259 bis 1804 war ein 545 Jahre gültiges Handelsprivileg. Alle Waren auf Schiffen, die an Köln vorbeifahren wollten, mussten drei Tage hier angeboten werden.`,
                 images: [
-                    { url: "https://images.unsplash.com/photo-1568667256549-094345857637?w=400", title: "Heumarkt heute", description: "Moderne Aufnahme des historischen Platzes" },
-                    { url: "https://images.unsplash.com/photo-1590736969955-71cc94901144?w=400", title: "Kölner Architektur", description: "Typische Rheinische Bauweise" },
-                    { url: "https://images.unsplash.com/photo-1551622656-fa4fa96b5faf?w=400", title: "Rheinufer", description: "Blick auf den historischen Handelsweg" }
+                    { title: "Heumarkt heute", description: "Moderne Aufnahme des historischen Platzes" },
+                    { title: "Kölner Architektur", description: "Typische Rheinische Bauweise" },
+                    { title: "Rheinufer", description: "Blick auf den historischen Handelsweg" }
                 ]
             },
             {
@@ -925,9 +965,9 @@ Das "Stapelrecht" von 1259 bis 1804 war ein 545 Jahre gültiges Handelsprivileg.
 
 Erst die Romantik des 19. Jahrhunderts und preußisches Geld vollendeten den Dom 1880. Der Hauptbahnhof entstand 1894 als einer der modernsten Europas.`,
                 images: [
-                    { url: "https://images.unsplash.com/photo-1571115764595-644a1f56a55c?w=400", title: "Kölner Dom", description: "Die berühmten Zwillingstürme" },
-                    { url: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400", title: "Dom Innenraum", description: "Gotische Architektur" },
-                    { url: "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=400", title: "Dom bei Nacht", description: "Beleuchtetes Wahrzeichen" }
+                    { title: "Kölner Dom", description: "Die berühmten Zwillingstürme" },
+                    { title: "Dom Innenraum", description: "Gotische Architektur" },
+                    { title: "Dom bei Nacht", description: "Beleuchtetes Wahrzeichen" }
                 ]
             },
             {
@@ -943,9 +983,9 @@ Oben am Turm seht ihr den "Platz-Jabbeck" - er streckt Autoritäten die Zunge ra
 
 Die Altstadt erzählt eine der größten deutschen Liebesgeschichten: Jan ist ein armer Knecht, Griet arbeitet auch dort. Er mag sie, sie ihn nicht. Der Krieg beginnt, Jan zieht aus, kommt als berühmter General zurück.`,
                 images: [
-                    { url: "https://images.unsplash.com/photo-1544892504-5ad7a122b56f?w=400", title: "Kölner Altstadt", description: "Historische Gassen" },
-                    { url: "https://images.unsplash.com/photo-1517840901100-8179e982acb7?w=400", title: "Rheinpromenade", description: "Spazierweg mit Domblick" },
-                    { url: "https://images.unsplash.com/photo-1567696911980-2eed69651dd7?w=400", title: "Historisches Rathaus", description: "Gotisches Bauwerk" }
+                    { title: "Kölner Altstadt", description: "Historische Gassen" },
+                    { title: "Rheinpromenade", description: "Spazierweg mit Domblick" },
+                    { title: "Historisches Rathaus", description: "Gotisches Bauwerk" }
                 ]
             },
             {
@@ -961,9 +1001,9 @@ Die Kirche wurde auf römischen Fundamenten errichtet - archäologische Ausgrabu
 
 Der Turm diente auch als Orientierungspunkt für Rheinschiffe und Händler - ein früher "Leuchtturm" des Handels.`,
                 images: [
-                    { url: "https://images.unsplash.com/photo-1518709268805-4e9042af2e96?w=400", title: "Groß St. Martin", description: "Romanischer Kirchenbau" },
-                    { url: "https://images.unsplash.com/photo-1573052905904-34ad8c27f0d4?w=400", title: "Altstadt Panorama", description: "Kirchtürme der Altstadt" },
-                    { url: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400", title: "Rheinufer", description: "Blick auf die Kirchen" }
+                    { title: "Groß St. Martin", description: "Romanischer Kirchenbau" },
+                    { title: "Altstadt Panorama", description: "Kirchtürme der Altstadt" },
+                    { title: "Rheinufer", description: "Blick auf die Kirchen" }
                 ]
             },
             {
@@ -979,22 +1019,21 @@ Die Kölner Bürger entwickelten hier ihre berühmte Unabhängigkeit. 1074 erhie
 
 Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerksmeister aus Köln gründeten in vielen anderen Städten ähnliche Organisationen.`,
                 images: [
-                    { url: "https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=400", title: "Alter Markt Köln", description: "Historischer Marktplatz" },
-                    { url: "https://images.unsplash.com/photo-1574790398664-0cb3c99c3711?w=400", title: "Kölner Häuser", description: "Typische Architektur" },
-                    { url: "https://images.unsplash.com/photo-1587474260584-136574528ed5?w=400", title: "Rheinischer Markt", description: "Handelstradition" }
+                    { title: "Alter Markt Köln", description: "Historischer Marktplatz" },
+                    { title: "Kölner Häuser", description: "Typische Architektur" },
+                    { title: "Rheinischer Markt", description: "Handelstradition" }
                 ]
             }
         ]
     };
 
-    // Firebase Initialization with Better Error Handling
+    // Firebase Initialization
     let db = null;
 
     async function initFirebase() {
         try {
             updateConnectionStatus('connecting');
             
-            // Initialize Firebase
             if (typeof firebase === 'undefined') {
                 throw new Error('Firebase SDK not loaded');
             }
@@ -1002,10 +1041,8 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             firebase.initializeApp(firebaseConfig);
             db = firebase.firestore();
             
-            // Test connection
             await db.enableNetwork();
             
-            // Test read/write access
             const testDoc = db.collection('tours').doc('test');
             await testDoc.set({ test: Date.now() }, { merge: true });
             
@@ -1015,7 +1052,6 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             
             console.log('✅ Firebase connected successfully');
             
-            // Enable real-time sync
             enableRealtimeSync();
             
         } catch (error) {
@@ -1024,7 +1060,6 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             updateConnectionStatus('offline');
             showErrorPanel('Firebase-Verbindung fehlgeschlagen. App funktioniert nur lokal.', error.message);
             
-            // Retry connection
             if (tourApp.state.connectionRetries < tourApp.state.maxRetries) {
                 tourApp.state.connectionRetries++;
                 setTimeout(() => {
@@ -1076,7 +1111,6 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
         if (!tourApp.state.isFirebaseConnected) return;
 
         try {
-            // Listen to chat messages
             const chatRef = db.collection('tours').doc(tourApp.state.tourId).collection('chat');
             const chatUnsubscribe = chatRef.orderBy('timestamp', 'asc').onSnapshot((snapshot) => {
                 snapshot.docChanges().forEach((change) => {
@@ -1087,15 +1121,12 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 });
             });
 
-            // Listen to team scores
             const scoresRef = db.collection('tours').doc(tourApp.state.tourId).collection('scores');
             const scoresUnsubscribe = scoresRef.onSnapshot(() => {
                 updateRanking();
             });
 
             tourApp.state.syncListeners.push(chatUnsubscribe, scoresUnsubscribe);
-            
-            console.log('✅ Real-time sync enabled');
         } catch (error) {
             console.error('Error setting up real-time sync:', error);
         }
@@ -1134,20 +1165,12 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
         console.log('🚀 Starting Tour App...');
         
         try {
-            // Generate tour ID first
             loadTourId();
-            
-            // Initialize Firebase
             initFirebase();
-            
-            // Load saved state
             loadState();
-            
-            // Generate UI
             generateStationsList();
             updateUI();
             
-            // Setup event listeners
             const chatInput = document.getElementById('chatInput');
             if (chatInput) {
                 chatInput.addEventListener('keypress', (e) => {
@@ -1159,7 +1182,6 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             
             console.log('✅ Tour App initialized successfully');
             
-            // Initialize optional features
             setTimeout(() => {
                 initGeolocation();
                 loadChatHistory();
@@ -1169,7 +1191,6 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             console.error('❌ Error initializing app:', error);
             showNotification('App-Start mit Fehlern. Basis-Funktionen verfügbar.', 'error');
             
-            // Emergency fallback
             if (!tourApp.state.tourId) {
                 tourApp.state.tourId = 'koeln-emergency-' + Date.now();
                 updateTourDisplay();
@@ -1185,7 +1206,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             
             if (urlTourId) {
                 tourApp.state.tourId = urlTourId;
-                setTimeout(() => addSystemMessage(`Automatisch der Tour "${urlTourId}" beigetreten! 🎉`), 2000);
+                setTimeout(() => addSystemMessage(`Der Tour "${urlTourId}" beigetreten! 🎉`), 2000);
             } else {
                 tourApp.state.tourId = localStorage.getItem('tourId') || generateTourId();
             }
@@ -1249,18 +1270,15 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             
             const message = input.value.trim();
             if (message) {
-                // Add to local chat immediately
                 addChatMessage(tourApp.state.userName, message, true);
                 
-                // Try to save to Firebase
-                const saved = await saveToFirebase('chat', Date.now().toString(), {
-                    userName: tourApp.state.userName,
-                    message: message,
-                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                
-                // Fallback to localStorage if Firebase fails
-                if (!saved) {
+                if (tourApp.state.isFirebaseConnected) {
+                    await saveToFirebase('chat', Date.now().toString(), {
+                        userName: tourApp.state.userName,
+                        message: message,
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                } else {
                     const chatMessages = JSON.parse(localStorage.getItem(`chat_${tourApp.state.tourId}`) || '[]');
                     chatMessages.push({
                         userName: tourApp.state.userName,
@@ -1281,12 +1299,275 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
         }
     }
 
+    function addChatMessage(userName, message, isOwn = false) {
+        try {
+            const chatContainer = document.getElementById('chatContainer');
+            if (!chatContainer) return;
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message ${isOwn ? 'own' : ''}`;
+            
+            const timeStr = new Date().toLocaleTimeString('de-DE', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            messageDiv.innerHTML = `
+                <strong>${userName}:</strong> ${message}
+                <span class="timestamp">${timeStr}</span>
+            `;
+            
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            
+            if (!isOwn && !document.getElementById('chat').classList.contains('active')) {
+                showNotification(`💬 ${userName}: ${message.substring(0, 30)}${message.length > 30 ? '...' : ''}`);
+            }
+        } catch (error) {
+            console.error('Error adding chat message:', error);
+        }
+    }
+
+    function addSystemMessage(message) {
+        try {
+            setTimeout(() => {
+                const chatContainer = document.getElementById('chatContainer');
+                if (!chatContainer) return;
+                
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'chat-message system';
+                
+                const timeStr = new Date().toLocaleTimeString('de-DE', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                messageDiv.innerHTML = `
+                    <strong>System:</strong> ${message}
+                    <span class="timestamp">${timeStr}</span>
+                `;
+                
+                chatContainer.appendChild(messageDiv);
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }, 100);
+        } catch (error) {
+            console.error('Error adding system message:', error);
+        }
+    }
+
+    async function loadChatHistory() {
+        try {
+            if (tourApp.state.isFirebaseConnected) {
+                const messages = await getFromFirebase('chat');
+                messages.forEach(msg => {
+                    if (msg.userName !== tourApp.state.userName) {
+                        addChatMessage(msg.userName, msg.message, false);
+                    }
+                });
+            } else {
+                const chatMessages = JSON.parse(localStorage.getItem(`chat_${tourApp.state.tourId}`) || '[]');
+                chatMessages.forEach(msg => {
+                    addChatMessage(msg.userName, msg.message, msg.userName === tourApp.state.userName);
+                });
+            }
+        } catch (error) {
+            console.error('Error loading chat history:', error);
+        }
+    }
+
+    // UI Functions
+    function showTab(tabName, tabElement) {
+        try {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            if (tabElement) {
+                tabElement.classList.add('active');
+            }
+
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            const targetTab = document.getElementById(tabName === 'map' ? 'map-tab' : tabName);
+            if (targetTab) {
+                targetTab.classList.add('active');
+            }
+
+            if (tabName === 'map') {
+                setTimeout(() => initMap(), 100);
+            } else if (tabName === 'ranking') {
+                updateRanking();
+            }
+        } catch (error) {
+            console.error('Error showing tab:', error);
+        }
+    }
+
+    function selectTeam(teamId, teamName, element) {
+        try {
+            tourApp.state.selectedTeam = teamId;
+            tourApp.state.teamName = teamName;
+            
+            document.querySelectorAll('.team-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            if (element) {
+                element.classList.add('selected');
+            }
+            
+            const selector = document.getElementById('teamSelector');
+            if (selector) {
+                selector.style.display = 'none';
+            }
+            
+            showNotification('Team ausgewählt! 🎉');
+            saveState();
+            addSystemMessage(`${tourApp.state.userName} ist ${teamName} beigetreten! 🎊`);
+        } catch (error) {
+            console.error('Error selecting team:', error);
+        }
+    }
+
+    function startTour() {
+        try {
+            if (!tourApp.state.selectedTeam) {
+                showNotification('Bitte wähle zuerst ein Team aus!', 'error');
+                return;
+            }
+            
+            showTab('stations', document.querySelector('[onclick*="stations"]'));
+            showNotification('Tour gestartet! Viel Erfolg! 🚀');
+        } catch (error) {
+            console.error('Error starting tour:', error);
+        }
+    }
+
+    function loginAdmin() {
+        try {
+            const password = document.getElementById('adminPassword').value;
+            if (password === 'koeln2024') {
+                tourApp.state.isAdmin = true;
+                document.getElementById('adminTab').classList.remove('hidden');
+                generateStationsList();
+                showNotification('Admin-Modus aktiviert! ⚙️');
+                showTab('admin', document.getElementById('adminTab'));
+            } else {
+                showNotification('Falsches Passwort!', 'error');
+            }
+        } catch (error) {
+            console.error('Error logging in admin:', error);
+        }
+    }
+
+    // Debug Functions
+    function setManualTourId() {
+        try {
+            const input = document.getElementById('manualTourId');
+            const newTourId = input.value.trim();
+            
+            if (newTourId && newTourId.length >= 3) {
+                tourApp.state.tourId = newTourId;
+                localStorage.setItem('tourId', newTourId);
+                
+                updateTourDisplay();
+                generateShareUrl();
+                
+                showNotification(`Tour-ID geändert zu: ${newTourId} 🎯`);
+                input.value = '';
+                
+                location.reload(); // Reload to reinitialize with new tour ID
+            } else {
+                showNotification('Bitte gib eine gültige Tour-ID ein (mindestens 3 Zeichen)', 'error');
+            }
+        } catch (error) {
+            console.error('Error setting manual tour ID:', error);
+        }
+    }
+
+    function testChatSync() {
+        try {
+            loadChatHistory();
+            showNotification('Chat neu geladen! 🔄');
+        } catch (error) {
+            console.error('Error testing chat sync:', error);
+        }
+    }
+
+    function clearChatHistory() {
+        try {
+            const chatContainer = document.getElementById('chatContainer');
+            if (chatContainer) {
+                chatContainer.innerHTML = `
+                    <div class="chat-message system">
+                        <strong>System:</strong> Chat geleert! 🗑️<br>
+                        <small>Neue Nachrichten werden wieder angezeigt</small>
+                        <span class="timestamp">jetzt</span>
+                    </div>
+                `;
+            }
+            showNotification('Chat geleert! 🗑️');
+        } catch (error) {
+            console.error('Error clearing chat:', error);
+        }
+    }
+
+    function showDebugInfo() {
+        try {
+            const debugInfo = {
+                tourId: tourApp.state.tourId,
+                userName: tourApp.state.userName,
+                isFirebaseConnected: tourApp.state.isFirebaseConnected,
+                selectedTeam: tourApp.state.selectedTeam,
+                totalScore: tourApp.state.totalScore
+            };
+            
+            alert(`📊 Debug Info:
+Tour-ID: ${debugInfo.tourId}
+Username: ${debugInfo.userName}
+Firebase: ${debugInfo.isFirebaseConnected ? '✅ Verbunden' : '❌ Nicht verbunden'}
+Team: ${debugInfo.selectedTeam || 'Nicht ausgewählt'}
+Score: ${debugInfo.totalScore}
+
+Siehe Console (F12) für mehr Details!`);
+        } catch (error) {
+            console.error('Error showing debug info:', error);
+        }
+    }
+
+    // Utility Functions
+    function copyShareUrl() {
+        try {
+            const shareUrl = document.getElementById('shareUrl').textContent;
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(shareUrl).then(() => {
+                    showNotification('URL kopiert! 📋');
+                });
+            } else {
+                const textarea = document.createElement('textarea');
+                textarea.value = shareUrl;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                showNotification('URL kopiert! 📋');
+            }
+        } catch (error) {
+            console.error('Error copying URL:', error);
+        }
+    }
+
+    function shareViaWhatsApp() {
+        try {
+            const shareUrl = document.getElementById('shareUrl').textContent;
+            const message = `🏛️ Kölner Abendspaziergang - Tour beitreten:\n${shareUrl}`;
+            const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+            window.open(whatsappUrl, '_blank');
+        } catch (error) {
+            console.error('Error sharing via WhatsApp:', error);
+        }
+    }
+
     async function addScore(points) {
         try {
             tourApp.state.totalScore += Math.round(points);
             updateUI();
             
-            // Try to save to Firebase
             if (tourApp.state.selectedTeam) {
                 await saveToFirebase('scores', tourApp.state.selectedTeam, {
                     teamId: tourApp.state.selectedTeam,
@@ -1378,118 +1659,6 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
         }
     }
 
-    // UI Functions (Basic implementations)
-    function copyShareUrl() {
-        try {
-            const shareUrl = document.getElementById('shareUrl').textContent;
-            if (navigator.clipboard) {
-                navigator.clipboard.writeText(shareUrl).then(() => {
-                    showNotification('URL kopiert! 📋');
-                });
-            } else {
-                const textarea = document.createElement('textarea');
-                textarea.value = shareUrl;
-                document.body.appendChild(textarea);
-                textarea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textarea);
-                showNotification('URL kopiert! 📋');
-            }
-        } catch (error) {
-            console.error('Error copying URL:', error);
-        }
-    }
-
-    function shareViaWhatsApp() {
-        try {
-            const shareUrl = document.getElementById('shareUrl').textContent;
-            const message = `🏛️ Kölner Abendspaziergang - Tour beitreten:\n${shareUrl}`;
-            const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
-            window.open(whatsappUrl, '_blank');
-        } catch (error) {
-            console.error('Error sharing via WhatsApp:', error);
-        }
-    }
-
-    function loginAdmin() {
-        try {
-            const password = document.getElementById('adminPassword').value;
-            if (password === 'koeln2024') {
-                tourApp.state.isAdmin = true;
-                document.getElementById('adminTab').classList.remove('hidden');
-                generateStationsList();
-                showNotification('Admin-Modus aktiviert! ⚙️');
-                showTab('admin', document.getElementById('adminTab'));
-            } else {
-                showNotification('Falsches Passwort!', 'error');
-            }
-        } catch (error) {
-            console.error('Error logging in admin:', error);
-        }
-    }
-
-    function showTab(tabName, tabElement) {
-        try {
-            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-            if (tabElement) {
-                tabElement.classList.add('active');
-            }
-
-            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-            const targetTab = document.getElementById(tabName === 'map' ? 'map-tab' : tabName);
-            if (targetTab) {
-                targetTab.classList.add('active');
-            }
-
-            if (tabName === 'map') {
-                setTimeout(() => initMap(), 100);
-            } else if (tabName === 'ranking') {
-                updateRanking();
-            }
-        } catch (error) {
-            console.error('Error showing tab:', error);
-        }
-    }
-
-    function selectTeam(teamId, teamName, element) {
-        try {
-            tourApp.state.selectedTeam = teamId;
-            tourApp.state.teamName = teamName;
-            
-            document.querySelectorAll('.team-option').forEach(option => {
-                option.classList.remove('selected');
-            });
-            if (element) {
-                element.classList.add('selected');
-            }
-            
-            const selector = document.getElementById('teamSelector');
-            if (selector) {
-                selector.style.display = 'none';
-            }
-            
-            showNotification('Team ausgewählt! 🎉');
-            saveState();
-            addSystemMessage(`${tourApp.state.userName} ist ${teamName} beigetreten! 🎊`);
-        } catch (error) {
-            console.error('Error selecting team:', error);
-        }
-    }
-
-    function startTour() {
-        try {
-            if (!tourApp.state.selectedTeam) {
-                showNotification('Bitte wähle zuerst ein Team aus!', 'error');
-                return;
-            }
-            
-            showTab('stations', document.querySelector('[onclick*="stations"]'));
-            showNotification('Tour gestartet! Viel Erfolg! 🚀');
-        } catch (error) {
-            console.error('Error starting tour:', error);
-        }
-    }
-
     function generateStationsList() {
         try {
             const container = document.getElementById('stationsList');
@@ -1506,7 +1675,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 
                 const imagesHtml = station.images.map(img => `
                     <div class="gallery-item">
-                        <img src="${img.url}" alt="${img.title}" class="gallery-image" onclick="showImageModal('${img.url}', '${img.title}', '${img.description}')">
+                        <div class="gallery-image" onclick="showImageModal('placeholder', '${img.title}', '${img.description}')">📷</div>
                         <small>${img.title}</small>
                     </div>
                 `).join('');
@@ -1789,530 +1958,27 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
         }
     }
 
-    function addChatMessage(userName, message, isOwn = false) {
-        try {
-            const chatContainer = document.getElementById('chatContainer');
-            if (!chatContainer) return;
-            
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `chat-message ${isOwn ? 'own' : ''}`;
-            
-            const timeStr = new Date().toLocaleTimeString('de-DE', {
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-
-            messageDiv.innerHTML = `
-                <strong>${userName}:</strong> ${message}
-                <span class="timestamp">${timeStr}</span>
-            `;
-            
-            chatContainer.appendChild(messageDiv);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-            
-            if (!isOwn && !document.getElementById('chat').classList.contains('active')) {
-                showNotification(`💬 ${userName}: ${message.substring(0, 30)}${message.length > 30 ? '...' : ''}`);
-            }
-        } catch (error) {
-            console.error('Error adding chat message:', error);
-        }
-    }
-
-    function addSystemMessage(message) {
-        try {
-            setTimeout(() => {
-                const chatContainer = document.getElementById('chatContainer');
-                if (!chatContainer) return;
-                
-                const messageDiv = document.createElement('div');
-                messageDiv.className = 'chat-message system';
-                
-                const timeStr = new Date().toLocaleTimeString('de-DE', {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
-
-                messageDiv.innerHTML = `
-                    <strong>System:</strong> ${message}
-                    <span class="timestamp">${timeStr}</span>
-                `;
-                
-                chatContainer.appendChild(messageDiv);
-                chatContainer.scrollTop = chatContainer.scrollHeight;
-            }, 100);
-        } catch (error) {
-            console.error('Error adding system message:', error);
-        }
-    }
-
-    // Admin Functions
-    function generateAdminContentEditor() {
-        try {
-            const container = document.getElementById('adminContentEditor');
-            if (!container) return;
-            
-            container.innerHTML = '';
-            
-            tourApp.stations.forEach(station => {
-                const editorSection = document.createElement('div');
-                editorSection.className = 'content-edit-section';
-                editorSection.innerHTML = `
-                    <h5 style="color: #1f2937; margin-bottom: 1rem;">Station ${station.id}: ${station.title}</h5>
-                    
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Titel:</label>
-                    <input type="text" class="edit-field" id="admin-title-${station.id}" value="${station.title}">
-                    
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Untertitel:</label>
-                    <input type="text" class="edit-field" id="admin-subtitle-${station.id}" value="${station.subtitle}">
-                    
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Beschreibung:</label>
-                    <textarea class="edit-field" id="admin-description-${station.id}" rows="3">${station.description}</textarea>
-                    
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Haupttext:</label>
-                    <textarea class="edit-field" id="admin-maintext-${station.id}" rows="6">${station.mainText}</textarea>
-                    
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Foto-Challenge:</label>
-                    <textarea class="edit-field" id="admin-challenge-${station.id}" rows="3">${station.photoChallenge}</textarea>
-                    
-                    <div class="edit-controls">
-                        <button class="btn btn-admin btn-small" onclick="saveStationContent(${station.id})">💾 Speichern</button>
-                        <button class="btn btn-secondary btn-small" onclick="resetStationContent(${station.id})">🔄 Zurücksetzen</button>
-                    </div>
-                `;
-                container.appendChild(editorSection);
-            });
-        } catch (error) {
-            console.error('Error generating admin content editor:', error);
-        }
-    }
-
-    function saveStationContent(stationId) {
-        try {
-            const station = tourApp.stations.find(s => s.id === stationId);
-            if (!station) return;
-            
-            station.title = document.getElementById(`admin-title-${stationId}`).value;
-            station.subtitle = document.getElementById(`admin-subtitle-${stationId}`).value;
-            station.description = document.getElementById(`admin-description-${stationId}`).value;
-            station.mainText = document.getElementById(`admin-maintext-${stationId}`).value;
-            station.photoChallenge = document.getElementById(`admin-challenge-${stationId}`).value;
-            
-            // Update Firebase
-            saveToFirebase('stations', stationId.toString(), station);
-            
-            // Refresh UI
-            generateStationsList();
-            
-            showNotification(`Station ${stationId} aktualisiert! 📝`);
-            addSystemMessage(`Admin hat Station "${station.title}" aktualisiert! 📝`);
-        } catch (error) {
-            console.error('Error saving station content:', error);
-            showNotification('Fehler beim Speichern', 'error');
-        }
-    }
-
-    function resetStationContent(stationId) {
-        try {
-            if (confirm('Station-Inhalte auf Standardwerte zurücksetzen?')) {
-                generateAdminContentEditor();
-                showNotification('Inhalte zurückgesetzt!');
-            }
-        } catch (error) {
-            console.error('Error resetting station content:', error);
-        }
-    }
-
-    function editChallenge(stationId) {
-        try {
-            const challengeDiv = document.getElementById(`challenge-${stationId}`);
-            const station = tourApp.stations.find(s => s.id === stationId);
-            if (!challengeDiv || !station) return;
-            
-            challengeDiv.innerHTML = `
-                <div class="inline-edit">
-                    <textarea id="edit-challenge-${stationId}" style="width: 100%; height: 80px; padding: 0.5rem; border: 2px solid #f59e0b; border-radius: 8px; font-family: inherit;">${station.photoChallenge}</textarea>
-                    <div style="margin-top: 0.5rem;">
-                        <button class="btn btn-admin btn-small" onclick="saveInlineChallenge(${stationId})">💾 Speichern</button>
-                        <button class="btn btn-secondary btn-small" onclick="cancelEditChallenge(${stationId})">❌ Abbrechen</button>
-                    </div>
-                </div>
-            `;
-        } catch (error) {
-            console.error('Error editing challenge:', error);
-        }
-    }
-
-    function saveInlineChallenge(stationId) {
-        try {
-            const textarea = document.getElementById(`edit-challenge-${stationId}`);
-            const station = tourApp.stations.find(s => s.id === stationId);
-            if (!textarea || !station) return;
-            
-            station.photoChallenge = textarea.value;
-            saveToFirebase('stations', stationId.toString(), station);
-            generateStationsList();
-            showNotification('Challenge aktualisiert! 📸');
-            addSystemMessage(`Admin hat die Challenge für "${station.title}" aktualisiert! 📝`);
-        } catch (error) {
-            console.error('Error saving inline challenge:', error);
-        }
-    }
-
-    function cancelEditChallenge(stationId) {
-        try {
-            generateStationsList();
-        } catch (error) {
-            console.error('Error canceling edit challenge:', error);
-        }
-    }
-
-    // Chat Moderation Functions
-    function enableChatModeration() {
-        try {
-            if (!tourApp.state.isAdmin) return;
-            
-            tourApp.state.isChatModerationActive = true;
-            
-            // Add moderation controls to existing messages
-            document.querySelectorAll('.chat-message:not(.system)').forEach(message => {
-                message.classList.add('admin-mode');
-            });
-            
-            updateChatModerationButton();
-        } catch (error) {
-            console.error('Error enabling chat moderation:', error);
-        }
-    }
-
-    function toggleChatModeration() {
-        try {
-            tourApp.state.isChatModerationActive = !tourApp.state.isChatModerationActive;
-            
-            if (tourApp.state.isChatModerationActive) {
-                enableChatModeration();
-                showNotification('Chat-Moderation aktiviert! 🛡️');
-            } else {
-                document.querySelectorAll('.chat-message').forEach(message => {
-                    message.classList.remove('admin-mode');
-                });
-                showNotification('Chat-Moderation deaktiviert!');
-            }
-            
-            updateChatModerationButton();
-        } catch (error) {
-            console.error('Error toggling chat moderation:', error);
-        }
-    }
-
-    function updateChatModerationButton() {
-        try {
-            const button = document.getElementById('chatModerationText');
-            if (button) {
-                button.textContent = tourApp.state.isChatModerationActive 
-                    ? '🛡️ Moderations-Modus deaktivieren' 
-                    : '🛡️ Moderations-Modus aktivieren';
-            }
-        } catch (error) {
-            console.error('Error updating chat moderation button:', error);
-        }
-    }
-
-    function deleteMessage(button) {
-        try {
-            if (!tourApp.state.isAdmin) return;
-            
-            const messageDiv = button.closest('.chat-message');
-            if (messageDiv && confirm('Nachricht löschen?')) {
-                messageDiv.remove();
-                showNotification('Nachricht gelöscht! 🗑️');
-            }
-        } catch (error) {
-            console.error('Error deleting message:', error);
-        }
-    }
-
-    function clearAllChatMessages() {
-        try {
-            if (!tourApp.state.isAdmin) return;
-            
-            if (confirm('Wirklich alle Chat-Nachrichten löschen?')) {
-                const chatContainer = document.getElementById('chatContainer');
-                if (chatContainer) {
-                    chatContainer.innerHTML = `
-                        <div class="chat-message system">
-                            <strong>System:</strong> Chat wurde von einem Admin geleert! 🗑️<br>
-                            <small>Neue Nachrichten werden wieder angezeigt</small>
-                            <span class="timestamp">jetzt</span>
-                        </div>
-                    `;
-                }
-                
-                // Clear Firebase chat
-                if (tourApp.state.isFirebaseConnected) {
-                    const chatRef = db.collection('tours').doc(tourApp.state.tourId).collection('chat');
-                    chatRef.get().then(snapshot => {
-                        snapshot.forEach(doc => doc.ref.delete());
-                    });
-                }
-                
-                // Clear localStorage chat
-                localStorage.removeItem(`chat_${tourApp.state.tourId}`);
-                
-                showNotification('Alle Nachrichten gelöscht! 🗑️');
-                addSystemMessage('Admin hat alle Chat-Nachrichten gelöscht! 🗑️');
-            }
-        } catch (error) {
-            console.error('Error clearing all chat messages:', error);
-        }
-    }
-
-    function sendAdminAnnouncement() {
-        try {
-            if (!tourApp.state.isAdmin) return;
-            
-            const announcement = prompt('Admin-Ankündigung eingeben:');
-            if (announcement && announcement.trim()) {
-                addChatMessage('📢 ADMIN', announcement.trim(), false, 'system');
-                
-                if (tourApp.state.isFirebaseConnected) {
-                    saveToFirebase('chat', Date.now().toString(), {
-                        userName: '📢 ADMIN',
-                        message: announcement.trim(),
-                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-                }
-                
-                showNotification('Ankündigung gesendet! 📢');
-            }
-        } catch (error) {
-            console.error('Error sending admin announcement:', error);
-        }
-    }
-
-    // Media Upload Functions
-    function selectChatImage() {
-        try {
-            const input = document.getElementById('chatImageInput');
-            if (input) {
-                input.click();
-            }
-        } catch (error) {
-            console.error('Error selecting chat image:', error);
-        }
-    }
-
-    async function uploadChatImage(event) {
-        try {
-            const file = event.target.files[0];
-            if (!file) return;
-            
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                const imageUrl = e.target.result;
-                
-                // For demo, use data URL. In production, upload to Firebase Storage
-                addChatMessage(tourApp.state.userName, '📷 Bild gesendet', true, 'image', imageUrl);
-                
-                if (tourApp.state.isFirebaseConnected) {
-                    await saveToFirebase('chat', Date.now().toString(), {
-                        userName: tourApp.state.userName,
-                        message: '📷 Bild gesendet',
-                        messageType: 'image',
-                        mediaUrl: imageUrl, // In production: upload to Storage first
-                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-                }
-                
-                showNotification('Bild gesendet! 📷');
-            };
-            
-            reader.readAsDataURL(file);
-        } catch (error) {
-            console.error('Error uploading chat image:', error);
-            showNotification('Fehler beim Bild-Upload', 'error');
-        }
-    }
-
-    function toggleAudioRecording() {
-        try {
-            if (tourApp.state.isRecording) {
-                stopAudioRecording();
-            } else {
-                startAudioRecording();
-            }
-        } catch (error) {
-            console.error('Error toggling audio recording:', error);
-            showNotification('Audio-Aufnahme nicht verfügbar', 'error');
-        }
-    }
-
-    async function startAudioRecording() {
-        try {
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                throw new Error('Audio recording not supported');
-            }
-            
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            tourApp.state.audioRecorder = new MediaRecorder(stream);
-            
-            const audioChunks = [];
-            tourApp.state.audioRecorder.ondataavailable = event => {
-                audioChunks.push(event.data);
-            };
-            
-            tourApp.state.audioRecorder.onstop = () => {
-                const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-                const audioUrl = URL.createObjectURL(audioBlob);
-                
-                addChatMessage(tourApp.state.userName, '🎤 Audio-Nachricht', true, 'audio', audioUrl);
-                
-                // Clean up
-                stream.getTracks().forEach(track => track.stop());
-            };
-            
-            tourApp.state.audioRecorder.start();
-            tourApp.state.isRecording = true;
-            
-            const button = document.getElementById('audioRecordBtn');
-            if (button) {
-                button.textContent = '⏹️ Stop';
-                button.classList.add('recording');
-            }
-            
-            showNotification('🎤 Aufnahme gestartet...');
-        } catch (error) {
-            console.error('Error starting audio recording:', error);
-            showNotification('Mikrofon-Zugriff verweigert', 'error');
-        }
-    }
-
-    function stopAudioRecording() {
-        try {
-            if (tourApp.state.audioRecorder && tourApp.state.isRecording) {
-                tourApp.state.audioRecorder.stop();
-                tourApp.state.isRecording = false;
-                
-                const button = document.getElementById('audioRecordBtn');
-                if (button) {
-                    button.textContent = '🎤 Audio';
-                    button.classList.remove('recording');
-                }
-                
-                showNotification('🎤 Aufnahme beendet!');
-            }
-        } catch (error) {
-            console.error('Error stopping audio recording:', error);
-        }
-    }
-
-    // Tour Management Functions
-    function exportTourData() {
-        try {
-            const tourData = {
-                tourId: tourApp.state.tourId,
-                stations: tourApp.stations,
-                completedStations: tourApp.state.completedStations,
-                uploadedPhotos: tourApp.state.uploadedPhotos,
-                totalScore: tourApp.state.totalScore,
-                selectedTeam: tourApp.state.selectedTeam,
-                exportDate: new Date().toISOString()
-            };
-            
-            const dataStr = JSON.stringify(tourData, null, 2);
-            const dataBlob = new Blob([dataStr], { type: 'application/json' });
-            
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(dataBlob);
-            link.download = `koeln-tour-${tourApp.state.tourId}-${new Date().toISOString().split('T')[0]}.json`;
-            link.click();
-            
-            showNotification('Tour-Daten exportiert! 💾');
-        } catch (error) {
-            console.error('Error exporting tour data:', error);
-            showNotification('Fehler beim Export', 'error');
-        }
-    }
-
     function resetTour() {
         try {
-            if (confirm('Wirklich alle Tour-Daten zurücksetzen? Dies kann nicht rückgängig gemacht werden!')) {
-                // Clear Firebase data
-                if (tourApp.state.isFirebaseConnected) {
-                    const tourRef = db.collection('tours').doc(tourApp.state.tourId);
-                    tourRef.collection('chat').get().then(snapshot => {
-                        snapshot.forEach(doc => doc.ref.delete());
-                    });
-                    tourRef.collection('scores').get().then(snapshot => {
-                        snapshot.forEach(doc => doc.ref.delete());
-                    });
-                }
-                
-                // Clear localStorage
+            if (confirm('Wirklich alle Daten zurücksetzen?')) {
                 localStorage.removeItem(`chat_${tourApp.state.tourId}`);
-                localStorage.removeItem(`scores_${tourApp.state.tourId}`);
-                localStorage.removeItem('tourState');
                 
-                // Reset app state
                 tourApp.state.completedStations = [];
                 tourApp.state.totalScore = 0;
                 tourApp.state.uploadedPhotos = [];
-                tourApp.state.selectedTeam = null;
-                tourApp.state.teamName = '';
                 
-                // Refresh UI
-                document.getElementById('teamSelector').style.display = 'block';
+                saveState();
                 generateStationsList();
                 updateUI();
-                
-                // Clear chat
-                const chatContainer = document.getElementById('chatContainer');
-                if (chatContainer) {
-                    chatContainer.innerHTML = `
-                        <div class="chat-message system">
-                            <strong>System:</strong> Tour wurde zurückgesetzt! 🔄<br>
-                            <small>Alle Daten wurden gelöscht</small>
-                            <span class="timestamp">jetzt</span>
-                        </div>
-                    `;
-                }
-                
                 showNotification('Tour zurückgesetzt! 🔄');
-                addSystemMessage('Admin hat die Tour komplett zurückgesetzt! 🔄');
+                addSystemMessage('Admin hat die Tour zurückgesetzt! 🔄');
             }
         } catch (error) {
             console.error('Error resetting tour:', error);
-            showNotification('Fehler beim Zurücksetzen', 'error');
         }
     }
 
-    function refreshAdminStats() {
-        try {
-            if (!tourApp.state.isAdmin) return;
-            
-            // Count active users (simplified)
-            const activeUsers = Math.floor(Math.random() * 15) + 5;
-            
-            // Count messages in chat container
-            const totalMessages = document.querySelectorAll('.chat-message:not(.system)').length;
-            
-            // Count completed stations
-            const completedStations = tourApp.state.completedStations.length;
-            
-            // Count uploaded photos
-            const uploadedPhotos = tourApp.state.uploadedPhotos.length;
-            
-            // Update stats display
-            document.getElementById('activeUsers').textContent = activeUsers;
-            document.getElementById('totalMessages').textContent = totalMessages;
-            document.getElementById('completedStations').textContent = `${completedStations}/${tourApp.stations.length}`;
-            document.getElementById('uploadedPhotos').textContent = uploadedPhotos;
-            
-        } catch (error) {
-            console.error('Error refreshing admin stats:', error);
-        }
-    }
-
-    // Map Functions
+    // Map Functions (simplified)
     function initMap() {
         try {
             if (tourApp.state.map || !document.getElementById('map')) return;
@@ -2486,7 +2152,6 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
         return R * c;
     }
 
-    // Utility Functions
     function showImageModal(url, title, description) {
         try {
             const modal = document.createElement('div');
@@ -2528,339 +2193,6 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             document.body.appendChild(modal);
         } catch (error) {
             console.error('Error showing image modal:', error);
-        }
-    }
-
-    function showNotification(message, type = 'success') {
-        try {
-            const notification = document.createElement('div');
-            notification.className = `notification ${type}`;
-            notification.textContent = message;
-            document.body.appendChild(notification);
-
-            setTimeout(() => {
-                notification.remove();
-            }, 4000);
-        } catch (error) {
-            console.error('Error showing notification:', error);
-        }
-    }
-
-    function saveState() {
-        try {
-            const stateToSave = {
-                ...tourApp.state,
-                map: null,
-                markers: [],
-                syncListeners: [],
-                audioRecorder: null
-            };
-            localStorage.setItem('tourState', JSON.stringify(stateToSave));
-        } catch (error) {
-            console.error('Error saving state:', error);
-        }
-    }
-
-    function loadState() {
-        try {
-            const saved = localStorage.getItem('tourState');
-            if (saved) {
-                const savedState = JSON.parse(saved);
-                tourApp.state = { ...tourApp.state, ...savedState };
-                
-                if (tourApp.state.selectedTeam) {
-                    setTimeout(() => {
-                        const teamOptions = document.querySelectorAll('.team-option');
-                        teamOptions.forEach(option => {
-                            if (option.textContent.includes(tourApp.state.teamName)) {
-                                option.classList.add('selected');
-                            }
-                        });
-                        const selector = document.getElementById('teamSelector');
-                        if (selector) {
-                            selector.style.display = 'none';
-                        }
-                    }, 100);
-                }
-            }
-        } catch (error) {
-            console.error('Error loading state:', error);
-        }
-    }
-
-    // Initialize app when DOM is ready
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
-            setTimeout(initApp, 100);
-        });
-    } else {
-        setTimeout(initApp, 100);
-    }
-
-    </script>
-</body>
-</html>
-                    <strong>System:</strong> ${message}
-                    <span class="timestamp">${timeStr}</span>
-                `;
-                
-                chatContainer.appendChild(messageDiv);
-                chatContainer.scrollTop = chatContainer.scrollHeight;
-            }, 100);
-        } catch (error) {
-            console.error('Error adding system message:', error);
-        }
-    }
-
-    async function loadChatHistory() {
-        try {
-            if (tourApp.state.isFirebaseConnected) {
-                const messages = await getFromFirebase('chat');
-                messages.forEach(msg => {
-                    if (msg.userName !== tourApp.state.userName) {
-                        addChatMessage(msg.userName, msg.message, false);
-                    }
-                });
-            } else {
-                const chatMessages = JSON.parse(localStorage.getItem(`chat_${tourApp.state.tourId}`) || '[]');
-                chatMessages.forEach(msg => {
-                    addChatMessage(msg.userName, msg.message, msg.userName === tourApp.state.userName);
-                });
-            }
-        } catch (error) {
-            console.error('Error loading chat history:', error);
-        }
-    }
-
-    // Map initialization (simplified)
-    function initMap() {
-        try {
-            if (tourApp.state.map || !document.getElementById('map')) return;
-            
-            if (typeof L === 'undefined') {
-                loadLeaflet(() => createMap());
-            } else {
-                createMap();
-            }
-        } catch (error) {
-            console.error('Error initializing map:', error);
-        }
-    }
-
-    function loadLeaflet(callback) {
-        const script = document.createElement('script');
-        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js';
-        script.onload = callback;
-        script.onerror = () => showMapError();
-        document.head.appendChild(script);
-    }
-
-    function createMap() {
-        try {
-            tourApp.state.map = L.map('map').setView([50.9375, 6.9597], 15);
-            
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap contributors'
-            }).addTo(tourApp.state.map);
-            
-            tourApp.stations.forEach(station => {
-                const isCompleted = tourApp.state.completedStations.includes(station.id);
-                const marker = L.marker([station.lat, station.lng])
-                    .bindPopup(`
-                        <div style="text-align: center; max-width: 200px;">
-                            <h4>${station.title}</h4>
-                            <p>${station.subtitle}</p>
-                            <p><strong>Station ${station.id}/${tourApp.stations.length}</strong></p>
-                            ${isCompleted ? '<p style="color: green;">✅ Abgeschlossen</p>' : '<p style="color: orange;">⏳ Ausstehend</p>'}
-                        </div>
-                    `)
-                    .addTo(tourApp.state.map);
-                
-                tourApp.state.markers.push(marker);
-            });
-            
-            const routeCoordinates = tourApp.stations.map(station => [station.lat, station.lng]);
-            L.polyline(routeCoordinates, {
-                color: '#dc2626',
-                weight: 3,
-                opacity: 0.7
-            }).addTo(tourApp.state.map);
-            
-            if (tourApp.state.userLocation) {
-                addUserLocationToMap();
-            }
-        } catch (error) {
-            console.error('Error creating map:', error);
-        }
-    }
-
-    function showMapError() {
-        const mapEl = document.getElementById('map');
-        if (mapEl) {
-            mapEl.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; background: #f3f4f6; border-radius: 10px;"><p>🗺️ Karte konnte nicht geladen werden</p></div>';
-        }
-    }
-
-    function addUserLocationToMap() {
-        try {
-            if (!tourApp.state.map || !tourApp.state.userLocation) return;
-            
-            const userIcon = L.divIcon({
-                html: '<div style="background: #3b82f6; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3);"></div>',
-                className: 'user-location-marker',
-                iconSize: [20, 20],
-                iconAnchor: [10, 10]
-            });
-            
-            L.marker([tourApp.state.userLocation.lat, tourApp.state.userLocation.lng], {
-                icon: userIcon
-            })
-            .bindPopup('📍 Dein Standort')
-            .addTo(tourApp.state.map);
-        } catch (error) {
-            console.error('Error adding user location to map:', error);
-        }
-    }
-
-    function centerOnUser() {
-        try {
-            if (tourApp.state.userLocation && tourApp.state.map) {
-                tourApp.state.map.setView([tourApp.state.userLocation.lat, tourApp.state.userLocation.lng], 17);
-            } else {
-                showNotification('Standort nicht verfügbar. Bitte erlaube Standortzugriff.', 'error');
-            }
-        } catch (error) {
-            console.error('Error centering on user:', error);
-        }
-    }
-
-    function initGeolocation() {
-        try {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    position => {
-                        tourApp.state.userLocation = {
-                            lat: position.coords.latitude,
-                            lng: position.coords.longitude
-                        };
-                        updateLocationInfo();
-                        if (tourApp.state.map) {
-                            addUserLocationToMap();
-                        }
-                    },
-                    error => {
-                        const distanceInfo = document.getElementById('distanceInfo');
-                        if (distanceInfo) {
-                            distanceInfo.textContent = '📍 Standort nicht verfügbar';
-                        }
-                    }
-                );
-            }
-        } catch (error) {
-            console.error('Error initializing geolocation:', error);
-        }
-    }
-
-    function updateLocationInfo() {
-        try {
-            if (!tourApp.state.userLocation) return;
-            
-            let nearestStation = null;
-            let minDistance = Infinity;
-            
-            tourApp.stations.forEach(station => {
-                const distance = calculateDistance(
-                    tourApp.state.userLocation.lat, tourApp.state.userLocation.lng,
-                    station.lat, station.lng
-                );
-                
-                if (distance < minDistance) {
-                    minDistance = distance;
-                    nearestStation = station;
-                }
-            });
-            
-            if (nearestStation) {
-                const distanceText = minDistance < 1 
-                    ? `${Math.round(minDistance * 1000)}m` 
-                    : `${minDistance.toFixed(1)}km`;
-                
-                const distanceInfo = document.getElementById('distanceInfo');
-                if (distanceInfo) {
-                    distanceInfo.textContent = `📍 Nächste Station: ${nearestStation.title} (${distanceText})`;
-                }
-            }
-        } catch (error) {
-            console.error('Error updating location info:', error);
-        }
-    }
-
-    function calculateDistance(lat1, lng1, lat2, lng2) {
-        const R = 6371;
-        const dLat = (lat2 - lat1) * Math.PI / 180;
-        const dLng = (lng2 - lng1) * Math.PI / 180;
-        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                  Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                  Math.sin(dLng/2) * Math.sin(dLng/2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-        return R * c;
-    }
-
-    function showImageModal(url, title, description) {
-        try {
-            const modal = document.createElement('div');
-            modal.style.cssText = `
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: rgba(0,0,0,0.9);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                z-index: 10000;
-                flex-direction: column;
-                padding: 20px;
-                box-sizing: border-box;
-            `;
-            
-            modal.innerHTML = `
-                <img src="${url}" style="max-width: 90%; max-height: 70%; object-fit: contain; border-radius: 8px;">
-                <div style="color: white; text-align: center; margin-top: 20px; max-width: 600px;">
-                    <h3>${title}</h3>
-                    <p>${description}</p>
-                    <button style="margin-top: 20px; padding: 10px 20px; background: #dc2626; color: white; border: none; border-radius: 5px; cursor: pointer;" onclick="this.parentElement.parentElement.remove()">Schließen</button>
-                </div>
-            `;
-            
-            modal.onclick = (e) => {
-                if (e.target === modal) modal.remove();
-            };
-            
-            document.body.appendChild(modal);
-        } catch (error) {
-            console.error('Error showing image modal:', error);
-        }
-    }
-
-    function resetTour() {
-        try {
-            if (confirm('Wirklich alle Daten zurücksetzen?')) {
-                localStorage.removeItem(`chat_${tourApp.state.tourId}`);
-                
-                tourApp.state.completedStations = [];
-                tourApp.state.totalScore = 0;
-                tourApp.state.uploadedPhotos = [];
-                
-                saveState();
-                generateStationsList();
-                updateUI();
-                showNotification('Tour zurückgesetzt! 🔄');
-                addSystemMessage('Admin hat die Tour zurückgesetzt! 🔄');
-            }
-        } catch (error) {
-            console.error('Error resetting tour:', error);
         }
     }
 
