@@ -3152,6 +3152,8 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
         function previewAudio(url, type, title) {
             playAudio(url, type, title);
         }
+
+        function deleteStation(stationId) {
             try {
                 if (confirm(`Station ${stationId} wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`)) {
                     const stationIndex = tourApp.stations.findIndex(s => s.id === stationId);
