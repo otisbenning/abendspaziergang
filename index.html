@@ -1464,6 +1464,18 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                             if (messageData.userName !== tourApp.state.userName) {
                                 addChatMessage(messageData, false);
                             }
+                        } else if (change.type === 'removed') {
+                            // Handle chat clearing - reload chat completely
+                            const chatContainer = document.getElementById('chatContainer');
+                            if (chatContainer) {
+                                chatContainer.innerHTML = `
+                                    <div class="chat-message system">
+                                        <strong>Admin:</strong> Chat wurde geleert! 🗑️<br>
+                                        <small>Alle Nachrichten wurden entfernt</small>
+                                        <span class="timestamp">jetzt</span>
+                                    </div>
+                                `;
+                            }
                         }
                     });
                 }, (error) => {
@@ -1481,6 +1493,18 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                                 if (messageData.userName !== tourApp.state.userName) {
                                     addTeamChatMessage(messageData, false);
                                 }
+                            } else if (change.type === 'removed') {
+                                // Handle team chat clearing
+                                const teamChatContainer = document.getElementById('teamChatMessages');
+                                if (teamChatContainer) {
+                                    teamChatContainer.innerHTML = `
+                                        <div class="chat-message system">
+                                            <strong>Admin:</strong> Team-Chat wurde geleert! 🗑️<br>
+                                            <small>Alle Team-Nachrichten wurden entfernt</small>
+                                            <span class="timestamp">jetzt</span>
+                                        </div>
+                                    `;
+                                }
                             }
                         });
                     }, (error) => {
@@ -1488,13 +1512,42 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     });
                 }
 
-                // Listen to moderation status
+                // Listen to moderation status - FIXED REAL-TIME SYNC
                 const moderationRef = db.collection('tours').doc(tourApp.state.tourId).collection('settings').doc('moderation');
                 const moderationUnsubscribe = moderationRef.onSnapshot((doc) => {
                     if (doc.exists) {
                         const moderationData = doc.data();
-                        tourApp.state.chatBlocked = moderationData.chatBlocked || false;
-                        updateChatModeration();
+                        const newBlockedStatus = moderationData.chatBlocked || false;
+                        
+                        // Only update if status actually changed
+                        if (tourApp.state.chatBlocked !== newBlockedStatus) {
+                            tourApp.state.chatBlocked = newBlockedStatus;
+                            tourApp.state.chatModeration = newBlockedStatus;
+                            
+                            // Update UI immediately for all users
+                            updateChatModeration();
+                            
+                            // Show notification to non-admin users
+                            if (!tourApp.state.isAdmin) {
+                                if (newBlockedStatus) {
+                                    showNotification('Chat wurde vom Admin gesperrt! 🔒', 'warning');
+                                    addSystemMessage('Chat wurde vom Admin gesperrt 🔒');
+                                } else {
+                                    showNotification('Chat wurde vom Admin freigegeben! 🔓');
+                                    addSystemMessage('Chat wurde vom Admin freigegeben 🔓');
+                                }
+                            }
+                            
+                            // Update admin button text if user is admin
+                            if (tourApp.state.isAdmin) {
+                                const textEl = document.getElementById('chatModerationText');
+                                if (textEl) {
+                                    textEl.textContent = newBlockedStatus ? 
+                                        '🔓 Chat freigeben' : 
+                                        '🛡️ Chat sperren';
+                                }
+                            }
+                        }
                     }
                 }, (error) => {
                     console.error('Moderation sync error:', error);
@@ -1562,7 +1615,61 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     console.error('Announcements sync error:', error);
                 });
 
-                const syncListeners = [chatUnsubscribe, scoresUnsubscribe, stationsUnsubscribe, announcementsUnsubscribe, moderationUnsubscribe];
+                // Listen to events (like chat clearing) - NEW!
+                const eventsRef = db.collection('tours').doc(tourApp.state.tourId).collection('events');
+                const eventsUnsubscribe = eventsRef.onSnapshot((snapshot) => {
+                    snapshot.docChanges().forEach((change) => {
+                        if (change.type === 'added') {
+                            const eventData = change.doc.data();
+                            if (eventData.type === 'chat_cleared' && eventData.by !== tourApp.state.userName) {
+                                // Another admin cleared the chat - update local UI immediately
+                                const chatContainer = document.getElementById('chatContainer');
+                                if (chatContainer) {
+                                    const allMessages = chatContainer.querySelectorAll('.chat-message');
+                                    allMessages.forEach(msg => {
+                                        if (!msg.classList.contains('system') || msg.textContent.includes('geleert')) {
+                                            msg.remove();
+                                        }
+                                    });
+                                    
+                                    const confirmationMsg = document.createElement('div');
+                                    confirmationMsg.className = 'chat-message system';
+                                    confirmationMsg.innerHTML = `
+                                        <strong>Admin:</strong> Chat wurde von ${eventData.by} geleert! 🗑️<br>
+                                        <small>Alle Nachrichten wurden entfernt</small>
+                                        <span class="timestamp">jetzt</span>
+                                    `;
+                                    chatContainer.appendChild(confirmationMsg);
+                                }
+
+                                const teamChatContainer = document.getElementById('teamChatMessages');
+                                if (teamChatContainer) {
+                                    const allTeamMessages = teamChatContainer.querySelectorAll('.chat-message');
+                                    allTeamMessages.forEach(msg => {
+                                        if (!msg.classList.contains('system') || msg.textContent.includes('geleert')) {
+                                            msg.remove();
+                                        }
+                                    });
+                                    
+                                    const teamConfirmationMsg = document.createElement('div');
+                                    teamConfirmationMsg.className = 'chat-message system';
+                                    teamConfirmationMsg.innerHTML = `
+                                        <strong>Admin:</strong> Team-Chat wurde geleert! 🗑️<br>
+                                        <small>Alle Team-Nachrichten wurden entfernt</small>
+                                        <span class="timestamp">jetzt</span>
+                                    `;
+                                    teamChatContainer.appendChild(teamConfirmationMsg);
+                                }
+
+                                showNotification('Chat wurde von Admin geleert! 🗑️', 'warning');
+                            }
+                        }
+                    });
+                }, (error) => {
+                    console.error('Events sync error:', error);
+                });
+
+                const syncListeners = [chatUnsubscribe, scoresUnsubscribe, stationsUnsubscribe, announcementsUnsubscribe, moderationUnsubscribe, eventsUnsubscribe];
                 if (teamChatUnsubscribe) {
                     syncListeners.push(teamChatUnsubscribe);
                 }
@@ -2420,6 +2527,22 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                                 </div>
                             </div>
                             
+                            <div style="margin-bottom: 1rem;">
+                                <label style="display: block; font-weight: bold; margin-bottom: 0.5rem;">Bildergalerie bearbeiten:</label>
+                                <div id="image-editor-${station.id}" style="border: 2px solid #e5e7eb; border-radius: 8px; padding: 1rem; background: #f9fafb;">
+                                    ${generateImageEditor(station)}
+                                </div>
+                                <button class="btn btn-secondary btn-small" onclick="addNewImage(${station.id})" style="margin-top: 0.5rem;">➕ Neues Bild hinzufügen</button>
+                            </div>
+                            
+                            <div style="margin-bottom: 1rem;">
+                                <label style="display: block; font-weight: bold; margin-bottom: 0.5rem;">Audio-Dateien bearbeiten:</label>
+                                <div id="audio-editor-${station.id}" style="border: 2px solid #e5e7eb; border-radius: 8px; padding: 1rem; background: #f0f9ff;">
+                                    ${generateAudioEditor(station)}
+                                </div>
+                                <button class="btn btn-secondary btn-small" onclick="addNewAudio(${station.id})" style="margin-top: 0.5rem;">🎵 Neue Audio-Datei hinzufügen</button>
+                            </div>
+                            
                             <div style="display: flex; gap: 1rem;">
                                 <button class="btn btn-admin btn-small" onclick="saveStationChanges(${station.id})">💾 Änderungen speichern</button>
                                 <button class="btn btn-secondary btn-small" onclick="resetStationEditor(${station.id})">🔄 Zurücksetzen</button>
@@ -2498,28 +2621,49 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                         }
                     }
                     
-                    // Clear local chat DOM for immediate feedback
+                    // IMMEDIATE LOCAL CLEARING FOR ALL USERS - FIXED!
+                    // This will be synchronized by Firebase listeners automatically
+                    
+                    // Clear main chat DOM immediately
                     const chatContainer = document.getElementById('chatContainer');
                     if (chatContainer) {
-                        chatContainer.innerHTML = `
-                            <div class="chat-message system">
-                                <strong>Admin:</strong> Chat wurde komplett geleert! 🗑️<br>
-                                <small>Alle Nachrichten wurden für alle Teilnehmer entfernt</small>
-                                <span class="timestamp">jetzt</span>
-                            </div>
+                        // Remove ALL messages, including challenge photos
+                        const allMessages = chatContainer.querySelectorAll('.chat-message');
+                        allMessages.forEach(msg => {
+                            if (!msg.classList.contains('system') || msg.textContent.includes('geleert')) {
+                                msg.remove();
+                            }
+                        });
+                        
+                        // Add confirmation message
+                        const confirmationMsg = document.createElement('div');
+                        confirmationMsg.className = 'chat-message system';
+                        confirmationMsg.innerHTML = `
+                            <strong>Admin:</strong> Chat wurde komplett geleert! 🗑️<br>
+                            <small>Alle Nachrichten wurden für alle Teilnehmer entfernt</small>
+                            <span class="timestamp">jetzt</span>
                         `;
+                        chatContainer.appendChild(confirmationMsg);
                     }
 
-                    // Clear team chat DOM
+                    // Clear team chat DOM immediately
                     const teamChatContainer = document.getElementById('teamChatMessages');
                     if (teamChatContainer) {
-                        teamChatContainer.innerHTML = `
-                            <div class="chat-message system">
-                                <strong>Admin:</strong> Team-Chat wurde geleert! 🗑️<br>
-                                <small>Alle Team-Nachrichten wurden entfernt</small>
-                                <span class="timestamp">jetzt</span>
-                            </div>
+                        const allTeamMessages = teamChatContainer.querySelectorAll('.chat-message');
+                        allTeamMessages.forEach(msg => {
+                            if (!msg.classList.contains('system') || msg.textContent.includes('geleert')) {
+                                msg.remove();
+                            }
+                        });
+                        
+                        const teamConfirmationMsg = document.createElement('div');
+                        teamConfirmationMsg.className = 'chat-message system';
+                        teamConfirmationMsg.innerHTML = `
+                            <strong>Admin:</strong> Team-Chat wurde geleert! 🗑️<br>
+                            <small>Alle Team-Nachrichten wurden entfernt</small>
+                            <span class="timestamp">jetzt</span>
                         `;
+                        teamChatContainer.appendChild(teamConfirmationMsg);
                     }
                     
                     // Clear localStorage for all tour participants
@@ -2533,14 +2677,24 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     
                     showNotification('Alle Chats komplett geleert für alle Teilnehmer! 🗑️');
                     
-                    // Send notification to all users
+                    // Send system message to Firebase so all users see the notification
                     if (tourApp.state.isFirebaseConnected) {
-                        await saveToFirebase('chat', Date.now().toString(), {
+                        await saveToFirebase('chat', `system_${Date.now()}`, {
                             userName: '🔊 System',
                             message: 'Alle Chats wurden vom Admin geleert',
                             timestamp: firebase.firestore.FieldValue.serverTimestamp(),
                             type: 'system'
                         });
+                    }
+
+                    // Broadcast clearing event to all connected clients via Firebase
+                    if (tourApp.state.isFirebaseConnected) {
+                        await db.collection('tours').doc(tourApp.state.tourId)
+                            .collection('events').doc(`clear_${Date.now()}`).set({
+                                type: 'chat_cleared',
+                                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                                by: tourApp.state.userName
+                            });
                     }
                 }
             } catch (error) {
@@ -2709,7 +2863,295 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             }
         }
 
-        function deleteStation(stationId) {
+        // Image Management Functions - RESTORED!
+        function generateImageEditor(station) {
+            try {
+                if (!station.images || station.images.length === 0) {
+                    return `
+                        <p style="color: #6b7280; text-align: center; padding: 2rem;">
+                            📷 Noch keine Bilder vorhanden<br>
+                            <small>Klicke auf "Neues Bild hinzufügen" um Bilder zur Galerie hinzuzufügen</small>
+                        </p>
+                    `;
+                }
+                
+                return station.images.map((image, index) => `
+                    <div style="border: 1px solid #d1d5db; border-radius: 6px; padding: 1rem; margin-bottom: 1rem; background: white;" id="image-item-${station.id}-${index}">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                            <strong style="color: #374151;">📷 Bild ${index + 1}</strong>
+                            <button onclick="removeImage(${station.id}, ${index})" style="background: #dc2626; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">🗑️ Löschen</button>
+                        </div>
+                        
+                        <div style="margin-bottom: 0.5rem;">
+                            <label style="display: block; font-size: 0.9rem; font-weight: bold; margin-bottom: 0.25rem;">Titel:</label>
+                            <input type="text" value="${image.title || ''}" onchange="updateImageData(${station.id}, ${index}, 'title', this.value)" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; font-size: 0.9rem;">
+                        </div>
+                        
+                        <div style="margin-bottom: 0.5rem;">
+                            <label style="display: block; font-size: 0.9rem; font-weight: bold; margin-bottom: 0.25rem;">Beschreibung:</label>
+                            <input type="text" value="${image.description || ''}" onchange="updateImageData(${station.id}, ${index}, 'description', this.value)" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; font-size: 0.9rem;">
+                        </div>
+                        
+                        <div style="margin-bottom: 0.5rem;">
+                            <label style="display: block; font-size: 0.9rem; font-weight: bold; margin-bottom: 0.25rem;">Bild-URL (optional):</label>
+                            <input type="url" value="${image.url || ''}" onchange="updateImageData(${station.id}, ${index}, 'url', this.value)" placeholder="https://example.com/image.jpg" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; font-size: 0.9rem;">
+                        </div>
+                        
+                        <div style="margin-bottom: 0.5rem;">
+                            <label style="display: block; font-size: 0.9rem; font-weight: bold; margin-bottom: 0.25rem;">Oder Bild hochladen:</label>
+                            <input type="file" accept="image/*" onchange="uploadImageFile(${station.id}, ${index}, this)" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; font-size: 0.9rem;">
+                        </div>
+                        
+                        ${image.url ? `
+                            <div style="margin-top: 0.5rem;">
+                                <img src="${image.url}" alt="${image.title}" style="max-width: 150px; max-height: 100px; border-radius: 4px; object-fit: cover;">
+                            </div>
+                        ` : ''}
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error generating image editor:', error);
+                return '<p style="color: #dc2626;">Fehler beim Laden des Bild-Editors</p>';
+            }
+        }
+
+        function addNewImage(stationId) {
+            try {
+                const station = tourApp.stations.find(s => s.id === stationId);
+                if (!station) return;
+                
+                if (!station.images) {
+                    station.images = [];
+                }
+                
+                station.images.push({
+                    title: `Neues Bild ${station.images.length + 1}`,
+                    description: "Beschreibung des Bildes",
+                    url: ""
+                });
+                
+                // Regenerate image editor
+                const editorContainer = document.getElementById(`image-editor-${stationId}`);
+                if (editorContainer) {
+                    editorContainer.innerHTML = generateImageEditor(station);
+                }
+                
+                showNotification('Neues Bild hinzugefügt! 📷');
+            } catch (error) {
+                console.error('Error adding new image:', error);
+            }
+        }
+
+        function removeImage(stationId, imageIndex) {
+            try {
+                if (!confirm('Dieses Bild wirklich löschen?')) return;
+                
+                const station = tourApp.stations.find(s => s.id === stationId);
+                if (!station || !station.images) return;
+                
+                station.images.splice(imageIndex, 1);
+                
+                // Regenerate image editor
+                const editorContainer = document.getElementById(`image-editor-${stationId}`);
+                if (editorContainer) {
+                    editorContainer.innerHTML = generateImageEditor(station);
+                }
+                
+                showNotification('Bild gelöscht! 🗑️');
+            } catch (error) {
+                console.error('Error removing image:', error);
+            }
+        }
+
+        function updateImageData(stationId, imageIndex, field, value) {
+            try {
+                const station = tourApp.stations.find(s => s.id === stationId);
+                if (!station || !station.images || !station.images[imageIndex]) return;
+                
+                station.images[imageIndex][field] = value;
+                
+                // If URL was updated, refresh the preview
+                if (field === 'url') {
+                    setTimeout(() => {
+                        const editorContainer = document.getElementById(`image-editor-${stationId}`);
+                        if (editorContainer) {
+                            editorContainer.innerHTML = generateImageEditor(station);
+                        }
+                    }, 100);
+                }
+            } catch (error) {
+                console.error('Error updating image data:', error);
+            }
+        }
+
+        function uploadImageFile(stationId, imageIndex, fileInput) {
+            try {
+                const file = fileInput.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const dataUrl = e.target.result;
+                    updateImageData(stationId, imageIndex, 'url', dataUrl);
+                    showNotification('Bild hochgeladen! 📷');
+                };
+                reader.readAsDataURL(file);
+            } catch (error) {
+                console.error('Error uploading image file:', error);
+                showNotification('Fehler beim Hochladen des Bildes', 'error');
+            }
+        }
+
+        // Audio Management Functions - RESTORED!
+        function generateAudioEditor(station) {
+            try {
+                if (!station.audio || station.audio.length === 0) {
+                    return `
+                        <p style="color: #6b7280; text-align: center; padding: 2rem;">
+                            🎵 Noch keine Audio-Dateien vorhanden<br>
+                            <small>Klicke auf "Neue Audio-Datei hinzufügen" um Audio zur Station hinzuzufügen</small>
+                        </p>
+                    `;
+                }
+                
+                return station.audio.map((audio, index) => `
+                    <div style="border: 1px solid #d1d5db; border-radius: 6px; padding: 1rem; margin-bottom: 1rem; background: white;" id="audio-item-${station.id}-${index}">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                            <strong style="color: #374151;">🎵 Audio ${index + 1}</strong>
+                            <button onclick="removeAudio(${station.id}, ${index})" style="background: #dc2626; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">🗑️ Löschen</button>
+                        </div>
+                        
+                        <div style="margin-bottom: 0.5rem;">
+                            <label style="display: block; font-size: 0.9rem; font-weight: bold; margin-bottom: 0.25rem;">Titel:</label>
+                            <input type="text" value="${audio.title || ''}" onchange="updateAudioData(${station.id}, ${index}, 'title', this.value)" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; font-size: 0.9rem;">
+                        </div>
+                        
+                        <div style="margin-bottom: 0.5rem;">
+                            <label style="display: block; font-size: 0.9rem; font-weight: bold; margin-bottom: 0.25rem;">Beschreibung:</label>
+                            <input type="text" value="${audio.description || ''}" onchange="updateAudioData(${station.id}, ${index}, 'description', this.value)" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; font-size: 0.9rem;">
+                        </div>
+                        
+                        <div style="margin-bottom: 0.5rem;">
+                            <label style="display: block; font-size: 0.9rem; font-weight: bold; margin-bottom: 0.25rem;">Audio-Typ:</label>
+                            <select onchange="updateAudioData(${station.id}, ${index}, 'type', this.value)" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; font-size: 0.9rem;">
+                                <option value="youtube" ${audio.type === 'youtube' ? 'selected' : ''}>📺 YouTube (in-app)</option>
+                                <option value="soundcloud" ${audio.type === 'soundcloud' ? 'selected' : ''}>☁️ SoundCloud (in-app)</option>
+                                <option value="spotify" ${audio.type === 'spotify' ? 'selected' : ''}>🟢 Spotify (in-app)</option>
+                                <option value="audio" ${audio.type === 'audio' ? 'selected' : ''}>🎵 Audio-URL (in-app)</option>
+                                <option value="podcast" ${audio.type === 'podcast' ? 'selected' : ''}>🎙️ Podcast-URL (in-app)</option>
+                            </select>
+                        </div>
+                        
+                        <div style="margin-bottom: 0.5rem;">
+                            <label style="display: block; font-size: 0.9rem; font-weight: bold; margin-bottom: 0.25rem;">
+                                ${audio.type === 'youtube' ? 'YouTube-URL:' :
+                                  audio.type === 'soundcloud' ? 'SoundCloud-URL:' :
+                                  audio.type === 'spotify' ? 'Spotify-URL:' :
+                                  audio.type === 'podcast' ? 'Podcast-URL:' : 'Audio-URL:'}
+                            </label>
+                            <input type="url" value="${audio.url || ''}" onchange="updateAudioData(${station.id}, ${index}, 'url', this.value)" 
+                                   placeholder="${audio.type === 'youtube' ? 'https://www.youtube.com/watch?v=...' :
+                                                audio.type === 'soundcloud' ? 'https://soundcloud.com/user/track-name' :
+                                                audio.type === 'spotify' ? 'https://open.spotify.com/track/...' :
+                                                audio.type === 'podcast' ? 'https://example.com/podcast.mp3' : 'https://example.com/audio.mp3'}" 
+                                   style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; font-size: 0.9rem;">
+                        </div>
+                        
+                        ${audio.url ? `
+                            <div style="margin-top: 0.5rem;">
+                                <button onclick="previewAudio('${audio.url}', '${audio.type}', '${audio.title}')" style="background: #059669; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">
+                                    ▶️ Vorschau (in-app)
+                                </button>
+                            </div>
+                        ` : ''}
+                        
+                        ${audio.url ? `
+                            <div style="margin-top: 0.5rem; font-size: 0.8rem; color: #059669;">
+                                ✅ ${audio.type.charAt(0).toUpperCase() + audio.type.slice(1)}-Link gesetzt - wird in-app abgespielt
+                            </div>
+                        ` : ''}
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error generating audio editor:', error);
+                return '<p style="color: #dc2626;">Fehler beim Laden des Audio-Editors</p>';
+            }
+        }
+
+        function addNewAudio(stationId) {
+            try {
+                const station = tourApp.stations.find(s => s.id === stationId);
+                if (!station) return;
+                
+                if (!station.audio) {
+                    station.audio = [];
+                }
+                
+                station.audio.push({
+                    title: `Neue Audio-Datei ${station.audio.length + 1}`,
+                    description: "Beschreibung der Audio-Datei",
+                    url: "",
+                    type: "youtube"
+                });
+                
+                // Regenerate audio editor
+                const editorContainer = document.getElementById(`audio-editor-${stationId}`);
+                if (editorContainer) {
+                    editorContainer.innerHTML = generateAudioEditor(station);
+                }
+                
+                showNotification('Neue Audio-Datei hinzugefügt! 🎵');
+            } catch (error) {
+                console.error('Error adding new audio:', error);
+            }
+        }
+
+        function removeAudio(stationId, audioIndex) {
+            try {
+                if (!confirm('Diese Audio-Datei wirklich löschen?')) return;
+                
+                const station = tourApp.stations.find(s => s.id === stationId);
+                if (!station || !station.audio) return;
+                
+                station.audio.splice(audioIndex, 1);
+                
+                // Regenerate audio editor
+                const editorContainer = document.getElementById(`audio-editor-${stationId}`);
+                if (editorContainer) {
+                    editorContainer.innerHTML = generateAudioEditor(station);
+                }
+                
+                showNotification('Audio-Datei gelöscht! 🗑️');
+            } catch (error) {
+                console.error('Error removing audio:', error);
+            }
+        }
+
+        function updateAudioData(stationId, audioIndex, field, value) {
+            try {
+                const station = tourApp.stations.find(s => s.id === stationId);
+                if (!station || !station.audio || !station.audio[audioIndex]) return;
+                
+                station.audio[audioIndex][field] = value;
+                
+                // If type was updated, refresh the editor to show different input fields
+                if (field === 'type' || field === 'url') {
+                    setTimeout(() => {
+                        const editorContainer = document.getElementById(`audio-editor-${stationId}`);
+                        if (editorContainer) {
+                            editorContainer.innerHTML = generateAudioEditor(station);
+                        }
+                    }, 100);
+                }
+            } catch (error) {
+                console.error('Error updating audio data:', error);
+            }
+        }
+
+        // Preview function for admin
+        function previewAudio(url, type, title) {
+            playAudio(url, type, title);
+        }
             try {
                 if (confirm(`Station ${stationId} wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`)) {
                     const stationIndex = tourApp.stations.findIndex(s => s.id === stationId);
@@ -3132,6 +3574,16 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                                     <div class="rating-score" id="score-${station.id}">0</div>
                                     <div class="rating-text" id="rating-text-${station.id}">KI analysiert dein Foto...</div>
                                     <div class="rating-details" id="rating-details-${station.id}"></div>
+                                    
+                                    <!-- Share Challenge Photo Button -->
+                                    <div id="share-photo-section-${station.id}" class="hidden" style="margin-top: 1rem; padding-top: 1rem; border-top: 2px solid #e5e7eb;">
+                                        <button class="btn btn-secondary" onclick="shareChallengePhoto(${station.id})" style="background: #059669; margin-top: 0.5rem;">
+                                            📤 Foto im Chat teilen
+                                        </button>
+                                        <p style="font-size: 0.8rem; color: #6b7280; margin-top: 0.5rem;">
+                                            💡 Teile dein Challenge-Foto mit allen Teilnehmern!
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
 
@@ -3248,6 +3700,12 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     if (ratingDetailsEl) {
                         ratingDetailsEl.innerHTML = feedback.join('<br>');
                     }
+
+                    // Show share button after rating is complete
+                    const shareSection = document.getElementById(`share-photo-section-${stationId}`);
+                    if (shareSection) {
+                        shareSection.classList.remove('hidden');
+                    }
                 }, 2000);
                 
                 addScore(finalScore);
@@ -3260,6 +3718,161 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 showNotification(`KI-Bewertung: ${finalScore} Punkte! 🤖`);
             } catch (error) {
                 console.error('Error rating photo:', error);
+            }
+        }
+
+        // NEW: Challenge Photo Sharing Function
+        async function shareChallengePhoto(stationId) {
+            try {
+                const photoData = tourApp.state.uploadedPhotos.find(p => p.stationId === stationId);
+                if (!photoData) {
+                    showNotification('Kein Foto zum Teilen gefunden!', 'error');
+                    return;
+                }
+
+                const station = tourApp.stations.find(s => s.id === stationId);
+                if (!station) return;
+
+                // Create high-quality version for sharing (less compression)
+                const shareableImage = await compressImage(
+                    dataURLtoFile(photoData.imageUrl), 
+                    0.8, // Higher quality
+                    1200, // Larger dimensions
+                    900
+                );
+
+                const shareMessageData = {
+                    userName: tourApp.state.userName,
+                    image: shareableImage,
+                    timestamp: firebase.firestore ? firebase.firestore.FieldValue.serverTimestamp() : Date.now(),
+                    tourId: tourApp.state.tourId,
+                    type: 'challenge-photo',
+                    stationId: stationId,
+                    stationTitle: station.title,
+                    score: photoData.score || 0,
+                    teamName: tourApp.state.teamName || 'Unbekanntes Team',
+                    isDownloadable: true
+                };
+
+                // Add to main chat
+                addChallengePhotoMessage(shareMessageData, true);
+
+                // Save to Firebase
+                if (tourApp.state.isFirebaseConnected && tourApp.state.tourId) {
+                    await saveToFirebase('chat', `challenge_${Date.now()}`, shareMessageData);
+                } else {
+                    const chatKey = `chat_${tourApp.state.tourId}`;
+                    const chatMessages = JSON.parse(localStorage.getItem(chatKey) || '[]');
+                    chatMessages.push(shareMessageData);
+                    if (chatMessages.length > 50) {
+                        chatMessages.splice(0, chatMessages.length - 50);
+                    }
+                    localStorage.setItem(chatKey, JSON.stringify(chatMessages));
+                }
+
+                showNotification('Challenge-Foto im Chat geteilt! 📤');
+                
+                // Disable share button to prevent spam
+                const shareButton = document.querySelector(`[onclick="shareChallengePhoto(${stationId})"]`);
+                if (shareButton) {
+                    shareButton.disabled = true;
+                    shareButton.textContent = '✅ Foto geteilt';
+                    shareButton.style.background = '#6b7280';
+                }
+
+            } catch (error) {
+                console.error('Error sharing challenge photo:', error);
+                showNotification('Fehler beim Teilen des Fotos', 'error');
+            }
+        }
+
+        // Helper function to convert data URL to File
+        function dataURLtoFile(dataURL) {
+            const arr = dataURL.split(',');
+            const mime = arr[0].match(/:(.*?);/)[1];
+            const bstr = atob(arr[1]);
+            let n = bstr.length;
+            const u8arr = new Uint8Array(n);
+            while(n--){
+                u8arr[n] = bstr.charCodeAt(n);
+            }
+            return new File([u8arr], 'challenge-photo.jpg', {type: mime});
+        }
+
+        // Special function for challenge photo messages
+        function addChallengePhotoMessage(messageData, isOwn = false) {
+            try {
+                const chatContainer = document.getElementById('chatContainer');
+                if (!chatContainer) return;
+                
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `chat-message ${isOwn ? 'own' : ''} challenge-photo-message`;
+                messageDiv.style.background = isOwn ? '#e0f2fe' : '#f0f9ff';
+                messageDiv.style.borderLeft = '4px solid #0ea5e9';
+                
+                const timeStr = new Date().toLocaleTimeString('de-DE', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                const downloadId = `download_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                
+                const messageContent = `
+                    <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
+                        <span style="background: #0ea5e9; color: white; padding: 0.2rem 0.5rem; border-radius: 12px; font-size: 0.7rem; margin-right: 0.5rem;">📸 CHALLENGE</span>
+                        <strong>${messageData.userName}</strong> ${messageData.teamName ? `(${messageData.teamName})` : ''}
+                    </div>
+                    <p style="margin-bottom: 0.5rem; color: #0369a1; font-weight: bold;">
+                        🏛️ ${messageData.stationTitle} - ${messageData.score} Punkte!
+                    </p>
+                    <div class="chat-image-container" style="position: relative;">
+                        <img src="${messageData.image}" class="chat-image" 
+                             onclick="event.stopPropagation(); showImageModal('${messageData.image}', 'Challenge: ${messageData.stationTitle}', 'Von ${messageData.userName} (${messageData.score} Punkte)')" 
+                             alt="Challenge Foto" style="max-width: 300px;">
+                        <button onclick="downloadChallengePhoto('${messageData.image}', '${messageData.stationTitle}', '${messageData.userName}')" 
+                                style="position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.7); color: white; border: none; padding: 0.5rem; border-radius: 50%; cursor: pointer; font-size: 0.9rem; transition: all 0.3s;"
+                                onmouseover="this.style.background='rgba(0,0,0,0.9)'"
+                                onmouseout="this.style.background='rgba(0,0,0,0.7)'"
+                                title="Foto herunterladen">
+                            💾
+                        </button>
+                    </div>
+                    <span class="timestamp" style="font-size: 0.8rem; color: #6b7280;">${timeStr}</span>
+                `;
+
+                messageDiv.innerHTML = messageContent;
+                
+                chatContainer.appendChild(messageDiv);
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+                
+                if (!isOwn && tourApp.state.currentTab !== 'chat') {
+                    tourApp.state.unreadMessages++;
+                    updateChatNotification();
+                    
+                    showClickableNotification(`📸 ${messageData.userName} hat ein Challenge-Foto geteilt!`, 'chat');
+                } else if (!isOwn && tourApp.state.currentTab === 'chat' && tourApp.state.currentChatTab !== 'main') {
+                    tourApp.state.unreadMessages++;
+                    updateChatNotification();
+                }
+            } catch (error) {
+                console.error('Error adding challenge photo message:', error);
+            }
+        }
+
+        // Download function for challenge photos
+        function downloadChallengePhoto(imageUrl, stationTitle, userName) {
+            try {
+                const link = document.createElement('a');
+                link.href = imageUrl;
+                link.download = `Challenge_${stationTitle.replace(/\s+/g, '_')}_${userName}_${Date.now()}.jpg`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                showNotification('Foto wird heruntergeladen! 💾');
+            } catch (error) {
+                console.error('Error downloading challenge photo:', error);
+                showNotification('Download fehlgeschlagen', 'error');
             }
         }
 
