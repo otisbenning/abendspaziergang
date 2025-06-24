@@ -3426,6 +3426,24 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     }
                 }
 
+                if (tabName === 'admin' && tourApp.state.isAdmin) {
+                    setTimeout(() => {
+                        generateContentEditor();
+                        updateRanking();
+                    }, 100);
+                }
+
+                if (tabName === 'map' || tabName === 'map-tab') {
+                    setTimeout(() => {
+                        if (!tourApp.state.map) {
+                            initMap();
+                        } else if (tourApp.state.map) {
+                            tourApp.state.map.invalidateSize();
+                        }
+                    }, 100);
+                }
+                } // Schließende Klammer für showTab Funktion
+
         window.selectTeam = function(teamId, teamName, element) {
             try {
                 tourApp.state.selectedTeam = teamId;
