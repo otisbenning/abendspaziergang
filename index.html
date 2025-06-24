@@ -736,6 +736,45 @@
             border-bottom: 3px solid #dc2626;
         }
 
+        .admin-chat-tab {
+            background: #fef3c7 !important;
+            color: #92400e !important;
+            border-bottom: 3px solid #f59e0b !important;
+            position: relative;
+            min-width: 100px;
+            font-size: 0.8rem;
+            padding: 0.6rem 0.4rem !important;
+        }
+
+        .admin-chat-tab.active {
+            background: #f59e0b !important;
+            color: white !important;
+        }
+
+        .admin-chat-tab .close-btn {
+            position: absolute;
+            top: 2px;
+            right: 4px;
+            background: rgba(220, 38, 38, 0.8);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            font-size: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .admin-chat-section {
+            background: #fef3c7;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
         .chat-section {
             display: none;
         }
@@ -1088,16 +1127,17 @@
             <!-- Chat Tab -->
             <div id="chat" class="tab-content">
                 <!-- Chat Sub-Navigation -->
-                <div style="display: flex; background: #f8fafc; border-radius: 8px; margin-bottom: 1rem; overflow: hidden;">
-                    <button class="chat-sub-tab active" onclick="showChatTab('main', this)" style="flex: 1; padding: 0.8rem; border: none; background: transparent; cursor: pointer; font-weight: bold; transition: all 0.3s;">
+                <div style="display: flex; background: #f8fafc; border-radius: 8px; margin-bottom: 1rem; overflow: hidden; flex-wrap: wrap;" id="chatTabContainer">
+                    <button class="chat-sub-tab active" onclick="showChatTab('main', this)" style="flex: 1; min-width: 120px; padding: 0.8rem; border: none; background: transparent; cursor: pointer; font-weight: bold; transition: all 0.3s;">
                         💬 Haupt-Chat
                     </button>
-                    <button class="chat-sub-tab" onclick="showChatTab('team', this)" id="teamChatTab" style="flex: 1; padding: 0.8rem; border: none; background: transparent; cursor: pointer; font-weight: bold; transition: all 0.3s; display: none;">
+                    <button class="chat-sub-tab" onclick="showChatTab('team', this)" id="teamChatTab" style="flex: 1; min-width: 120px; padding: 0.8rem; border: none; background: transparent; cursor: pointer; font-weight: bold; transition: all 0.3s; display: none;">
                         👥 Team-Chat
                     </button>
-                    <button class="chat-sub-tab" onclick="showChatTab('admin', this)" id="adminChatTab" style="flex: 1; padding: 0.8rem; border: none; background: transparent; cursor: pointer; font-weight: bold; transition: all 0.3s;">
+                    <button class="chat-sub-tab" onclick="showChatTab('admin', this)" id="adminChatTab" style="flex: 1; min-width: 120px; padding: 0.8rem; border: none; background: transparent; cursor: pointer; font-weight: bold; transition: all 0.3s;">
                         👤 Admin
                     </button>
+                    <!-- Dynamic admin chat tabs will be added here -->
                 </div>
 
                 <!-- Main Chat -->
@@ -1139,22 +1179,28 @@
                         <button class="chat-send" onclick="sendTeamMessage()">Senden</button>
                     </div>
                 </div>
-
                 <!-- Admin Direct Message -->
                 <div id="adminChatContainer" class="chat-section" style="display: none;">
-                    <div class="chat-container" id="adminChatMessages">
-                        <div class="chat-message system">
-                            <strong>Admin-Chat:</strong> Direkter Kontakt zum Tour-Admin 👤<br>
-                            <small>Nur du und der Admin können diese Nachrichten sehen.</small>
-                            <span class="timestamp">jetzt</span>
+                    <div class="admin-chat-section">
+                        <div class="chat-container" id="adminChatMessages">
+                            <div class="chat-message system">
+                                <strong>Admin-Chat:</strong> Direkter Kontakt zum Tour-Admin 👤<br>
+                                <small>Nur du und der Admin können diese Nachrichten sehen.</small>
+                                <span class="timestamp">jetzt</span>
+                            </div>
+                        </div>
+                        
+                        <div class="chat-input-container" id="adminChatInput">
+                            <input type="text" class="chat-input" id="adminChatInputField" placeholder="Nachricht an Admin..." maxlength="200">
+                            <button class="chat-image-upload" onclick="selectAdminChatImage()">📷</button>
+                            <button class="chat-send" onclick="sendAdminMessage()">An Admin</button>
                         </div>
                     </div>
-                    
-                    <div class="chat-input-container" id="adminChatInput">
-                        <input type="text" class="chat-input" id="adminChatInputField" placeholder="Nachricht an Admin..." maxlength="200">
-                        <button class="chat-image-upload" onclick="selectAdminChatImage()">📷</button>
-                        <button class="chat-send" onclick="sendAdminMessage()">An Admin</button>
-                    </div>
+                </div>
+
+                <!-- Dynamic Admin Chat Containers -->
+                <div id="dynamicAdminChats">
+                    <!-- Individual user chat containers will be created here dynamically -->
                 </div>
 
                 <input type="file" class="file-input" id="adminChatImageInput" accept="image/*" onchange="handleAdminChatImageUpload(event)">
@@ -1702,7 +1748,43 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     allSyncListeners.push(teamChatUnsubscribe);
                 }
                 // Listen to admin chat messages
-                const adminChatRef = db.collection('tours').doc(tourApp.state.tourId).collection('adminChat');
+                const adminDirectRef = db.collection('tours').doc(tourApp.state.tourId).collection('adminDirectMessages');
+                const adminDirectUnsubscribe = adminDirectRef.onSnapshot((snapshot) => {
+                    snapshot.docChanges().forEach(async (change) => {
+                        if (change.type === 'added' || change.type === 'modified') {
+                            const channelId = change.doc.id;
+                            
+                            // Listen to messages in this channel
+                            if (channelId.startsWith('user_')) {
+                                const userName = channelId.replace('user_', '');
+                                
+                                // Create tab for admin if it doesn't exist
+                                if (tourApp.state.isAdmin && !document.getElementById(`adminChatTab_${userName}`)) {
+                                    createAdminChatTab(userName);
+                                }
+                                
+                                // Listen to messages in this channel
+                                const messagesRef = change.doc.ref.collection('messages');
+                                messagesRef.orderBy('timestamp', 'desc').limit(1).onSnapshot((messagesSnapshot) => {
+                                    messagesSnapshot.docChanges().forEach((messageChange) => {
+                                        if (messageChange.type === 'added') {
+                                            const messageData = messageChange.doc.data();
+                                            if (messageData.userName !== tourApp.state.userName) {
+                                                if (tourApp.state.isAdmin) {
+                                                    addAdminChatMessage(messageData, false, userName);
+                                                } else if (messageData.targetUser === tourApp.state.userName || messageData.isFromAdmin) {
+                                                    addAdminChatMessage(messageData, false, 'admin');
+                                                }
+                                            }
+                                        }
+                                    });
+                                });
+                            }
+                        }
+                    });
+                }, (error) => {
+                    console.error('Admin direct messages sync error:', error);
+                });
                 const adminChatUnsubscribe = adminChatRef.orderBy('timestamp', 'asc').onSnapshot((snapshot) => {
                     snapshot.docChanges().forEach((change) => {
                         if (change.type === 'added') {
@@ -1806,6 +1888,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 setTimeout(() => {
                     initGeolocation();
                     loadChatHistory();
+                    initializeAdminChat(); // HIER EINFÜGEN
                 }, 1000);
                 
             } catch (error) {
@@ -2302,6 +2385,17 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                         adminContainer.style.display = 'block';
                     }
                     clearAdminChatNotification();
+                    currentAdminChatUser = null;
+                } else if (tabType.startsWith('admin_')) {
+                    // Admin chat with specific user
+                    const userName = tabType.replace('admin_', '');
+                    const adminContainer = document.getElementById(`adminChatContainer_${userName}`);
+                    if (adminContainer) {
+                        adminContainer.classList.add('active');
+                        adminContainer.style.display = 'block';
+                    }
+                    clearAdminChatNotification(userName);
+                    currentAdminChatUser = userName;
                 }
             } catch (error) {
                 console.error('Error showing chat tab:', error);
