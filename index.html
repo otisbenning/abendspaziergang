@@ -4747,23 +4747,32 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                         timestamp: firebase.firestore ? firebase.firestore.FieldValue.serverTimestamp() : Date.now(),
                         tourId: tourApp.state.tourId,
                         type: 'admin-direct',
-                        isFromAdmin: tourApp.state.isAdmin
+                        isFromAdmin: tourApp.state.isAdmin,
+                        targetUser: tourApp.state.isAdmin ? currentAdminChatUser : 'admin'
                     };
                     
-                    addAdminChatMessage(messageData, true);
+                    addAdminChatMessage(messageData, true, tourApp.state.isAdmin ? currentAdminChatUser : 'admin');
                     
                     if (tourApp.state.isFirebaseConnected && tourApp.state.tourId) {
+                        // Create channel for user if it doesn't exist
+                        const channelName = tourApp.state.isAdmin ? 
+                            `user_${currentAdminChatUser || 'unknown'}` : 
+                            `user_${tourApp.state.userName}`;
+                        
+                        // Save to specific user channel
                         await db.collection('tours').doc(tourApp.state.tourId)
-                            .collection('adminChat').doc(Date.now().toString())
+                            .collection('adminDirectMessages').doc(channelName)
+                            .collection('messages').doc(Date.now().toString())
                             .set(messageData);
-                    } else {
-                        const adminChatKey = `adminChat_${tourApp.state.tourId}`;
-                        const adminChatMessages = JSON.parse(localStorage.getItem(adminChatKey) || '[]');
-                        adminChatMessages.push(messageData);
-                        if (adminChatMessages.length > 50) {
-                            adminChatMessages.splice(0, adminChatMessages.length - 50);
-                        }
-                        localStorage.setItem(adminChatKey, JSON.stringify(adminChatMessages));
+                        
+                        // Also ensure the channel document exists
+                        await db.collection('tours').doc(tourApp.state.tourId)
+                            .collection('adminDirectMessages').doc(channelName)
+                            .set({
+                                userName: tourApp.state.isAdmin ? currentAdminChatUser : tourApp.state.userName,
+                                lastActivity: firebase.firestore.FieldValue.serverTimestamp(),
+                                isActive: true
+                            }, { merge: true });
                     }
                     
                     input.value = '';
@@ -4812,10 +4821,27 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             }
         }
 
-        function addAdminChatMessage(messageData, isOwn = false) {
+        function addAdminChatMessage(messageData, isOwn = false, targetUser = null) {
             try {
-                const adminChatContainer = document.getElementById('adminChatMessages');
-                if (!adminChatContainer) return;
+                // Determine which container to use
+                let adminChatContainer;
+                
+                if (tourApp.state.isAdmin && targetUser && targetUser !== 'admin') {
+                    // Admin viewing specific user's chat
+                    adminChatContainer = document.getElementById(`adminChatContainer_${targetUser}`);
+                    if (!adminChatContainer) {
+                        console.log(`Admin chat container for ${targetUser} not found`);
+                        return;
+                    }
+                } else {
+                    // Regular admin chat container
+                    adminChatContainer = document.getElementById('adminChatMessages');
+                }
+                
+                if (!adminChatContainer) {
+                    console.error('Admin chat container not found');
+                    return;
+                }
                 
                 const messageDiv = document.createElement('div');
                 messageDiv.className = `chat-message ${isOwn ? 'own' : ''}`;
@@ -4853,26 +4879,31 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 adminChatContainer.appendChild(messageDiv);
                 adminChatContainer.scrollTop = adminChatContainer.scrollHeight;
                 
-                if (!isOwn && tourApp.state.currentTab !== 'chat') {
-                    tourApp.state.unreadAdminMessages = (tourApp.state.unreadAdminMessages || 0) + 1;
-                    updateAdminChatNotification();
-                    
-                    const notificationText = messageData.type === 'admin-direct-image' 
-                        ? `📷 ${messageData.userName} hat ein Admin-Bild geteilt`
-                        : `👤 ${messageData.userName}: ${messageData.message.substring(0, 30)}${messageData.message.length > 30 ? '...' : ''}`;
+                // Handle notifications
+                if (!isOwn) {
+                    if (tourApp.state.currentTab !== 'chat') {
+                        tourApp.state.unreadAdminMessages = (tourApp.state.unreadAdminMessages || 0) + 1;
+                        updateAdminChatNotification(targetUser);
                         
-                    showClickableNotification(notificationText, 'admin');
-                } else if (!isOwn && tourApp.state.currentTab === 'chat' && tourApp.state.currentChatTab !== 'admin') {
-                    tourApp.state.unreadAdminMessages = (tourApp.state.unreadAdminMessages || 0) + 1;
-                    updateAdminChatNotification();
+                        const notificationText = messageData.type === 'admin-direct-image' 
+                            ? `📷 ${messageData.userName} hat ein Admin-Bild geteilt`
+                            : `👤 ${messageData.userName}: ${messageData.message.substring(0, 30)}${messageData.message.length > 30 ? '...' : ''}`;
+                            
+                        showClickableNotification(notificationText, 'admin');
+                    } else if (tourApp.state.currentTab === 'chat' && !tourApp.state.currentChatTab.startsWith('admin')) {
+                        tourApp.state.unreadAdminMessages = (tourApp.state.unreadAdminMessages || 0) + 1;
+                        updateAdminChatNotification(targetUser);
+                    }
                 }
             } catch (error) {
                 console.error('Error adding admin chat message:', error);
             }
         }
 
-        function updateAdminChatNotification() {
-            const adminChatTab = document.getElementById('adminChatTab');
+        function updateAdminChatNotification(targetUser = null) {
+            const tabId = targetUser ? `adminChatTab_${targetUser}` : 'adminChatTab';
+            const adminChatTab = document.getElementById(tabId);
+            
             if (adminChatTab && tourApp.state.unreadAdminMessages > 0) {
                 let notification = adminChatTab.querySelector('.tab-notification');
                 if (!notification) {
@@ -4885,6 +4916,19 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     adminChatTab.appendChild(notification);
                 }
                 notification.textContent = tourApp.state.unreadAdminMessages > 9 ? '9+' : tourApp.state.unreadAdminMessages;
+            }
+        }
+
+        function clearAdminChatNotification(targetUser = null) {
+            tourApp.state.unreadAdminMessages = 0;
+            const tabId = targetUser ? `adminChatTab_${targetUser}` : 'adminChatTab';
+            const adminChatTab = document.getElementById(tabId);
+            
+            if (adminChatTab) {
+                const notification = adminChatTab.querySelector('.tab-notification');
+                if (notification) {
+                    notification.remove();
+                }
             }
         }
 
@@ -4902,6 +4946,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
         // User Position Tracking
         let userPositionInterval = null;
         let userMarkers = {};
+        let currentAdminChatUser = null; // Track which user the admin is chatting with
 
         function startUserPositionTracking() {
             if (userPositionInterval) return;
@@ -5006,6 +5051,144 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 delete userMarkers[userName];
             } catch (error) {
                 console.error('Error removing user marker:', error);
+            }
+        }
+
+        // Admin Chat Tab Management
+        function createAdminChatTab(userName) {
+            try {
+                const chatTabContainer = document.getElementById('chatTabContainer');
+                if (!chatTabContainer || document.getElementById(`adminChatTab_${userName}`)) return;
+                
+                const adminChatTab = document.createElement('button');
+                adminChatTab.id = `adminChatTab_${userName}`;
+                adminChatTab.className = 'chat-sub-tab admin-chat-tab';
+                adminChatTab.style.cssText = 'position: relative; min-width: 100px; font-size: 0.8rem; padding: 0.6rem 0.4rem !important;';
+                adminChatTab.innerHTML = `
+                    👤 ${userName}
+                    <button class="close-btn" onclick="event.stopPropagation(); closeAdminChatTab('${userName}')" 
+                            style="position: absolute; top: 2px; right: 4px; background: rgba(220, 38, 38, 0.8); color: white; border: none; border-radius: 50%; width: 16px; height: 16px; font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                        ×
+                    </button>
+                `;
+                
+                adminChatTab.onclick = () => showChatTab(`admin_${userName}`, adminChatTab);
+                chatTabContainer.appendChild(adminChatTab);
+                
+                // Create chat container for this user
+                const dynamicAdminChats = document.getElementById('dynamicAdminChats');
+                if (dynamicAdminChats) {
+                    const chatContainer = document.createElement('div');
+                    chatContainer.id = `adminChatContainer_${userName}`;
+                    chatContainer.className = 'chat-section';
+                    chatContainer.style.display = 'none';
+                    
+                    chatContainer.innerHTML = `
+                        <div class="admin-chat-section">
+                            <div class="chat-container" id="adminChatMessages_${userName}">
+                                <div class="chat-message system">
+                                    <strong>Admin-Chat mit ${userName}:</strong> Direkter Kontakt 👤<br>
+                                    <small>Privater Chat zwischen Admin und Benutzer</small>
+                                    <span class="timestamp">jetzt</span>
+                                </div>
+                            </div>
+                            
+                            <div class="chat-input-container">
+                                <input type="text" class="chat-input" placeholder="Nachricht an ${userName}..." maxlength="200">
+                                <button class="chat-image-upload" onclick="selectAdminChatImage()">📷</button>
+                                <button class="chat-send" onclick="sendAdminMessageToUser('${userName}', this)">Senden</button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    dynamicAdminChats.appendChild(chatContainer);
+                }
+                
+                console.log(`Created admin chat tab for ${userName}`);
+            } catch (error) {
+                console.error('Error creating admin chat tab:', error);
+            }
+        }
+
+        function closeAdminChatTab(userName) {
+            try {
+                const tab = document.getElementById(`adminChatTab_${userName}`);
+                const container = document.getElementById(`adminChatContainer_${userName}`);
+                
+                if (tab) tab.remove();
+                if (container) container.remove();
+                
+                // Switch to main admin chat if this was the active tab
+                if (tourApp.state.currentChatTab === `admin_${userName}`) {
+                    showChatTab('admin', document.getElementById('adminChatTab'));
+                }
+            } catch (error) {
+                console.error('Error closing admin chat tab:', error);
+            }
+        }
+
+        function sendAdminMessageToUser(userName, buttonElement) {
+            try {
+                const input = buttonElement.parentElement.querySelector('.chat-input');
+                if (!input) return;
+                
+                const message = input.value.trim();
+                if (message) {
+                    currentAdminChatUser = userName;
+                    
+                    const messageData = {
+                        userName: tourApp.state.userName,
+                        message: message,
+                        timestamp: Date.now(),
+                        tourId: tourApp.state.tourId,
+                        type: 'admin-direct',
+                        isFromAdmin: true,
+                        targetUser: userName
+                    };
+                    
+                    addAdminChatMessage(messageData, true, userName);
+                    
+                    if (tourApp.state.isFirebaseConnected && tourApp.state.tourId) {
+                        // Save to Firebase
+                        db.collection('tours').doc(tourApp.state.tourId)
+                            .collection('adminDirectMessages').doc(`user_${userName}`)
+                            .collection('messages').doc(Date.now().toString())
+                            .set(messageData);
+                        
+                        // Ensure channel exists
+                        db.collection('tours').doc(tourApp.state.tourId)
+                            .collection('adminDirectMessages').doc(`user_${userName}`)
+                            .set({
+                                userName: userName,
+                                lastActivity: firebase.firestore.FieldValue.serverTimestamp(),
+                                isActive: true
+                            }, { merge: true });
+                    }
+                    
+                    input.value = '';
+                }
+            } catch (error) {
+                console.error('Error sending admin message to user:', error);
+            }
+        }
+
+        // Initialize Admin Chat System
+        function initializeAdminChat() {
+            try {
+                if (tourApp.state.isFirebaseConnected && tourApp.state.tourId) {
+                    // Create initial admin direct message channel for current user
+                    const channelName = `user_${tourApp.state.userName}`;
+                    
+                    db.collection('tours').doc(tourApp.state.tourId)
+                        .collection('adminDirectMessages').doc(channelName)
+                        .set({
+                            userName: tourApp.state.userName,
+                            lastActivity: firebase.firestore.FieldValue.serverTimestamp(),
+                            isActive: true
+                        }, { merge: true });
+                }
+            } catch (error) {
+                console.error('Error initializing admin chat:', error);
             }
         }
 
