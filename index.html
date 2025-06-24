@@ -1098,6 +1098,14 @@
             margin: 1rem 0;
         }
 
+        .notification.info {
+            background: #3b82f6;
+        }
+
+        .notification.warning {
+            background: #f59e0b;
+        }
+
     </style>
 </head>
 <body>
@@ -2503,46 +2511,89 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     return;
                 }
                 
-                // Get all active users from Firebase
-                let activeUsers = [];
+                // Get all active users from multiple sources
+                let activeUsers = new Set();
                 
                 if (tourApp.state.isFirebaseConnected && tourApp.state.tourId) {
                     try {
-                        const membersData = await getFromFirebase('teamMembers');
-                        const uniqueUsers = new Set();
-                        
-                        if (membersData && membersData.length > 0) {
-                            membersData.forEach(member => {
-                                if (member.userName) {
-                                    uniqueUsers.add(member.userName);
+                        // Get from activeUsers collection
+                        const activeUsersData = await getFromFirebase('activeUsers');
+                        if (activeUsersData && activeUsersData.length > 0) {
+                            activeUsersData.forEach(user => {
+                                if (user.userName && !user.userName.startsWith('Tourist_')) {
+                                    activeUsers.add(user.userName);
                                 }
                             });
                         }
                         
-                        activeUsers = Array.from(uniqueUsers);
-                        
-                        // Add current user if not in list
-                        if (!activeUsers.includes(tourApp.state.userName)) {
-                            activeUsers.push(tourApp.state.userName);
+                        // Get from teamMembers collection
+                        const membersData = await getFromFirebase('teamMembers');
+                        if (membersData && membersData.length > 0) {
+                            membersData.forEach(member => {
+                                if (member.userName && !member.userName.startsWith('Tourist_')) {
+                                    activeUsers.add(member.userName);
+                                }
+                            });
                         }
+                        
+                        // Get from chat messages (users who have been active)
+                        const chatData = await getFromFirebase('chat');
+                        if (chatData && chatData.length > 0) {
+                            chatData.forEach(msg => {
+                                if (msg.userName && !msg.userName.startsWith('Tourist_') && msg.userName !== 'System' && msg.userName !== '🔊 System') {
+                                    activeUsers.add(msg.userName);
+                                }
+                            });
+                        }
+                        
                     } catch (error) {
-                        console.log('No existing team members found, using current user only');
-                        activeUsers = [tourApp.state.userName];
+                        console.log('Error fetching from Firebase, using local data');
                     }
-                } else {
-                    // Fallback: use current user only
-                    activeUsers = [tourApp.state.userName];
                 }
                 
-                if (activeUsers.length === 0) {
-                    showNotification('Keine aktiven Nutzer gefunden!', 'error');
+                // Get from localStorage
+                Object.keys(localStorage).forEach(key => {
+                    if (key.startsWith('user_')) {
+                        try {
+                            const userData = JSON.parse(localStorage.getItem(key));
+                            if (userData.userName && !userData.userName.startsWith('Tourist_')) {
+                                activeUsers.add(userData.userName);
+                            }
+                        } catch (e) {
+                            // Ignore invalid entries
+                        }
+                    }
+                });
+                
+                // Always include current user if they have a proper name
+                if (!tourApp.state.userName.startsWith('Tourist_')) {
+                    activeUsers.add(tourApp.state.userName);
+                }
+                
+                // Convert to array and filter out default names
+                const userArray = Array.from(activeUsers).filter(name => 
+                    name && 
+                    name.length > 0 && 
+                    !name.startsWith('Tourist_') && 
+                    name !== 'System' && 
+                    name !== '🔊 System' &&
+                    name !== 'Admin'
+                );
+                
+                if (userArray.length === 0) {
+                    showNotification('❌ Keine Nutzer mit gültigen Namen gefunden!\n\n💡 Teilnehmer sollten sich zuerst einen Namen geben.', 'warning');
+                    return;
+                }
+                
+                const confirmMessage = `${userArray.length} Nutzer gefunden:\n${userArray.join(', ')}\n\nAlle auf Teams verteilen?`;
+                if (!confirm(confirmMessage)) {
                     return;
                 }
                 
                 // Shuffle users randomly
-                for (let i = activeUsers.length - 1; i > 0; i--) {
+                for (let i = userArray.length - 1; i > 0; i--) {
                     const j = Math.floor(Math.random() * (i + 1));
-                    [activeUsers[i], activeUsers[j]] = [activeUsers[j], activeUsers[i]];
+                    [userArray[i], userArray[j]] = [userArray[j], userArray[i]];
                 }
                 
                 // Clear all teams
@@ -2556,7 +2607,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 const teamIds = Object.keys(teamMembers);
                 
                 // Distribute users evenly
-                activeUsers.forEach((userName, index) => {
+                userArray.forEach((userName, index) => {
                     const teamId = teamIds[index % teamIds.length];
                     teamMembers[teamId].push({
                         userName: userName,
@@ -2596,7 +2647,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                         await saveToFirebase('teamAssignments', Date.now().toString(), {
                             type: 'auto-assignment',
                             assignedBy: tourApp.state.userName,
-                            userCount: activeUsers.length,
+                            userCount: userArray.length,
                             assignments: teamMembers,
                             timestamp: firebase.firestore.FieldValue.serverTimestamp()
                         });
@@ -2635,8 +2686,8 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 
                 generateTeamOptions();
                 
-                showNotification(`${activeUsers.length} Nutzer automatisch auf Teams verteilt! 🎲`);
-                addSystemMessage(`Admin hat ${activeUsers.length} Nutzer automatisch auf Teams verteilt! 🎲`);
+                showNotification(`✅ ${userArray.length} Nutzer automatisch auf Teams verteilt! 🎲`);
+                addSystemMessage(`Admin hat ${userArray.length} Nutzer automatisch auf Teams verteilt! 🎲`);
                 
                 // Show distribution details
                 const distributionDetails = Object.keys(teamMembers).map(teamId => {
@@ -2653,7 +2704,163 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 console.error('Error auto-assigning teams:', error);
                 showNotification('Fehler bei der automatischen Team-Verteilung: ' + error.message, 'error');
             }
-        }   
+        }  
+
+        function showWelcomeModal() {
+            try {
+                // Don't show if already shown in this session
+                if (sessionStorage.getItem('welcomeShown')) return;
+                
+                const modal = document.createElement('div');
+                modal.className = 'admin-popup-overlay';
+                modal.style.zIndex = '15000'; // Higher than other modals
+                
+                modal.innerHTML = `
+                    <div class="admin-popup" style="max-width: 500px; width: 90%; background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); color: white;">
+                        <h3 style="color: white; margin-bottom: 1.5rem; font-size: 1.8rem;">🏛️ Willkommen zur Kölner Tour!</h3>
+                        
+                        <div style="margin-bottom: 2rem; text-align: left; line-height: 1.6;">
+                            <p style="margin-bottom: 1rem;">Bevor es losgeht, gib dir bitte einen <strong>eigenen Namen</strong> für die Tour!</p>
+                            <ul style="margin-left: 1.5rem; margin-bottom: 1rem;">
+                                <li>Dein Name wird im Chat und Ranking angezeigt</li>
+                                <li>So können andere Teilnehmer dich erkennen</li>
+                                <li>Für die automatische Team-Verteilung wichtig</li>
+                            </ul>
+                        </div>
+                        
+                        <div style="margin-bottom: 1.5rem;">
+                            <label style="display: block; font-weight: bold; margin-bottom: 0.5rem; color: white;">Dein Tour-Name:</label>
+                            <input type="text" id="welcomeNameInput" maxlength="20" placeholder="z.B. Anna, Max, Team-Leader..." 
+                                style="width: 100%; padding: 1rem; border: none; border-radius: 8px; font-size: 1.1rem; text-align: center;">
+                            <small style="color: #fbbf24; display: block; margin-top: 0.5rem;">💡 Wähle einen Namen, den andere leicht erkennen können</small>
+                        </div>
+                        
+                        <div style="text-align: center;">
+                            <button onclick="setWelcomeName()" style="background: white; color: #dc2626; border: none; padding: 1rem 2rem; border-radius: 25px; font-weight: bold; cursor: pointer; font-size: 1.1rem; margin-right: 1rem; transition: all 0.3s;" 
+                                    onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 15px rgba(255,255,255,0.3)'" 
+                                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                                🚀 Tour starten
+                            </button>
+                            <button onclick="closeWelcomeModal()" style="background: transparent; color: white; border: 2px solid white; padding: 1rem 2rem; border-radius: 25px; font-weight: bold; cursor: pointer; font-size: 1.1rem; transition: all 0.3s;"
+                                    onmouseover="this.style.background='rgba(255,255,255,0.1)'" 
+                                    onmouseout="this.style.background='transparent'">
+                                ⏩ Später
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                // Prevent closing by clicking background
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        e.stopPropagation();
+                    }
+                });
+                
+                document.body.appendChild(modal);
+                
+                // Focus on input
+                setTimeout(() => {
+                    const input = document.getElementById('welcomeNameInput');
+                    if (input) {
+                        input.focus();
+                        input.addEventListener('keypress', (e) => {
+                            if (e.key === 'Enter') {
+                                setWelcomeName();
+                            }
+                        });
+                    }
+                }, 100);
+                
+                // Mark as shown in this session
+                sessionStorage.setItem('welcomeShown', 'true');
+                
+            } catch (error) {
+                console.error('Error showing welcome modal:', error);
+            }
+        }
+
+        function setWelcomeName() {
+            try {
+                const input = document.getElementById('welcomeNameInput');
+                if (!input) return;
+                
+                const newName = input.value.trim();
+                if (!newName || newName.length < 2) {
+                    showNotification('Name muss mindestens 2 Zeichen haben!', 'error');
+                    input.focus();
+                    return;
+                }
+                
+                const oldName = tourApp.state.userName;
+                tourApp.state.userName = newName;
+                
+                // Update UI
+                const displayEl = document.getElementById('currentUserName');
+                if (displayEl) {
+                    displayEl.textContent = newName;
+                }
+                
+                const userNameInput = document.getElementById('userNameInput');
+                if (userNameInput) {
+                    userNameInput.value = '';
+                }
+                
+                // Register user immediately for team assignment
+                registerUserForTeamAssignment();
+                
+                saveState();
+                closeWelcomeModal();
+                
+                showNotification(`Willkommen ${newName}! 🎉`);
+                addSystemMessage(`${newName} ist der Tour beigetreten! 👋`);
+                
+                // Show notification about team selection
+                setTimeout(() => {
+                    showNotification('💡 Tipp: Wähle jetzt ein Team aus!', 'info');
+                }, 2000);
+                
+            } catch (error) {
+                console.error('Error setting welcome name:', error);
+            }
+        }
+
+        function closeWelcomeModal() {
+            try {
+                const modal = document.querySelector('.admin-popup-overlay');
+                if (modal) {
+                    modal.remove();
+                }
+            } catch (error) {
+                console.error('Error closing welcome modal:', error);
+            }
+        }
+
+        async function registerUserForTeamAssignment() {
+            try {
+                // Register user in Firebase for team assignment recognition
+                if (tourApp.state.isFirebaseConnected && tourApp.state.tourId) {
+                    await saveToFirebase('activeUsers', tourApp.state.userName, {
+                        userName: tourApp.state.userName,
+                        joinedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        isActive: true,
+                        tourId: tourApp.state.tourId
+                    });
+                }
+                
+                // Also register locally
+                localStorage.setItem(`user_${tourApp.state.userName}`, JSON.stringify({
+                    userName: tourApp.state.userName,
+                    joinedAt: Date.now(),
+                    isActive: true,
+                    tourId: tourApp.state.tourId
+                }));
+                
+                console.log(`✅ User ${tourApp.state.userName} registered for team assignment`);
+            } catch (error) {
+                console.error('Error registering user for team assignment:', error);
+            }
+        }
 
         // App Initialization
         function initApp() {
@@ -2684,6 +2891,13 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 const userNameDisplay = document.getElementById('currentUserName');
                 if (userNameDisplay) {
                     userNameDisplay.textContent = tourApp.state.userName;
+                }
+
+                // Check if user needs to set a proper name
+                if (tourApp.state.userName.startsWith('Tourist_')) {
+                    setTimeout(() => {
+                        showWelcomeModal();
+                    }, 2000);
                 }
                 
                 console.log('✅ Tour App initialized successfully');
@@ -7136,6 +7350,8 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
         window.openMediaSearch = openMediaSearch;
         window.insertFoundMedia = insertFoundMedia;
         window.closeMediaModal = closeMediaModal;
+        window.setWelcomeName = setWelcomeName;
+        window.closeWelcomeModal = closeWelcomeModal;
         window.showTab = function(tabName, tabElement) {
             try {
                 tourApp.state.currentTab = tabName;
