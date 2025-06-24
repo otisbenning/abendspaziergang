@@ -1996,7 +1996,8 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 if (teamChatUnsubscribe) {
                     allSyncListeners.push(teamChatUnsubscribe);
                 }
-                // Listen to admin chat messages
+
+                // Listen to admin direct messages - FIXED to prevent duplicates
                 const adminDirectRef = db.collection('tours').doc(tourApp.state.tourId).collection('adminDirectMessages');
                 const adminDirectUnsubscribe = adminDirectRef.onSnapshot((snapshot) => {
                     snapshot.docChanges().forEach(async (change) => {
@@ -2012,22 +2013,30 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                                     createAdminChatTab(userName);
                                 }
                                 
-                                // Listen to messages in this channel
-                                const messagesRef = change.doc.ref.collection('messages');
-                                messagesRef.orderBy('timestamp', 'desc').limit(1).onSnapshot((messagesSnapshot) => {
-                                    messagesSnapshot.docChanges().forEach((messageChange) => {
-                                        if (messageChange.type === 'added') {
-                                            const messageData = messageChange.doc.data();
-                                            if (messageData.userName !== tourApp.state.userName) {
-                                                if (tourApp.state.isAdmin) {
-                                                    addAdminChatMessage(messageData, false, userName);
-                                                } else if (messageData.targetUser === tourApp.state.userName || messageData.isFromAdmin) {
-                                                    addAdminChatMessage(messageData, false, 'admin');
+                                // Listen to messages in this channel - prevent duplicate listeners
+                                if (!tourApp.state.adminChatListeners) {
+                                    tourApp.state.adminChatListeners = new Set();
+                                }
+                                
+                                if (!tourApp.state.adminChatListeners.has(channelId)) {
+                                    tourApp.state.adminChatListeners.add(channelId);
+                                    
+                                    const messagesRef = change.doc.ref.collection('messages');
+                                    messagesRef.orderBy('timestamp', 'asc').onSnapshot((messagesSnapshot) => {
+                                        messagesSnapshot.docChanges().forEach((messageChange) => {
+                                            if (messageChange.type === 'added') {
+                                                const messageData = messageChange.doc.data();
+                                                if (messageData.userName !== tourApp.state.userName) {
+                                                    if (tourApp.state.isAdmin && messageData.targetUser !== tourApp.state.userName) {
+                                                        addAdminChatMessage(messageData, false, userName);
+                                                    } else if (!tourApp.state.isAdmin && (messageData.targetUser === tourApp.state.userName || messageData.isFromAdmin)) {
+                                                        addAdminChatMessage(messageData, false, 'admin');
+                                                    }
                                                 }
                                             }
-                                        }
+                                        });
                                     });
-                                });
+                                }
                             }
                         }
                     });
@@ -2099,6 +2108,10 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     console.error('Team assignments sync error:', error);
                 });
 
+                // Store team chat listener and team assignment listeners
+                if (teamChatUnsubscribe) {
+                    allSyncListeners.push(teamChatUnsubscribe);
+                }
                 allSyncListeners.push(teamNamesUnsubscribe, teamAssignmentsUnsubscribe);
 
                 allSyncListeners.push(adminChatUnsubscribe, positionsUnsubscribe);
@@ -2662,12 +2675,18 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 const currentUserTeam = Object.keys(teamMembers).find(teamId => 
                     teamMembers[teamId].some(member => member.userName === tourApp.state.userName)
                 );
-                
+
                 if (currentUserTeam) {
                     tourApp.state.selectedTeam = currentUserTeam;
                     tourApp.state.teamName = teamNames[currentUserTeam];
                     updateCurrentTeamDisplay();
                     updateTeamChatTab();
+                    
+                    // Show team chat tab
+                    const teamChatTab = document.getElementById('teamChatTab');
+                    if (teamChatTab) {
+                        teamChatTab.style.display = 'block';
+                    }
                     
                     // Save state without circular references
                     try {
@@ -2682,6 +2701,9 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     } catch (saveError) {
                         console.log('State save skipped due to circular reference');
                     }
+                    
+                    // Reload chat history to include team chat
+                    setTimeout(() => loadChatHistory(), 500);
                 }
                 
                 generateTeamOptions();
@@ -6241,7 +6263,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     const messageData = {
                         userName: tourApp.state.userName,
                         message: message,
-                        timestamp: Date.now(),
+                        timestamp: firebase.firestore ? firebase.firestore.FieldValue.serverTimestamp() : Date.now(),
                         tourId: tourApp.state.tourId,
                         type: 'admin-direct',
                         isFromAdmin: true,
@@ -6251,11 +6273,16 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     addAdminChatMessage(messageData, true, userName);
                     
                     if (tourApp.state.isFirebaseConnected && tourApp.state.tourId) {
-                        // Save to Firebase
+                        // Save to Firebase with proper timestamp
                         db.collection('tours').doc(tourApp.state.tourId)
                             .collection('adminDirectMessages').doc(`user_${userName}`)
-                            .collection('messages').doc(Date.now().toString())
-                            .set(messageData);
+                            .collection('messages').add(messageData)
+                            .then(() => {
+                                console.log(`Admin message sent to ${userName}`);
+                            })
+                            .catch(error => {
+                                console.error('Error sending admin message:', error);
+                            });
                         
                         // Ensure channel exists
                         db.collection('tours').doc(tourApp.state.tourId)
@@ -7449,6 +7476,27 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 const teamChatTab = document.getElementById('teamChatTab');
                 if (teamChatTab) {
                     teamChatTab.style.display = 'block';
+                }
+                
+                // Restart real-time sync to include new team chat
+                if (tourApp.state.isFirebaseConnected && tourApp.state.tourId) {
+                    // Stop old listeners
+                    if (tourApp.state.syncListeners) {
+                        tourApp.state.syncListeners.forEach(unsubscribe => {
+                            if (typeof unsubscribe === 'function') {
+                                try {
+                                    unsubscribe();
+                                } catch (e) {
+                                    console.log('Error unsubscribing:', e);
+                                }
+                            }
+                        });
+                    }
+                    
+                    // Restart sync with new team
+                    setTimeout(() => {
+                        enableRealtimeSync();
+                    }, 1000);
                 }
                 
                 if (oldTeam && oldTeam !== teamId) {
