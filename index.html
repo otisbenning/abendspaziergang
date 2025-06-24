@@ -2590,6 +2590,9 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     activeUsersSize: activeUsers.size
                 });
                 
+                console.log('ActiveUsers before filtering:', Array.from(activeUsers));
+                console.log('Current userName for auto-assign:', tourApp.state.userName);
+
                 // Convert to array and filter out default names
                 const userArray = Array.from(activeUsers).filter(name => 
                     name && 
@@ -2738,7 +2741,12 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
         function showWelcomeModal() {
             try {
                 // Don't show if already shown in this session
-                if (sessionStorage.getItem('welcomeShown')) return;
+                const welcomeShown = sessionStorage.getItem('welcomeShown');
+                console.log('Welcome modal check - welcomeShown:', welcomeShown);
+                if (welcomeShown) {
+                    console.log('Welcome modal blocked by sessionStorage');
+                    return;
+                }
                 
                 const modal = document.createElement('div');
                 modal.className = 'admin-popup-overlay';
@@ -2803,6 +2811,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 
                 // Mark as shown in this session
                 sessionStorage.setItem('welcomeShown', 'true');
+                console.log('Welcome modal marked as shown');
                 
             } catch (error) {
                 console.error('Error showing welcome modal:', error);
