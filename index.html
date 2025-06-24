@@ -1276,6 +1276,20 @@
                     <button class="btn btn-secondary btn-small" onclick="refreshAdminStats()">🔄 Statistiken aktualisieren</button>
                 </div>
 
+                <!-- Tour Export/Import -->
+                <div style="background: white; border-radius: 12px; padding: 1.5rem; margin: 1.5rem 0; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                    <h4 style="color: #1f2937; margin-bottom: 1rem;">📦 Tour Export/Import</h4>
+                    <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem;">
+                        <button class="btn btn-admin btn-small" onclick="exportTourData()">📤 Tour exportieren</button>
+                        <button class="btn btn-secondary btn-small" onclick="document.getElementById('importFileInput').click()">📥 Tour importieren</button>
+                    </div>
+                    <input type="file" id="importFileInput" accept=".json" style="display: none;" onchange="importTourData(event)">
+                    <p style="font-size: 0.9rem; color: #6b7280;">
+                        💡 Exportiert alle Stationen, Texte, Bilder und Audio-Dateien als JSON-Datei.<br>
+                        ⚠️ Chat-Daten werden nicht exportiert und werden nach 24h automatisch gelöscht.
+                    </p>
+                </div>
+
                 <div style="background: white; border-radius: 12px; padding: 1.5rem; margin: 1.5rem 0; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
                     <h4 style="color: #1f2937; margin-bottom: 1rem;">🔄 Tour zurücksetzen</h4>
                     <button class="btn btn-secondary" onclick="resetTour()">Alle Daten zurücksetzen</button>
@@ -1902,7 +1916,8 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 setTimeout(() => {
                     initGeolocation();
                     loadChatHistory();
-                    initializeAdminChat(); // HIER EINFÜGEN
+                    initializeAdminChat();
+                    startChatCleanup(); // HIER EINFÜGEN
                 }, 1000);
                 
             } catch (error) {
@@ -5192,6 +5207,247 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             }
         }
 
+        // Tour Export/Import Functions
+        async function exportTourData() {
+            try {
+                const exportData = {
+                    version: "1.0",
+                    exportDate: new Date().toISOString(),
+                    tourId: tourApp.state.tourId,
+                    stations: tourApp.stations.map(station => ({
+                        ...station,
+                        // Ensure all data is included
+                        id: station.id,
+                        title: station.title,
+                        subtitle: station.subtitle,
+                        lat: station.lat,
+                        lng: station.lng,
+                        description: station.description,
+                        photoChallenge: station.photoChallenge,
+                        mainText: station.mainText,
+                        images: station.images || [],
+                        audio: station.audio || []
+                    })),
+                    metadata: {
+                        totalStations: tourApp.stations.length,
+                        exportedBy: tourApp.state.userName,
+                        isAdmin: tourApp.state.isAdmin
+                    }
+                };
+
+                // Create download
+                const dataStr = JSON.stringify(exportData, null, 2);
+                const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(dataBlob);
+                link.download = `koeln-tour-${tourApp.state.tourId}-${new Date().toISOString().split('T')[0]}.json`;
+                
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                showNotification('Tour erfolgreich exportiert! 📤');
+                addSystemMessage(`Admin hat Tour-Daten exportiert! 📦`);
+                
+            } catch (error) {
+                console.error('Error exporting tour data:', error);
+                showNotification('Fehler beim Exportieren der Tour-Daten', 'error');
+            }
+        }
+
+        async function importTourData(event) {
+            try {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    try {
+                        const importData = JSON.parse(e.target.result);
+                        
+                        // Validate import data
+                        if (!importData.version || !importData.stations) {
+                            throw new Error('Ungültiges Tour-Datei-Format');
+                        }
+
+                        if (!confirm(`Tour importieren?\n\nDatenmenge: ${importData.stations.length} Stationen\nExportiert am: ${new Date(importData.exportDate).toLocaleString('de-DE')}\nExportiert von: ${importData.metadata?.exportedBy || 'Unbekannt'}\n\n⚠️ Alle aktuellen Stationen werden ersetzt!`)) {
+                            return;
+                        }
+
+                        // Import stations
+                        tourApp.stations = importData.stations.map(station => ({
+                            ...station,
+                            // Ensure required fields exist
+                            images: station.images || [],
+                            audio: station.audio || []
+                        }));
+
+                        // Save to Firebase if connected
+                        if (tourApp.state.isFirebaseConnected && tourApp.state.tourId) {
+                            // Clear existing stations in Firebase
+                            const stationsRef = db.collection('tours').doc(tourApp.state.tourId).collection('stations');
+                            const snapshot = await stationsRef.get();
+                            const batch = db.batch();
+                            snapshot.docs.forEach((doc) => {
+                                batch.delete(doc.ref);
+                            });
+                            await batch.commit();
+
+                            // Import new stations to Firebase
+                            for (const station of tourApp.stations) {
+                                await saveToFirebase('stations', station.id.toString(), station);
+                            }
+                        }
+
+                        // Reset user progress for imported tour
+                        tourApp.state.completedStations = [];
+                        tourApp.state.totalScore = 0;
+                        tourApp.state.uploadedPhotos = [];
+
+                        // Update UI
+                        generateStationsList();
+                        generateContentEditor();
+                        updateProgress();
+                        updateUI();
+                        
+                        if (tourApp.state.map) {
+                            updateMapMarkers();
+                        }
+
+                        saveState();
+                        showNotification(`Tour erfolgreich importiert! ${importData.stations.length} Stationen geladen 📥`);
+                        addSystemMessage(`Admin hat neue Tour-Daten importiert! ${importData.stations.length} Stationen 📦`);
+
+                    } catch (parseError) {
+                        console.error('Error parsing import file:', parseError);
+                        showNotification('Fehler beim Lesen der Import-Datei: ' + parseError.message, 'error');
+                    }
+                };
+                
+                reader.readAsText(file);
+                
+                // Reset file input
+                event.target.value = '';
+                
+            } catch (error) {
+                console.error('Error importing tour data:', error);
+                showNotification('Fehler beim Importieren der Tour-Daten', 'error');
+            }
+        }
+
+        // Auto-delete chat messages after 24 hours
+        async function cleanupOldChatMessages() {
+            try {
+                if (!tourApp.state.isFirebaseConnected || !tourApp.state.tourId) return;
+
+                const now = Date.now();
+                const twentyFourHoursAgo = now - (24 * 60 * 60 * 1000);
+
+                // Clean main chat
+                const chatRef = db.collection('tours').doc(tourApp.state.tourId).collection('chat');
+                const oldChatMessages = await chatRef.where('timestamp', '<', twentyFourHoursAgo).get();
+                
+                if (!oldChatMessages.empty) {
+                    const batch = db.batch();
+                    oldChatMessages.docs.forEach((doc) => {
+                        batch.delete(doc.ref);
+                    });
+                    await batch.commit();
+                    console.log(`🗑️ Deleted ${oldChatMessages.docs.length} old chat messages`);
+                }
+
+                // Clean team chats
+                const teamChatRef = db.collection('tours').doc(tourApp.state.tourId).collection('teamChat');
+                const teamSnapshot = await teamChatRef.get();
+                
+                for (const teamDoc of teamSnapshot.docs) {
+                    const messagesRef = teamDoc.ref.collection('messages');
+                    const oldTeamMessages = await messagesRef.where('timestamp', '<', twentyFourHoursAgo).get();
+                    
+                    if (!oldTeamMessages.empty) {
+                        const teamBatch = db.batch();
+                        oldTeamMessages.docs.forEach((messageDoc) => {
+                            teamBatch.delete(messageDoc.ref);
+                        });
+                        await teamBatch.commit();
+                        console.log(`🗑️ Deleted ${oldTeamMessages.docs.length} old team messages for ${teamDoc.id}`);
+                    }
+                }
+
+                // Clean admin direct messages
+                const adminDirectRef = db.collection('tours').doc(tourApp.state.tourId).collection('adminDirectMessages');
+                const adminDirectSnapshot = await adminDirectRef.get();
+                
+                for (const channelDoc of adminDirectSnapshot.docs) {
+                    const messagesRef = channelDoc.ref.collection('messages');
+                    const oldAdminMessages = await messagesRef.where('timestamp', '<', twentyFourHoursAgo).get();
+                    
+                    if (!oldAdminMessages.empty) {
+                        const adminBatch = db.batch();
+                        oldAdminMessages.docs.forEach((messageDoc) => {
+                            adminBatch.delete(messageDoc.ref);
+                        });
+                        await adminBatch.commit();
+                        console.log(`🗑️ Deleted ${oldAdminMessages.docs.length} old admin messages for ${channelDoc.id}`);
+                    }
+                }
+
+                // Clean local storage chat data
+                const chatKey = `chat_${tourApp.state.tourId}`;
+                const localChatMessages = JSON.parse(localStorage.getItem(chatKey) || '[]');
+                const filteredMessages = localChatMessages.filter(msg => {
+                    const messageTime = msg.timestamp || 0;
+                    return messageTime > twentyFourHoursAgo;
+                });
+                
+                if (filteredMessages.length !== localChatMessages.length) {
+                    localStorage.setItem(chatKey, JSON.stringify(filteredMessages));
+                    console.log(`🗑️ Cleaned ${localChatMessages.length - filteredMessages.length} old local chat messages`);
+                }
+
+                // Clean team chat local storage
+                Object.keys(localStorage).forEach(key => {
+                    if (key.startsWith(`teamChat_${tourApp.state.tourId}_`)) {
+                        const teamMessages = JSON.parse(localStorage.getItem(key) || '[]');
+                        const filteredTeamMessages = teamMessages.filter(msg => {
+                            const messageTime = msg.timestamp || 0;
+                            return messageTime > twentyFourHoursAgo;
+                        });
+                        
+                        if (filteredTeamMessages.length !== teamMessages.length) {
+                            localStorage.setItem(key, JSON.stringify(filteredTeamMessages));
+                            console.log(`🗑️ Cleaned ${teamMessages.length - filteredTeamMessages.length} old local team messages for ${key}`);
+                        }
+                    }
+                });
+
+            } catch (error) {
+                console.error('Error cleaning up old chat messages:', error);
+            }
+        }
+
+        // Start cleanup interval (runs every hour)
+        let chatCleanupInterval = null;
+
+        function startChatCleanup() {
+            if (chatCleanupInterval) return;
+            
+            // Run cleanup immediately and then every hour
+            cleanupOldChatMessages();
+            
+            chatCleanupInterval = setInterval(() => {
+                cleanupOldChatMessages();
+            }, 60 * 60 * 1000); // Every hour
+        }
+
+        function stopChatCleanup() {
+            if (chatCleanupInterval) {
+                clearInterval(chatCleanupInterval);
+                chatCleanupInterval = null;
+            }
+        }
+        
         // Global window functions for HTML onclick handlers
         window.showTab = function(tabName, tabElement) {
             try {
@@ -5400,6 +5656,12 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
         } else {
             setTimeout(initApp, 100);
         }
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            stopChatCleanup();
+            stopUserPositionTracking();
+        });
 
     </script>
 </body>
