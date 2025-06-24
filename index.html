@@ -230,8 +230,9 @@
         .input-group {
             display: flex;
             gap: 0.5rem;
-            align-items: center;
+            align-items: stretch;
             margin-bottom: 0.5rem;
+            flex-wrap: nowrap;
         }
 
         .input-group input {
@@ -240,6 +241,14 @@
             border: 2px solid #e5e7eb;
             border-radius: 8px;
             font-size: 1rem;
+            min-width: 0;
+        }
+
+        .input-group .btn-small {
+            flex-shrink: 0;
+            white-space: nowrap;
+            height: auto;
+            align-self: center;
         }
 
         .team-selector {
@@ -672,7 +681,8 @@
             display: flex;
             gap: 0.5rem;
             margin-top: 1rem;
-            align-items: flex-end;
+            align-items: stretch;
+            flex-wrap: nowrap;
         }
 
         .chat-input {
@@ -681,6 +691,7 @@
             border: 2px solid #e5e7eb;
             border-radius: 8px;
             font-size: 1rem;
+            min-width: 0;
         }
 
         .chat-send {
@@ -692,6 +703,8 @@
             cursor: pointer;
             font-weight: bold;
             touch-action: manipulation;
+            flex-shrink: 0;
+            white-space: nowrap;
         }
 
         .chat-image-upload {
@@ -704,6 +717,7 @@
             font-weight: bold;
             touch-action: manipulation;
             white-space: nowrap;
+            flex-shrink: 0;
         }
 
         .chat-image-container {
