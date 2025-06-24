@@ -1133,31 +1133,31 @@
                         </div>
                     </div>
                     
-                    <!-- Admin Direct Message -->
-                    <div id="adminChatContainer" class="chat-section" style="display: none;">
-                        <div class="chat-container" id="adminChatMessages">
-                            <div class="chat-message system">
-                                <strong>Admin-Chat:</strong> Direkter Kontakt zum Tour-Admin 👤<br>
-                                <small>Nur du und der Admin können diese Nachrichten sehen.</small>
-                                <span class="timestamp">jetzt</span>
-                            </div>
-                        </div>
-                        
-                        <div class="chat-input-container" id="adminChatInput">
-                            <input type="text" class="chat-input" id="adminChatInputField" placeholder="Nachricht an Admin..." maxlength="200">
-                            <button class="chat-image-upload" onclick="selectAdminChatImage()">📷</button>
-                            <button class="chat-send" onclick="sendAdminMessage()">An Admin</button>
-                        </div>
-                    </div>
-
-                    <input type="file" class="file-input" id="adminChatImageInput" accept="image/*" onchange="handleAdminChatImageUpload(event)">
-
                     <div class="chat-input-container" id="teamChatInput">
                         <input type="text" class="chat-input" id="teamChatInputField" placeholder="Team-Nachricht eingeben..." maxlength="200">
                         <button class="chat-image-upload" onclick="selectTeamChatImage()">📷</button>
                         <button class="chat-send" onclick="sendTeamMessage()">Senden</button>
                     </div>
                 </div>
+
+                <!-- Admin Direct Message -->
+                <div id="adminChatContainer" class="chat-section" style="display: none;">
+                    <div class="chat-container" id="adminChatMessages">
+                        <div class="chat-message system">
+                            <strong>Admin-Chat:</strong> Direkter Kontakt zum Tour-Admin 👤<br>
+                            <small>Nur du und der Admin können diese Nachrichten sehen.</small>
+                            <span class="timestamp">jetzt</span>
+                        </div>
+                    </div>
+                    
+                    <div class="chat-input-container" id="adminChatInput">
+                        <input type="text" class="chat-input" id="adminChatInputField" placeholder="Nachricht an Admin..." maxlength="200">
+                        <button class="chat-image-upload" onclick="selectAdminChatImage()">📷</button>
+                        <button class="chat-send" onclick="sendAdminMessage()">An Admin</button>
+                    </div>
+                </div>
+
+                <input type="file" class="file-input" id="adminChatImageInput" accept="image/*" onchange="handleAdminChatImageUpload(event)">
 
                 <input type="file" class="file-input" id="chatImageInput" accept="image/*" onchange="handleChatImageUpload(event)">
                 <input type="file" class="file-input" id="teamChatImageInput" accept="image/*" onchange="handleTeamChatImageUpload(event)">
@@ -1981,7 +1981,10 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 }
 
                 const input = document.getElementById('teamChatInputField');
-                if (!input) return;
+                if (!input) {
+                    console.error('Team chat input not found');
+                    return;
+                }
                 
                 const message = input.value.trim();
                 if (message) {
@@ -2273,16 +2276,31 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 }
 
                 // Show/hide chat sections
-                document.querySelectorAll('.chat-section').forEach(section => section.classList.remove('active'));
+                document.querySelectorAll('.chat-section').forEach(section => {
+                    section.classList.remove('active');
+                    section.style.display = 'none';
+                });
                 
                 if (tabType === 'main') {
-                    document.getElementById('mainChatContainer').classList.add('active');
+                    const mainContainer = document.getElementById('mainChatContainer');
+                    if (mainContainer) {
+                        mainContainer.classList.add('active');
+                        mainContainer.style.display = 'block';
+                    }
                     clearChatNotification();
                 } else if (tabType === 'team') {
-                    document.getElementById('teamChatContainer').classList.add('active');
+                    const teamContainer = document.getElementById('teamChatContainer');
+                    if (teamContainer) {
+                        teamContainer.classList.add('active');
+                        teamContainer.style.display = 'block';
+                    }
                     clearTeamChatNotification();
                 } else if (tabType === 'admin') {
-                    document.getElementById('adminChatContainer').classList.add('active');
+                    const adminContainer = document.getElementById('adminChatContainer');
+                    if (adminContainer) {
+                        adminContainer.classList.add('active');
+                        adminContainer.style.display = 'block';
+                    }
                     clearAdminChatNotification();
                 }
             } catch (error) {
@@ -3380,33 +3398,33 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     // Clear notifications based on current chat tab
                     if (tourApp.state.currentChatTab === 'main') {
                         clearChatNotification();
-                    } else {
+                    } else if (tourApp.state.currentChatTab === 'team') {
                         clearTeamChatNotification();
+                    } else if (tourApp.state.currentChatTab === 'admin') {
+                        clearAdminChatNotification();
                     }
                     
-                    // Add Enter key listener for team chat
+                    // Add Enter key listeners for all chat inputs
                     const teamChatInput = document.getElementById('teamChatInputField');
-                    if (teamChatInput) {
+                    if (teamChatInput && !teamChatInput.hasAttribute('data-listener-added')) {
                         teamChatInput.addEventListener('keypress', (e) => {
                             if (e.key === 'Enter') {
                                 sendTeamMessage();
                             }
                         });
+                        teamChatInput.setAttribute('data-listener-added', 'true');
+                    }
+                    
+                    const adminChatInput = document.getElementById('adminChatInputField');
+                    if (adminChatInput && !adminChatInput.hasAttribute('data-listener-added')) {
+                        adminChatInput.addEventListener('keypress', (e) => {
+                            if (e.key === 'Enter') {
+                                sendAdminMessage();
+                            }
+                        });
+                        adminChatInput.setAttribute('data-listener-added', 'true');
                     }
                 }
-
-                if (tabName === 'map') {
-                    setTimeout(() => initMap(), 100);
-                } else if (tabName === 'ranking') {
-                    updateRanking();
-                } else if (tabName === 'admin' && tourApp.state.isAdmin) {
-                    generateContentEditor();
-                    refreshAdminStats();
-                }
-            } catch (error) {
-                console.error('Error showing tab:', error);
-            }
-        }
 
         window.selectTeam = function(teamId, teamName, element) {
             try {
@@ -4786,7 +4804,10 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
         async function sendAdminMessage() {
             try {
                 const input = document.getElementById('adminChatInputField');
-                if (!input) return;
+                if (!input) {
+                    console.error('Admin chat input not found');
+                    return;
+                }
                 
                 const message = input.value.trim();
                 if (message) {
@@ -4805,6 +4826,14 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                         await db.collection('tours').doc(tourApp.state.tourId)
                             .collection('adminChat').doc(Date.now().toString())
                             .set(messageData);
+                    } else {
+                        const adminChatKey = `adminChat_${tourApp.state.tourId}`;
+                        const adminChatMessages = JSON.parse(localStorage.getItem(adminChatKey) || '[]');
+                        adminChatMessages.push(messageData);
+                        if (adminChatMessages.length > 50) {
+                            adminChatMessages.splice(0, adminChatMessages.length - 50);
+                        }
+                        localStorage.setItem(adminChatKey, JSON.stringify(adminChatMessages));
                     }
                     
                     input.value = '';
