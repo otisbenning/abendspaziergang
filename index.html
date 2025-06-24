@@ -2579,9 +2579,16 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 });
                 
                 // Always include current user if they have a proper name
-                if (!tourApp.state.userName.startsWith('Tourist_')) {
+                if (tourApp.state.userName && tourApp.state.userName.trim() && !tourApp.state.userName.startsWith('Tourist_')) {
                     activeUsers.add(tourApp.state.userName);
                 }
+
+                // Debug: Log current user info
+                console.log('Current user for auto-assign:', {
+                    userName: tourApp.state.userName,
+                    isValid: !tourApp.state.userName.startsWith('Tourist_'),
+                    activeUsersSize: activeUsers.size
+                });
                 
                 // Convert to array and filter out default names
                 const userArray = Array.from(activeUsers).filter(name => 
@@ -2920,12 +2927,18 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 }
 
                 // Check if user needs to set a proper name - show welcome modal for new users
-                const hasSetCustomName = localStorage.getItem('hasSetCustomName');
-                if (tourApp.state.userName.startsWith('Tourist_') || !hasSetCustomName) {
-                    setTimeout(() => {
+                setTimeout(() => {
+                    const hasSetCustomName = localStorage.getItem('hasSetCustomName');
+                    console.log('Welcome modal check:', {
+                        userName: tourApp.state.userName,
+                        startsWithTourist: tourApp.state.userName.startsWith('Tourist_'),
+                        hasSetCustomName: hasSetCustomName
+                    });
+                    
+                    if (tourApp.state.userName.startsWith('Tourist_') || !hasSetCustomName) {
                         showWelcomeModal();
-                    }, 2000);
-                }
+                    }
+                }, 3000); // Länger warten, damit loadState() fertig ist
                 
                 console.log('✅ Tour App initialized successfully');
                 
