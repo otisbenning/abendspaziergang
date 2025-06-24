@@ -3378,202 +3378,6 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             }
         }
 
-        // UI Functions
-        window.showTab = function(tabName, tabElement) {
-            try {
-                tourApp.state.currentTab = tabName;
-                
-                document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-                if (tabElement) {
-                    tabElement.classList.add('active');
-                }
-
-                document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-                const targetTab = document.getElementById(tabName === 'map' ? 'map-tab' : tabName);
-                if (targetTab) {
-                    targetTab.classList.add('active');
-                }
-
-                if (tabName === 'chat') {
-                    // Clear notifications based on current chat tab
-                    if (tourApp.state.currentChatTab === 'main') {
-                        clearChatNotification();
-                    } else if (tourApp.state.currentChatTab === 'team') {
-                        clearTeamChatNotification();
-                    } else if (tourApp.state.currentChatTab === 'admin') {
-                        clearAdminChatNotification();
-                    }
-                    
-                    // Add Enter key listeners for all chat inputs
-                    const teamChatInput = document.getElementById('teamChatInputField');
-                    if (teamChatInput && !teamChatInput.hasAttribute('data-listener-added')) {
-                        teamChatInput.addEventListener('keypress', (e) => {
-                            if (e.key === 'Enter') {
-                                sendTeamMessage();
-                            }
-                        });
-                        teamChatInput.setAttribute('data-listener-added', 'true');
-                    }
-                    
-                    const adminChatInput = document.getElementById('adminChatInputField');
-                    if (adminChatInput && !adminChatInput.hasAttribute('data-listener-added')) {
-                        adminChatInput.addEventListener('keypress', (e) => {
-                            if (e.key === 'Enter') {
-                                sendAdminMessage();
-                            }
-                        });
-                        adminChatInput.setAttribute('data-listener-added', 'true');
-                    }
-                }
-
-                if (tabName === 'admin' && tourApp.state.isAdmin) {
-                    setTimeout(() => {
-                        generateContentEditor();
-                        updateRanking();
-                    }, 100);
-                }
-
-                if (tabName === 'map' || tabName === 'map-tab') {
-                    setTimeout(() => {
-                        if (!tourApp.state.map) {
-                            initMap();
-                        } else if (tourApp.state.map) {
-                            tourApp.state.map.invalidateSize();
-                        }
-                    }, 100);
-                }
-                } // Schließende Klammer für showTab Funktion
-
-        window.selectTeam = function(teamId, teamName, element) {
-            try {
-                tourApp.state.selectedTeam = teamId;
-                tourApp.state.teamName = teamName;
-                
-                document.querySelectorAll('.team-option').forEach(option => {
-                    option.classList.remove('selected');
-                });
-                if (element) {
-                    element.classList.add('selected');
-                }
-                
-                const selector = document.getElementById('teamSelector');
-                if (selector) {
-                    selector.style.display = 'none';
-                }
-
-                // Enable team chat tab
-                const teamChatTab = document.getElementById('teamChatTab');
-                if (teamChatTab) {
-                    teamChatTab.style.display = 'block';
-                    teamChatTab.innerHTML = `👥 ${teamName.split(' ')[1]}-Chat`;
-                }
-                
-                showNotification('Team ausgewählt! 🎉');
-                saveState();
-                addSystemMessage(`${tourApp.state.userName} ist ${teamName} beigetreten! 🎊`);
-
-                // Load team chat history
-                setTimeout(() => loadChatHistory(), 500);
-            } catch (error) {
-                console.error('Error selecting team:', error);
-            }
-        }
-
-        window.changeUserName = function() {
-            try {
-                const input = document.getElementById('userNameInput');
-                const newName = input.value.trim();
-                
-                if (newName && newName.length >= 2) {
-                    const oldName = tourApp.state.userName;
-                    tourApp.state.userName = newName;
-                    
-                    const displayEl = document.getElementById('currentUserName');
-                    if (displayEl) {
-                        displayEl.textContent = newName;
-                    }
-                    
-                    input.value = '';
-                    saveState();
-                    showNotification('Name geändert! 👤');
-                    addSystemMessage(`${oldName} heißt jetzt ${newName}! 👤`);
-                } else {
-                    showNotification('Name muss mindestens 2 Zeichen haben!', 'error');
-                }
-            } catch (error) {
-                console.error('Error changing user name:', error);
-            }
-        }
-
-        window.startTour = function() {
-            try {
-                if (!tourApp.state.selectedTeam) {
-                    showNotification('Bitte wähle zuerst ein Team aus!', 'error');
-                    return;
-                }
-                
-                showTab('stations', document.querySelector('.tab[onclick*="stations"]'));
-                showNotification('Tour gestartet! Viel Erfolg! 🚀');
-            } catch (error) {
-                console.error('Error starting tour:', error);
-            }
-        }
-
-        window.loginAdmin = function() {
-            try {
-                const password = document.getElementById('adminPassword').value;
-                if (password === 'koeln2024') {
-                    tourApp.state.isAdmin = true;
-                    document.getElementById('adminTab').classList.remove('hidden');
-                    generateStationsList();
-                    showNotification('Admin-Modus aktiviert! ⚙️');
-                    showTab('admin', document.getElementById('adminTab'));
-                } else {
-                    showNotification('Falsches Passwort!', 'error');
-                }
-            } catch (error) {
-                console.error('Error logging in admin:', error);
-            }
-        }
-
-        // Utility Functions
-        window.copyShareUrl = function() {
-            try {
-                const shareUrl = document.getElementById('shareUrl').textContent;
-                if (navigator.clipboard) {
-                    navigator.clipboard.writeText(shareUrl).then(() => {
-                        showNotification('URL kopiert! 📋');
-                    });
-                } else {
-                    const textarea = document.createElement('textarea');
-                    textarea.value = shareUrl;
-                    document.body.appendChild(textarea);
-                    textarea.select();
-                    document.execCommand('copy');
-                    document.body.removeChild(textarea);
-                    showNotification('URL kopiert! 📋');
-                }
-            } catch (error) {
-                console.error('Error copying URL:', error);
-            }
-        }
-
-        window.shareViaWhatsApp = function() {
-            try {
-                const shareUrl = document.getElementById('shareUrl').textContent;
-                const message = `🏛️ Kölner Abendspaziergang - Tour beitreten:\n${shareUrl}`;
-                const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
-                window.open(whatsappUrl, '_blank');
-            } catch (error) {
-                console.error('Error sharing via WhatsApp:', error);
-            }
-        }
-
-        window.retryConnection = function() {
-            tourApp.state.connectionRetries = 0;
-            initFirebase();
-        }
-
         async function addScore(points) {
             try {
                 tourApp.state.totalScore += Math.round(points);
@@ -5095,6 +4899,206 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             } catch (error) {
                 console.error('Error removing user marker:', error);
             }
+        }
+
+        // Global window functions for HTML onclick handlers
+        window.showTab = function(tabName, tabElement) {
+            try {
+                tourApp.state.currentTab = tabName;
+                
+                document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+                if (tabElement) {
+                    tabElement.classList.add('active');
+                }
+
+                document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+                const targetTab = document.getElementById(tabName === 'map' ? 'map-tab' : tabName);
+                if (targetTab) {
+                    targetTab.classList.add('active');
+                }
+
+                if (tabName === 'chat') {
+                    if (tourApp.state.currentChatTab === 'main') {
+                        clearChatNotification();
+                    } else if (tourApp.state.currentChatTab === 'team') {
+                        clearTeamChatNotification();
+                    } else if (tourApp.state.currentChatTab === 'admin') {
+                        clearAdminChatNotification();
+                    }
+                    
+                    const teamChatInput = document.getElementById('teamChatInputField');
+                    if (teamChatInput && !teamChatInput.hasAttribute('data-listener-added')) {
+                        teamChatInput.addEventListener('keypress', (e) => {
+                            if (e.key === 'Enter') {
+                                sendTeamMessage();
+                            }
+                        });
+                        teamChatInput.setAttribute('data-listener-added', 'true');
+                    }
+                    
+                    const adminChatInput = document.getElementById('adminChatInputField');
+                    if (adminChatInput && !adminChatInput.hasAttribute('data-listener-added')) {
+                        adminChatInput.addEventListener('keypress', (e) => {
+                            if (e.key === 'Enter') {
+                                sendAdminMessage();
+                            }
+                        });
+                        adminChatInput.setAttribute('data-listener-added', 'true');
+                    }
+                }
+
+                if (tabName === 'admin' && tourApp.state.isAdmin) {
+                    setTimeout(() => {
+                        generateContentEditor();
+                        updateRanking();
+                    }, 100);
+                }
+
+                if (tabName === 'map' || tabName === 'map-tab') {
+                    setTimeout(() => {
+                        if (!tourApp.state.map) {
+                            initMap();
+                        } else if (tourApp.state.map) {
+                            tourApp.state.map.invalidateSize();
+                        }
+                    }, 100);
+                }
+
+                if (tabName === 'ranking') {
+                    setTimeout(() => {
+                        updateRanking();
+                    }, 100);
+                }
+            } catch (error) {
+                console.error('Error showing tab:', error);
+            }
+        }
+
+        window.selectTeam = function(teamId, teamName, element) {
+            try {
+                tourApp.state.selectedTeam = teamId;
+                tourApp.state.teamName = teamName;
+                
+                document.querySelectorAll('.team-option').forEach(option => {
+                    option.classList.remove('selected');
+                });
+                if (element) {
+                    element.classList.add('selected');
+                }
+                
+                const selector = document.getElementById('teamSelector');
+                if (selector) {
+                    selector.style.display = 'none';
+                }
+
+                const teamChatTab = document.getElementById('teamChatTab');
+                if (teamChatTab) {
+                    teamChatTab.style.display = 'block';
+                    teamChatTab.innerHTML = `👥 ${teamName.split(' ')[1]}-Chat`;
+                }
+                
+                showNotification('Team ausgewählt! 🎉');
+                saveState();
+                addSystemMessage(`${tourApp.state.userName} ist ${teamName} beigetreten! 🎊`);
+
+                setTimeout(() => loadChatHistory(), 500);
+            } catch (error) {
+                console.error('Error selecting team:', error);
+            }
+        }
+
+        window.changeUserName = function() {
+            try {
+                const input = document.getElementById('userNameInput');
+                const newName = input.value.trim();
+                
+                if (newName && newName.length >= 2) {
+                    const oldName = tourApp.state.userName;
+                    tourApp.state.userName = newName;
+                    
+                    const displayEl = document.getElementById('currentUserName');
+                    if (displayEl) {
+                        displayEl.textContent = newName;
+                    }
+                    
+                    input.value = '';
+                    saveState();
+                    showNotification('Name geändert! 👤');
+                    addSystemMessage(`${oldName} heißt jetzt ${newName}! 👤`);
+                } else {
+                    showNotification('Name muss mindestens 2 Zeichen haben!', 'error');
+                }
+            } catch (error) {
+                console.error('Error changing user name:', error);
+            }
+        }
+
+        window.startTour = function() {
+            try {
+                if (!tourApp.state.selectedTeam) {
+                    showNotification('Bitte wähle zuerst ein Team aus!', 'error');
+                    return;
+                }
+                
+                showTab('stations', document.querySelector('.tab[onclick*="stations"]'));
+                showNotification('Tour gestartet! Viel Erfolg! 🚀');
+            } catch (error) {
+                console.error('Error starting tour:', error);
+            }
+        }
+
+        window.loginAdmin = function() {
+            try {
+                const password = document.getElementById('adminPassword').value;
+                if (password === 'koeln2024') {
+                    tourApp.state.isAdmin = true;
+                    document.getElementById('adminTab').classList.remove('hidden');
+                    generateStationsList();
+                    showNotification('Admin-Modus aktiviert! ⚙️');
+                    showTab('admin', document.getElementById('adminTab'));
+                } else {
+                    showNotification('Falsches Passwort!', 'error');
+                }
+            } catch (error) {
+                console.error('Error logging in admin:', error);
+            }
+        }
+
+        window.copyShareUrl = function() {
+            try {
+                const shareUrl = document.getElementById('shareUrl').textContent;
+                if (navigator.clipboard) {
+                    navigator.clipboard.writeText(shareUrl).then(() => {
+                        showNotification('URL kopiert! 📋');
+                    });
+                } else {
+                    const textarea = document.createElement('textarea');
+                    textarea.value = shareUrl;
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textarea);
+                    showNotification('URL kopiert! 📋');
+                }
+            } catch (error) {
+                console.error('Error copying URL:', error);
+            }
+        }
+
+        window.shareViaWhatsApp = function() {
+            try {
+                const shareUrl = document.getElementById('shareUrl').textContent;
+                const message = `🏛️ Kölner Abendspaziergang - Tour beitreten:\n${shareUrl}`;
+                const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+                window.open(whatsappUrl, '_blank');
+            } catch (error) {
+                console.error('Error sharing via WhatsApp:', error);
+            }
+        }
+
+        window.retryConnection = function() {
+            tourApp.state.connectionRetries = 0;
+            initFirebase();
         }
 
         // Initialize app when DOM is ready
