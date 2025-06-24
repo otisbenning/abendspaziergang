@@ -1868,7 +1868,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
         }
 
         // Chat Functions - ENHANCED with Team Chat and Moderation
-        async function sendMessage() {
+        window.sendMessage = async function() {
             try {
                 // Check if chat is blocked by moderation
                 if (tourApp.state.chatBlocked && !tourApp.state.isAdmin) {
@@ -3296,7 +3296,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
         }
 
         // UI Functions
-        function showTab(tabName, tabElement) {
+        window.showTab = function(tabName, tabElement) {
             try {
                 tourApp.state.currentTab = tabName;
                 
@@ -3343,7 +3343,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             }
         }
 
-        function selectTeam(teamId, teamName, element) {
+        window.selectTeam = function(teamId, teamName, element) {
             try {
                 tourApp.state.selectedTeam = teamId;
                 tourApp.state.teamName = teamName;
@@ -3378,7 +3378,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             }
         }
 
-        function changeUserName() {
+        window.changeUserName = function() {
             try {
                 const input = document.getElementById('userNameInput');
                 const newName = input.value.trim();
@@ -3404,7 +3404,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             }
         }
 
-        function startTour() {
+        window.startTour = function() {
             try {
                 if (!tourApp.state.selectedTeam) {
                     showNotification('Bitte wähle zuerst ein Team aus!', 'error');
@@ -3418,7 +3418,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             }
         }
 
-        function loginAdmin() {
+        window.loginAdmin = function() {
             try {
                 const password = document.getElementById('adminPassword').value;
                 if (password === 'koeln2024') {
@@ -3436,7 +3436,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
         }
 
         // Utility Functions
-        function copyShareUrl() {
+        window.copyShareUrl = function() {
             try {
                 const shareUrl = document.getElementById('shareUrl').textContent;
                 if (navigator.clipboard) {
@@ -3457,7 +3457,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             }
         }
 
-        function shareViaWhatsApp() {
+        window.shareViaWhatsApp = function() {
             try {
                 const shareUrl = document.getElementById('shareUrl').textContent;
                 const message = `🏛️ Kölner Abendspaziergang - Tour beitreten:\n${shareUrl}`;
@@ -3466,6 +3466,11 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             } catch (error) {
                 console.error('Error sharing via WhatsApp:', error);
             }
+        }
+
+        window.retryConnection = function() {
+            tourApp.state.connectionRetries = 0;
+            initFirebase();
         }
 
         async function addScore(points) {
