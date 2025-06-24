@@ -969,6 +969,37 @@
             display: none !important;
         }
 
+        .address-result {
+            transition: all 0.3s;
+        }
+
+        .address-result:hover {
+            background: #f3f4f6 !important;
+            transform: translateX(2px);
+        }
+
+        .address-result:last-child {
+            border-bottom: none !important;
+        }
+
+        /* Location map specific styles */
+        #location-map-container {
+            position: relative;
+        }
+
+        .location-map-overlay {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 0.5rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            color: #374151;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+
         .file-input {
             display: none;
         }
@@ -2738,10 +2769,35 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                             </div>
                             
                             <div style="margin-bottom: 1rem;">
-                                <label style="display: block; font-weight: bold; margin-bottom: 0.5rem;">Koordinaten:</label>
-                                <div class="admin-lat-lng">
-                                    <input type="number" class="admin-input" id="edit-lat-${station.id}" value="${station.lat}" step="0.000001" placeholder="Breitengrad">
-                                    <input type="number" class="admin-input" id="edit-lng-${station.id}" value="${station.lng}" step="0.000001" placeholder="Längengrad">
+                                <label style="display: block; font-weight: bold; margin-bottom: 0.5rem;">📍 Standort festlegen:</label>
+                                
+                                <!-- Address Search -->
+                                <div style="margin-bottom: 1rem;">
+                                    <div class="input-group">
+                                        <input type="text" class="admin-input" id="edit-address-${station.id}" placeholder="Adresse suchen (z.B. Heumarkt 14, Köln)" style="flex: 1;">
+                                        <button class="btn btn-secondary btn-small" onclick="searchAddress(${station.id})" style="margin-left: 0.5rem;">🔍 Suchen</button>
+                                    </div>
+                                    <div id="address-results-${station.id}" style="display: none; background: white; border: 2px solid #e5e7eb; border-radius: 8px; max-height: 200px; overflow-y: auto; margin-top: 0.5rem;"></div>
+                                </div>
+                                
+                                <!-- Interactive Map -->
+                                <div style="margin-bottom: 1rem;">
+                                    <div id="location-map-${station.id}" style="height: 300px; width: 100%; border-radius: 8px; border: 2px solid #e5e7eb; cursor: crosshair;"></div>
+                                    <p style="font-size: 0.8rem; color: #6b7280; margin-top: 0.5rem;">
+                                        💡 Klicke auf die Karte um den Standort zu setzen oder verwende die Adresssuche
+                                    </p>
+                                </div>
+                                
+                                <!-- Coordinates Display -->
+                                <div style="background: #f9fafb; padding: 1rem; border-radius: 8px; border: 1px solid #e5e7eb;">
+                                    <label style="display: block; font-weight: bold; margin-bottom: 0.5rem; color: #374151;">Aktuelle Koordinaten:</label>
+                                    <div class="admin-lat-lng">
+                                        <input type="number" class="admin-input" id="edit-lat-${station.id}" value="${station.lat}" step="0.000001" placeholder="Breitengrad" readonly style="background: #f3f4f6;">
+                                        <input type="number" class="admin-input" id="edit-lng-${station.id}" value="${station.lng}" step="0.000001" placeholder="Längengrad" readonly style="background: #f3f4f6;">
+                                    </div>
+                                    <button class="btn btn-secondary btn-small" onclick="manualCoordinates(${station.id})" style="margin-top: 0.5rem;">
+                                        ✏️ Koordinaten manuell bearbeiten
+                                    </button>
                                 </div>
                             </div>
                             
@@ -2802,6 +2858,11 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                         content.classList.add('expanded');
                         header.classList.add('expanded');
                         icon.classList.add('expanded');
+                        
+                        // Initialize location map when editor is opened
+                        setTimeout(() => {
+                            initStationLocationMap(stationId);
+                        }, 100);
                     }
                 }
             } catch (error) {
@@ -5207,6 +5268,298 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             }
         }
 
+        // Location Selection Functions
+        let stationLocationMaps = {};
+        let stationLocationMarkers = {};
+
+        async function searchAddress(stationId) {
+            try {
+                const addressInput = document.getElementById(`edit-address-${stationId}`);
+                const resultsContainer = document.getElementById(`address-results-${stationId}`);
+                
+                if (!addressInput || !resultsContainer) return;
+                
+                const query = addressInput.value.trim();
+                if (!query) {
+                    showNotification('Bitte gib eine Adresse ein', 'warning');
+                    return;
+                }
+                
+                // Show loading
+                resultsContainer.style.display = 'block';
+                resultsContainer.innerHTML = '<div style="padding: 1rem; text-align: center;">🔍 Suche...</div>';
+                
+                // Use Nominatim API for geocoding (free OpenStreetMap service)
+                const searchUrl = `https://nominatim.openstreetmap.org/search?format=json&limit=5&countrycodes=de&q=${encodeURIComponent(query + ', Deutschland')}`;
+                
+                const response = await fetch(searchUrl);
+                const results = await response.json();
+                
+                if (results.length === 0) {
+                    resultsContainer.innerHTML = '<div style="padding: 1rem; text-align: center; color: #6b7280;">❌ Keine Ergebnisse gefunden</div>';
+                    return;
+                }
+                
+                // Display results
+                resultsContainer.innerHTML = results.map((result, index) => `
+                    <div class="address-result" onclick="selectAddressResult(${stationId}, ${result.lat}, ${result.lon}, '${result.display_name.replace(/'/g, "\\'")}', this)" 
+                         style="padding: 0.8rem; border-bottom: 1px solid #e5e7eb; cursor: pointer; transition: background 0.3s;"
+                         onmouseover="this.style.background='#f3f4f6'"
+                         onmouseout="this.style.background='white'">
+                        <div style="font-weight: bold; color: #1f2937; margin-bottom: 0.25rem;">📍 ${result.display_name.split(',')[0]}</div>
+                        <div style="font-size: 0.85rem; color: #6b7280;">${result.display_name}</div>
+                        <div style="font-size: 0.8rem; color: #059669; margin-top: 0.25rem;">
+                            ${parseFloat(result.lat).toFixed(6)}, ${parseFloat(result.lon).toFixed(6)}
+                        </div>
+                    </div>
+                `).join('');
+                
+            } catch (error) {
+                console.error('Error searching address:', error);
+                const resultsContainer = document.getElementById(`address-results-${stationId}`);
+                if (resultsContainer) {
+                    resultsContainer.innerHTML = '<div style="padding: 1rem; text-align: center; color: #dc2626;">❌ Fehler bei der Adresssuche</div>';
+                }
+            }
+        }
+
+        function selectAddressResult(stationId, lat, lng, address, element) {
+            try {
+                // Update coordinates
+                const latInput = document.getElementById(`edit-lat-${stationId}`);
+                const lngInput = document.getElementById(`edit-lng-${stationId}`);
+                
+                if (latInput && lngInput) {
+                    latInput.value = parseFloat(lat).toFixed(6);
+                    lngInput.value = parseFloat(lng).toFixed(6);
+                }
+                
+                // Update map
+                updateStationLocationMap(stationId, lat, lng);
+                
+                // Hide results
+                const resultsContainer = document.getElementById(`address-results-${stationId}`);
+                if (resultsContainer) {
+                    resultsContainer.style.display = 'none';
+                }
+                
+                // Clear search input
+                const addressInput = document.getElementById(`edit-address-${stationId}`);
+                if (addressInput) {
+                    addressInput.value = '';
+                }
+                
+                showNotification(`📍 Standort gesetzt: ${address.split(',')[0]}`, 'success');
+                
+            } catch (error) {
+                console.error('Error selecting address result:', error);
+            }
+        }
+
+        function initStationLocationMap(stationId) {
+            try {
+                const mapContainer = document.getElementById(`location-map-${stationId}`);
+                if (!mapContainer || stationLocationMaps[stationId]) return;
+                
+                // Wait for Leaflet if not loaded yet
+                if (typeof L === 'undefined') {
+                    setTimeout(() => initStationLocationMap(stationId), 500);
+                    return;
+                }
+                
+                const station = tourApp.stations.find(s => s.id === stationId);
+                if (!station) return;
+                
+                // Create map
+                const locationMap = L.map(`location-map-${stationId}`, {
+                    center: [station.lat, station.lng],
+                    zoom: 16,
+                    scrollWheelZoom: true,
+                    zoomControl: true
+                });
+                
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap',
+                    maxZoom: 19
+                }).addTo(locationMap);
+                
+                // Add marker
+                const marker = L.marker([station.lat, station.lng], {
+                    draggable: true
+                })
+                .bindPopup(`
+                    <div style="text-align: center;">
+                        <h4>${station.title}</h4>
+                        <p>📍 Ziehe den Marker um die Position zu ändern</p>
+                        <small>${station.lat.toFixed(6)}, ${station.lng.toFixed(6)}</small>
+                    </div>
+                `)
+                .addTo(locationMap);
+                
+                // Handle marker drag
+                marker.on('dragend', function(e) {
+                    const position = e.target.getLatLng();
+                    updateStationCoordinates(stationId, position.lat, position.lng);
+                });
+                
+                // Handle map click
+                locationMap.on('click', function(e) {
+                    const lat = e.latlng.lat;
+                    const lng = e.latlng.lng;
+                    
+                    // Move marker to clicked position
+                    marker.setLatLng([lat, lng]);
+                    updateStationCoordinates(stationId, lat, lng);
+                    
+                    // Update popup
+                    marker.setPopupContent(`
+                        <div style="text-align: center;">
+                            <h4>${station.title}</h4>
+                            <p>✅ Position aktualisiert!</p>
+                            <small>${lat.toFixed(6)}, ${lng.toFixed(6)}</small>
+                        </div>
+                    `);
+                    marker.openPopup();
+                });
+                
+                // Store references
+                stationLocationMaps[stationId] = locationMap;
+                stationLocationMarkers[stationId] = marker;
+                
+                // Open popup initially
+                setTimeout(() => {
+                    marker.openPopup();
+                }, 300);
+                
+            } catch (error) {
+                console.error('Error initializing station location map:', error);
+                const mapContainer = document.getElementById(`location-map-${stationId}`);
+                if (mapContainer) {
+                    mapContainer.innerHTML = '<div style="background: #f3f4f6; height: 100%; display: flex; align-items: center; justify-content: center; border-radius: 8px; color: #6b7280;">🗺️ Karte nicht verfügbar</div>';
+                }
+            }
+        }
+
+        function updateStationLocationMap(stationId, lat, lng) {
+            try {
+                const locationMap = stationLocationMaps[stationId];
+                const marker = stationLocationMarkers[stationId];
+                
+                if (locationMap && marker) {
+                    const newLatLng = [parseFloat(lat), parseFloat(lng)];
+                    
+                    // Update marker position
+                    marker.setLatLng(newLatLng);
+                    
+                    // Center map on new position
+                    locationMap.setView(newLatLng, 16);
+                    
+                    // Update popup
+                    const station = tourApp.stations.find(s => s.id === stationId);
+                    if (station) {
+                        marker.setPopupContent(`
+                            <div style="text-align: center;">
+                                <h4>${station.title}</h4>
+                                <p>✅ Position aktualisiert!</p>
+                                <small>${parseFloat(lat).toFixed(6)}, ${parseFloat(lng).toFixed(6)}</small>
+                            </div>
+                        `);
+                    }
+                } else {
+                    // Initialize map if it doesn't exist
+                    setTimeout(() => {
+                        initStationLocationMap(stationId);
+                        setTimeout(() => updateStationLocationMap(stationId, lat, lng), 500);
+                    }, 100);
+                }
+            } catch (error) {
+                console.error('Error updating station location map:', error);
+            }
+        }
+
+        function updateStationCoordinates(stationId, lat, lng) {
+            try {
+                const latInput = document.getElementById(`edit-lat-${stationId}`);
+                const lngInput = document.getElementById(`edit-lng-${stationId}`);
+                
+                if (latInput && lngInput) {
+                    latInput.value = parseFloat(lat).toFixed(6);
+                    lngInput.value = parseFloat(lng).toFixed(6);
+                }
+                
+                showNotification('📍 Koordinaten aktualisiert!', 'success');
+                
+            } catch (error) {
+                console.error('Error updating station coordinates:', error);
+            }
+        }
+
+        function manualCoordinates(stationId) {
+            try {
+                const latInput = document.getElementById(`edit-lat-${stationId}`);
+                const lngInput = document.getElementById(`edit-lng-${stationId}`);
+                
+                if (latInput && lngInput) {
+                    const currentReadonly = latInput.readOnly;
+                    
+                    if (currentReadonly) {
+                        // Enable manual editing
+                        latInput.readOnly = false;
+                        lngInput.readOnly = false;
+                        latInput.style.background = 'white';
+                        lngInput.style.background = 'white';
+                        
+                        const button = document.querySelector(`[onclick="manualCoordinates(${stationId})"]`);
+                        if (button) {
+                            button.textContent = '💾 Koordinaten speichern';
+                            button.onclick = () => saveManualCoordinates(stationId);
+                        }
+                        
+                        showNotification('✏️ Koordinaten können jetzt manuell bearbeitet werden', 'success');
+                    }
+                }
+            } catch (error) {
+                console.error('Error enabling manual coordinates:', error);
+            }
+        }
+
+        function saveManualCoordinates(stationId) {
+            try {
+                const latInput = document.getElementById(`edit-lat-${stationId}`);
+                const lngInput = document.getElementById(`edit-lng-${stationId}`);
+                
+                if (latInput && lngInput) {
+                    const lat = parseFloat(latInput.value);
+                    const lng = parseFloat(lngInput.value);
+                    
+                    // Validate coordinates
+                    if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+                        showNotification('❌ Ungültige Koordinaten! Breitengrad: -90 bis 90, Längengrad: -180 bis 180', 'error');
+                        return;
+                    }
+                    
+                    // Disable editing
+                    latInput.readOnly = true;
+                    lngInput.readOnly = true;
+                    latInput.style.background = '#f3f4f6';
+                    lngInput.style.background = '#f3f4f6';
+                    
+                    // Update map
+                    updateStationLocationMap(stationId, lat, lng);
+                    
+                    const button = document.querySelector(`[onclick="saveManualCoordinates(${stationId})"]`);
+                    if (button) {
+                        button.textContent = '✏️ Koordinaten manuell bearbeiten';
+                        button.onclick = () => manualCoordinates(stationId);
+                    }
+                    
+                    showNotification('💾 Koordinaten gespeichert!', 'success');
+                }
+            } catch (error) {
+                console.error('Error saving manual coordinates:', error);
+            }
+        }
+        
         // Tour Export/Import Functions
         async function exportTourData() {
             try {
@@ -5661,6 +6014,15 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
         window.addEventListener('beforeunload', () => {
             stopChatCleanup();
             stopUserPositionTracking();
+            
+            // Cleanup location maps
+            Object.values(stationLocationMaps).forEach(map => {
+                if (map) {
+                    map.remove();
+                }
+            });
+            stationLocationMaps = {};
+            stationLocationMarkers = {};
         });
 
     </script>
