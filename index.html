@@ -1050,8 +1050,8 @@
 <body>
     <div class="container">
         <header>
-            <h1>🏛️ Kölner Abendspaziergang</h1>
-            <p class="subtitle">Entdecke 2000 Jahre Stadtgeschichte</p>
+            <h1 id="tourTitle">🏛️ Kölner Abendspaziergang</h1>
+            <p class="subtitle" id="tourSubtitle">Entdecke 2000 Jahre Stadtgeschichte</p>
             <div class="tour-id-display">
                 Tour: <span id="currentTourId">Wird geladen...</span>
                 <span class="connection-status connecting" id="connectionStatus" title="Verbindung wird aufgebaut..."></span>
@@ -1132,13 +1132,15 @@
                     <button class="btn btn-admin" onclick="loginAdmin()">Admin-Modus aktivieren</button>
                 </div>
 
-                <div style="background: #f8fafc; padding: 1.5rem; border-radius: 12px; margin: 1.5rem 0;">
+                <div style="background: #f8fafc; padding: 1.5rem; border-radius: 12px; margin: 1.5rem 0;" id="tourInfoSection">
                     <h3 style="color: #1f2937; margin-bottom: 1rem;">📋 Tour-Informationen</h3>
-                    <p><strong>⏰ Dauer:</strong> ca. 3,5 Stunden</p>
-                    <p><strong>📍 Start:</strong> Heumarkt, 19:30 Uhr</p>
-                    <p><strong>🎯 Ziel:</strong> Alte Bastion</p>
-                    <p><strong>👥 Teilnehmer:</strong> 15-25 Personen</p>
-                    <p><strong>📸 Ziel:</strong> Sammle die besten Foto-Punkte!</p>
+                    <div id="tourInfoContent">
+                        <p><strong>⏰ Dauer:</strong> <span id="tourDuration">ca. 3,5 Stunden</span></p>
+                        <p><strong>📍 Start:</strong> <span id="tourStart">Heumarkt, 19:30 Uhr</span></p>
+                        <p><strong>🎯 Ziel:</strong> <span id="tourEnd">Alte Bastion</span></p>
+                        <p><strong>👥 Teilnehmer:</strong> <span id="tourParticipants">15-25 Personen</span></p>
+                        <p><strong>📸 Ziel:</strong> <span id="tourGoal">Sammle die besten Foto-Punkte!</span></p>
+                    </div>
                 </div>
             </div>
 
@@ -1270,60 +1272,151 @@
 
             <!-- Admin Tab -->
             <div id="admin" class="tab-content">
-                <div style="background: #fef3c7; padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem;">
-                    <h3 style="color: #92400e; margin-bottom: 1rem;">⚙️ Admin-Panel</h3>
-                    <p>Vollständiges Content-Management. Alle Änderungen werden sofort für alle Teilnehmer sichtbar.</p>
+                <!-- Admin Sub-Navigation -->
+                <div style="display: flex; background: #f8fafc; border-radius: 8px; margin-bottom: 1rem; overflow: hidden; flex-wrap: wrap;" id="adminTabContainer">
+                    <button class="admin-sub-tab active" onclick="showAdminTab('live', this)" style="flex: 1; min-width: 120px; padding: 0.8rem; border: none; background: transparent; cursor: pointer; font-weight: bold; transition: all 0.3s; color: #dc2626; border-bottom: 3px solid #dc2626;">
+                        📱 Live-Admin
+                    </button>
+                    <button class="admin-sub-tab" onclick="showAdminTab('planning', this)" style="flex: 1; min-width: 120px; padding: 0.8rem; border: none; background: transparent; cursor: pointer; font-weight: bold; transition: all 0.3s; color: #6b7280; border-bottom: 3px solid transparent;">
+                        🗺️ Streckenplanung
+                    </button>
+                    <button class="admin-sub-tab" onclick="showAdminTab('settings', this)" style="flex: 1; min-width: 120px; padding: 0.8rem; border: none; background: transparent; cursor: pointer; font-weight: bold; transition: all 0.3s; color: #6b7280; border-bottom: 3px solid transparent;">
+                        ⚙️ Tour-Einstellungen
+                    </button>
                 </div>
 
-                <!-- Content Management -->
-                <div class="admin-content-editor">
-                    <h4 style="color: #1f2937; margin-bottom: 1rem;">📝 Stationen-Content bearbeiten</h4>
-                    <div id="adminContentEditor">
-                        <!-- Content editor will be generated here -->
+                <!-- Live-Admin Section -->
+                <div id="liveAdminSection" class="admin-section active">
+                    <div style="background: #fef3c7; padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem;">
+                        <h3 style="color: #92400e; margin-bottom: 1rem;">📱 Live-Admin</h3>
+                        <p>Schneller Zugriff für unterwegs - Chat-Moderation und Live-Updates</p>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div style="background: white; border-radius: 12px; padding: 1.5rem; margin: 1.5rem 0; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                        <h4 style="color: #1f2937; margin-bottom: 1rem;">🚀 Schnellaktionen</h4>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                            <button class="btn btn-admin btn-small" onclick="toggleChatModeration()">
+                                <span id="chatModerationText">🛡️ Chat sperren</span>
+                            </button>
+                            <button class="btn btn-secondary btn-small" onclick="sendAdminAnnouncement()">📢 Ankündigung senden</button>
+                            <button class="btn btn-secondary btn-small" onclick="clearAllChatMessages()">🗑️ Chat löschen</button>
+                            <button class="btn btn-secondary btn-small" onclick="showQuickStationUpdate()">⚡ Station schnell bearbeiten</button>
+                        </div>
+                    </div>
+
+                    <!-- Live Statistics -->
+                    <div style="background: white; border-radius: 12px; padding: 1.5rem; margin: 1.5rem 0; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                        <h4 style="color: #1f2937; margin-bottom: 1rem;">📊 Live-Statistiken</h4>
+                        <div id="adminStats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;">
+                            <div style="text-align: center; padding: 1rem; background: #f0f9ff; border-radius: 8px;">
+                                <div style="font-size: 2rem; font-weight: bold; color: #0369a1;" id="activeUsers">-</div>
+                                <div style="color: #6b7280; font-size: 0.9rem;">Aktive Nutzer</div>
+                            </div>
+                            <div style="text-align: center; padding: 1rem; background: #f0fdf4; border-radius: 8px;">
+                                <div style="font-size: 2rem; font-weight: bold; color: #059669;" id="totalMessages">-</div>
+                                <div style="color: #6b7280; font-size: 0.9rem;">Nachrichten</div>
+                            </div>
+                            <div style="text-align: center; padding: 1rem; background: #fef3c7; border-radius: 8px;">
+                                <div style="font-size: 2rem; font-weight: bold; color: #d97706;" id="completedStations">-</div>
+                                <div style="color: #6b7280; font-size: 0.9rem;">Abgeschlossen</div>
+                            </div>
+                            <div style="text-align: center; padding: 1rem; background: #fef2f2; border-radius: 8px;">
+                                <div style="font-size: 2rem; font-weight: bold; color: #dc2626;" id="uploadedPhotos">-</div>
+                                <div style="color: #6b7280; font-size: 0.9rem;">Fotos</div>
+                            </div>
+                        </div>
+                        <button class="btn btn-secondary btn-small" onclick="refreshAdminStats()" style="margin-top: 1rem;">🔄 Aktualisieren</button>
                     </div>
                 </div>
 
-                <!-- Chat Moderation -->
-                <div style="background: white; border-radius: 12px; padding: 1.5rem; margin: 1.5rem 0; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-                    <h4 style="color: #1f2937; margin-bottom: 1rem;">💬 Chat-Moderation</h4>
-                    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-                        <button class="btn btn-admin btn-small" onclick="toggleChatModeration()">
-                            <span id="chatModerationText">🛡️ Moderations-Modus aktivieren</span>
-                        </button>
-                        <button class="btn btn-secondary btn-small" onclick="clearAllChatMessages()">🗑️ Alle Nachrichten löschen</button>
-                        <button class="btn btn-secondary btn-small" onclick="sendAdminAnnouncement()">📢 Ankündigung senden</button>
+                <!-- Planning Section -->
+                <div id="planningSection" class="admin-section" style="display: none;">
+                    <div style="background: #e0e7ff; padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem;">
+                        <h3 style="color: #4338ca; margin-bottom: 1rem;">🗺️ Streckenplanung</h3>
+                        <p>Detaillierte Bearbeitung der Stationen und Inhalte</p>
+                    </div>
+
+                    <!-- Content Management -->
+                    <div class="admin-content-editor">
+                        <h4 style="color: #1f2937; margin-bottom: 1rem;">📝 Stationen-Content bearbeiten</h4>
+                        <div id="adminContentEditor">
+                            <!-- Content editor will be generated here -->
+                        </div>
+                    </div>
+
+                    <!-- Tour Export/Import -->
+                    <div style="background: white; border-radius: 12px; padding: 1.5rem; margin: 1.5rem 0; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                        <h4 style="color: #1f2937; margin-bottom: 1rem;">📦 Tour Export/Import</h4>
+                        <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem;">
+                            <button class="btn btn-admin btn-small" onclick="exportTourData()">📤 Tour exportieren</button>
+                            <button class="btn btn-secondary btn-small" onclick="document.getElementById('importFileInput').click()">📥 Tour importieren</button>
+                        </div>
+                        <input type="file" id="importFileInput" accept=".json" style="display: none;" onchange="importTourData(event)">
+                        <p style="font-size: 0.9rem; color: #6b7280;">
+                            💡 Exportiert alle Stationen, Texte, Bilder und Audio-Dateien als JSON-Datei.
+                        </p>
+                    </div>
+
+                    <div style="background: white; border-radius: 12px; padding: 1.5rem; margin: 1.5rem 0; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                        <h4 style="color: #1f2937; margin-bottom: 1rem;">🔄 Tour zurücksetzen</h4>
+                        <button class="btn btn-secondary" onclick="resetTour()">Alle Daten zurücksetzen</button>
                     </div>
                 </div>
 
-                <!-- Live Statistics -->
-                <div style="background: white; border-radius: 12px; padding: 1.5rem; margin: 1.5rem 0; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-                    <h4 style="color: #1f2937; margin-bottom: 1rem;">📊 Live-Statistiken</h4>
-                    <div id="adminStats">
-                        <p>Aktive Teilnehmer: <span id="activeUsers">-</span></p>
-                        <p>Gesendete Nachrichten: <span id="totalMessages">-</span></p>
-                        <p>Abgeschlossene Stationen: <span id="completedStations">-</span></p>
-                        <p>Hochgeladene Fotos: <span id="uploadedPhotos">-</span></p>
+                <!-- Settings Section -->
+                <div id="settingsSection" class="admin-section" style="display: none;">
+                    <div style="background: #f0fdf4; padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem;">
+                        <h3 style="color: #059669; margin-bottom: 1rem;">⚙️ Tour-Einstellungen</h3>
+                        <p>Grundlegende Einstellungen der Tour anpassen</p>
                     </div>
-                    <button class="btn btn-secondary btn-small" onclick="refreshAdminStats()">🔄 Statistiken aktualisieren</button>
-                </div>
 
-                <!-- Tour Export/Import -->
-                <div style="background: white; border-radius: 12px; padding: 1.5rem; margin: 1.5rem 0; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-                    <h4 style="color: #1f2937; margin-bottom: 1rem;">📦 Tour Export/Import</h4>
-                    <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem;">
-                        <button class="btn btn-admin btn-small" onclick="exportTourData()">📤 Tour exportieren</button>
-                        <button class="btn btn-secondary btn-small" onclick="document.getElementById('importFileInput').click()">📥 Tour importieren</button>
+                    <!-- Tour Basic Settings -->
+                    <div style="background: white; border-radius: 12px; padding: 1.5rem; margin: 1.5rem 0; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                        <h4 style="color: #1f2937; margin-bottom: 1rem;">📋 Tour-Grunddaten</h4>
+                        
+                        <div style="margin-bottom: 1rem;">
+                            <label style="display: block; font-weight: bold; margin-bottom: 0.5rem;">Tour-Titel:</label>
+                            <input type="text" class="admin-input" id="editTourTitle" value="🏛️ Kölner Abendspaziergang" placeholder="Tour-Titel eingeben">
+                        </div>
+                        
+                        <div style="margin-bottom: 1rem;">
+                            <label style="display: block; font-weight: bold; margin-bottom: 0.5rem;">Untertitel:</label>
+                            <input type="text" class="admin-input" id="editTourSubtitle" value="Entdecke 2000 Jahre Stadtgeschichte" placeholder="Untertitel eingeben">
+                        </div>
                     </div>
-                    <input type="file" id="importFileInput" accept=".json" style="display: none;" onchange="importTourData(event)">
-                    <p style="font-size: 0.9rem; color: #6b7280;">
-                        💡 Exportiert alle Stationen, Texte, Bilder und Audio-Dateien als JSON-Datei.<br>
-                        ⚠️ Chat-Daten werden nicht exportiert und werden nach 24h automatisch gelöscht.
-                    </p>
-                </div>
 
-                <div style="background: white; border-radius: 12px; padding: 1.5rem; margin: 1.5rem 0; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-                    <h4 style="color: #1f2937; margin-bottom: 1rem;">🔄 Tour zurücksetzen</h4>
-                    <button class="btn btn-secondary" onclick="resetTour()">Alle Daten zurücksetzen</button>
+                    <!-- Tour Info Settings -->
+                    <div style="background: white; border-radius: 12px; padding: 1.5rem; margin: 1.5rem 0; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                        <h4 style="color: #1f2937; margin-bottom: 1rem;">ℹ️ Tour-Informationen</h4>
+                        
+                        <div style="margin-bottom: 1rem;">
+                            <label style="display: block; font-weight: bold; margin-bottom: 0.5rem;">⏰ Dauer:</label>
+                            <input type="text" class="admin-input" id="editTourDuration" value="ca. 3,5 Stunden" placeholder="z.B. ca. 2 Stunden">
+                        </div>
+                        
+                        <div style="margin-bottom: 1rem;">
+                            <label style="display: block; font-weight: bold; margin-bottom: 0.5rem;">📍 Start:</label>
+                            <input type="text" class="admin-input" id="editTourStart" value="Heumarkt, 19:30 Uhr" placeholder="z.B. Hauptbahnhof, 14:00 Uhr">
+                        </div>
+                        
+                        <div style="margin-bottom: 1rem;">
+                            <label style="display: block; font-weight: bold; margin-bottom: 0.5rem;">🎯 Ziel:</label>
+                            <input type="text" class="admin-input" id="editTourEnd" value="Alte Bastion" placeholder="z.B. Rheinufer">
+                        </div>
+                        
+                        <div style="margin-bottom: 1rem;">
+                            <label style="display: block; font-weight: bold; margin-bottom: 0.5rem;">👥 Teilnehmer:</label>
+                            <input type="text" class="admin-input" id="editTourParticipants" value="15-25 Personen" placeholder="z.B. 10-20 Personen">
+                        </div>
+                        
+                        <div style="margin-bottom: 1.5rem;">
+                            <label style="display: block; font-weight: bold; margin-bottom: 0.5rem;">📸 Ziel:</label>
+                            <input type="text" class="admin-input" id="editTourGoal" value="Sammle die besten Foto-Punkte!" placeholder="z.B. Erkunde die Geschichte der Stadt">
+                        </div>
+                        
+                        <button class="btn btn-admin" onclick="saveTourSettings()">💾 Einstellungen speichern</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1924,6 +2017,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 
                 setTimeout(async () => {
                     await loadStationsFromFirebase();
+                    await loadTourSettings();
                     generateStationsList();
                     updateUI();
                 }, 1500);
@@ -2760,14 +2854,20 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                             
                             <div style="margin-bottom: 1rem;">
                                 <label style="display: block; font-weight: bold; margin-bottom: 0.5rem;">Haupttext:</label>
+                                <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                    <button class="btn btn-secondary btn-small" onclick="showPerplexityHelper(${station.id}, 'mainText')" style="background: #8b5cf6;">🤖 KI-Text generieren</button>
+                                </div>
                                 <textarea class="admin-textarea" id="edit-maintext-${station.id}">${station.mainText}</textarea>
                             </div>
-                            
+
                             <div style="margin-bottom: 1rem;">
                                 <label style="display: block; font-weight: bold; margin-bottom: 0.5rem;">Foto-Challenge:</label>
+                                <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                    <button class="btn btn-secondary btn-small" onclick="showPerplexityHelper(${station.id}, 'photoChallenge')" style="background: #8b5cf6;">🤖 KI-Challenge generieren</button>
+                                </div>
                                 <textarea class="admin-textarea" id="edit-challenge-${station.id}" style="min-height: 80px;">${station.photoChallenge}</textarea>
                             </div>
-                            
+                                                       
                             <div style="margin-bottom: 1rem;">
                                 <label style="display: block; font-weight: bold; margin-bottom: 0.5rem;">📍 Standort festlegen:</label>
                                 
@@ -3149,8 +3249,11 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     return `
                         <p style="color: #6b7280; text-align: center; padding: 2rem;">
                             📷 Noch keine Bilder vorhanden<br>
-                            <small>Klicke auf "Neues Bild hinzufügen" um Bilder zur Galerie hinzuzufügen</small>
+                            <small>Nutze die Buttons unten um Bilder hinzuzufügen</small>
                         </p>
+                        <div style="display: flex; gap: 0.5rem; justify-content: center; margin-top: 1rem;">
+                            <button class="btn btn-secondary btn-small" onclick="showMediaSearchHelper(${station.id}, 'image')">🔍 Bilder suchen</button>
+                        </div>
                     `;
                 }
                 
@@ -3158,7 +3261,10 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     <div style="border: 1px solid #d1d5db; border-radius: 6px; padding: 1rem; margin-bottom: 1rem; background: white;" id="image-item-${station.id}-${index}">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
                             <strong style="color: #374151;">📷 Bild ${index + 1}</strong>
-                            <button onclick="removeImage(${station.id}, ${index})" style="background: #dc2626; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">🗑️ Löschen</button>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <button onclick="showMediaSearchHelper(${station.id}, 'image', ${index})" style="background: #059669; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">🔍</button>
+                                <button onclick="removeImage(${station.id}, ${index})" style="background: #dc2626; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">🗑️</button>
+                            </div>
                         </div>
                         
                         <div style="margin-bottom: 0.5rem;">
@@ -3172,7 +3278,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                         </div>
                         
                         <div style="margin-bottom: 0.5rem;">
-                            <label style="display: block; font-size: 0.9rem; font-weight: bold; margin-bottom: 0.25rem;">Bild-URL (optional):</label>
+                            <label style="display: block; font-size: 0.9rem; font-weight: bold; margin-bottom: 0.25rem;">Bild-URL:</label>
                             <input type="url" value="${image.url || ''}" onchange="updateImageData(${station.id}, ${index}, 'url', this.value)" placeholder="https://example.com/image.jpg" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; font-size: 0.9rem;">
                         </div>
                         
@@ -3187,7 +3293,11 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                             </div>
                         ` : ''}
                     </div>
-                `).join('');
+                `).join('') + `
+                    <div style="display: flex; gap: 0.5rem; justify-content: center; margin-top: 1rem;">
+                        <button class="btn btn-secondary btn-small" onclick="showMediaSearchHelper(${station.id}, 'image')">🔍 Weitere Bilder suchen</button>
+                    </div>
+                `;
             } catch (error) {
                 console.error('Error generating image editor:', error);
                 return '<p style="color: #dc2626;">Fehler beim Laden des Bild-Editors</p>';
@@ -3288,8 +3398,12 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     return `
                         <p style="color: #6b7280; text-align: center; padding: 2rem;">
                             🎵 Noch keine Audio-Dateien vorhanden<br>
-                            <small>Klicke auf "Neue Audio-Datei hinzufügen" um Audio zur Station hinzuzufügen</small>
+                            <small>Nutze die Buttons unten um Audio-Dateien hinzuzufügen</small>
                         </p>
+                        <div style="display: flex; gap: 0.5rem; justify-content: center; margin-top: 1rem; flex-wrap: wrap;">
+                            <button class="btn btn-secondary btn-small" onclick="showMediaSearchHelper(${station.id}, 'youtube')">📺 YouTube</button>
+                            <button class="btn btn-secondary btn-small" onclick="showMediaSearchHelper(${station.id}, 'soundcloud')">☁️ SoundCloud</button>
+                        </div>
                     `;
                 }
                 
@@ -3297,7 +3411,10 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     <div style="border: 1px solid #d1d5db; border-radius: 6px; padding: 1rem; margin-bottom: 1rem; background: white;" id="audio-item-${station.id}-${index}">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
                             <strong style="color: #374151;">🎵 Audio ${index + 1}</strong>
-                            <button onclick="removeAudio(${station.id}, ${index})" style="background: #dc2626; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">🗑️ Löschen</button>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <button onclick="showMediaSearchHelper(${station.id}, '${audio.type || 'youtube'}', ${index})" style="background: #059669; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">🔍</button>
+                                <button onclick="removeAudio(${station.id}, ${index})" style="background: #dc2626; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">🗑️</button>
+                            </div>
                         </div>
                         
                         <div style="margin-bottom: 0.5rem;">
@@ -3313,11 +3430,11 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                         <div style="margin-bottom: 0.5rem;">
                             <label style="display: block; font-size: 0.9rem; font-weight: bold; margin-bottom: 0.25rem;">Audio-Typ:</label>
                             <select onchange="updateAudioData(${station.id}, ${index}, 'type', this.value)" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; font-size: 0.9rem;">
-                                <option value="youtube" ${audio.type === 'youtube' ? 'selected' : ''}>📺 YouTube (in-app)</option>
-                                <option value="soundcloud" ${audio.type === 'soundcloud' ? 'selected' : ''}>☁️ SoundCloud (in-app)</option>
-                                <option value="spotify" ${audio.type === 'spotify' ? 'selected' : ''}>🟢 Spotify (in-app)</option>
-                                <option value="audio" ${audio.type === 'audio' ? 'selected' : ''}>🎵 Audio-URL (in-app)</option>
-                                <option value="podcast" ${audio.type === 'podcast' ? 'selected' : ''}>🎙️ Podcast-URL (in-app)</option>
+                                <option value="youtube" ${audio.type === 'youtube' ? 'selected' : ''}>📺 YouTube</option>
+                                <option value="soundcloud" ${audio.type === 'soundcloud' ? 'selected' : ''}>☁️ SoundCloud</option>
+                                <option value="spotify" ${audio.type === 'spotify' ? 'selected' : ''}>🟢 Spotify</option>
+                                <option value="audio" ${audio.type === 'audio' ? 'selected' : ''}>🎵 Audio-URL</option>
+                                <option value="podcast" ${audio.type === 'podcast' ? 'selected' : ''}>🎙️ Podcast</option>
                             </select>
                         </div>
                         
@@ -3339,18 +3456,23 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                         ${audio.url ? `
                             <div style="margin-top: 0.5rem;">
                                 <button onclick="previewAudio('${audio.url}', '${audio.type}', '${audio.title}')" style="background: #059669; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">
-                                    ▶️ Vorschau (in-app)
+                                    ▶️ Vorschau
                                 </button>
                             </div>
                         ` : ''}
                         
                         ${audio.url ? `
                             <div style="margin-top: 0.5rem; font-size: 0.8rem; color: #059669;">
-                                ✅ ${audio.type.charAt(0).toUpperCase() + audio.type.slice(1)}-Link gesetzt - wird in-app abgespielt
+                                ✅ ${audio.type.charAt(0).toUpperCase() + audio.type.slice(1)}-Link gesetzt
                             </div>
                         ` : ''}
                     </div>
-                `).join('');
+                `).join('') + `
+                    <div style="display: flex; gap: 0.5rem; justify-content: center; margin-top: 1rem; flex-wrap: wrap;">
+                        <button class="btn btn-secondary btn-small" onclick="showMediaSearchHelper(${station.id}, 'youtube')">📺 YouTube</button>
+                        <button class="btn btn-secondary btn-small" onclick="showMediaSearchHelper(${station.id}, 'soundcloud')">☁️ SoundCloud</button>
+                    </div>
+                `;
             } catch (error) {
                 console.error('Error generating audio editor:', error);
                 return '<p style="color: #dc2626;">Fehler beim Laden des Audio-Editors</p>';
@@ -5800,8 +5922,530 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 chatCleanupInterval = null;
             }
         }
-        
+
+        // Admin Tab Management
+        function showAdminTab(tabType, tabElement) {
+            try {
+                // Update tab appearance
+                document.querySelectorAll('.admin-sub-tab').forEach(tab => {
+                    tab.classList.remove('active');
+                    tab.style.color = '#6b7280';
+                    tab.style.borderBottom = '3px solid transparent';
+                });
+                
+                if (tabElement) {
+                    tabElement.classList.add('active');
+                    tabElement.style.color = '#dc2626';
+                    tabElement.style.borderBottom = '3px solid #dc2626';
+                }
+
+                // Show/hide sections
+                document.querySelectorAll('.admin-section').forEach(section => {
+                    section.classList.remove('active');
+                    section.style.display = 'none';
+                });
+                
+                const targetSection = document.getElementById(tabType + 'Section');
+                if (targetSection) {
+                    targetSection.classList.add('active');
+                    targetSection.style.display = 'block';
+                }
+
+                // Load content for specific tabs
+                if (tabType === 'planning') {
+                    setTimeout(() => generateContentEditor(), 100);
+                } else if (tabType === 'live') {
+                    setTimeout(() => refreshAdminStats(), 100);
+                }
+            } catch (error) {
+                console.error('Error showing admin tab:', error);
+            }
+        }
+
+        // Tour Settings Functions
+        async function saveTourSettings() {
+            try {
+                const tourSettings = {
+                    title: document.getElementById('editTourTitle').value.trim(),
+                    subtitle: document.getElementById('editTourSubtitle').value.trim(),
+                    duration: document.getElementById('editTourDuration').value.trim(),
+                    start: document.getElementById('editTourStart').value.trim(),
+                    end: document.getElementById('editTourEnd').value.trim(),
+                    participants: document.getElementById('editTourParticipants').value.trim(),
+                    goal: document.getElementById('editTourGoal').value.trim()
+                };
+
+                // Update UI immediately
+                document.getElementById('tourTitle').textContent = tourSettings.title;
+                document.getElementById('tourSubtitle').textContent = tourSettings.subtitle;
+                document.getElementById('tourDuration').textContent = tourSettings.duration;
+                document.getElementById('tourStart').textContent = tourSettings.start;
+                document.getElementById('tourEnd').textContent = tourSettings.end;
+                document.getElementById('tourParticipants').textContent = tourSettings.participants;
+                document.getElementById('tourGoal').textContent = tourSettings.goal;
+
+                // Save to Firebase
+                if (tourApp.state.isFirebaseConnected && tourApp.state.tourId) {
+                    await saveToFirebase('settings', 'tour', tourSettings);
+                }
+
+                // Save to localStorage as backup
+                localStorage.setItem(`tourSettings_${tourApp.state.tourId}`, JSON.stringify(tourSettings));
+
+                showNotification('Tour-Einstellungen gespeichert! ✅');
+                addSystemMessage('Admin hat die Tour-Einstellungen aktualisiert! ⚙️');
+
+            } catch (error) {
+                console.error('Error saving tour settings:', error);
+                showNotification('Fehler beim Speichern der Einstellungen', 'error');
+            }
+        }
+
+        // Load Tour Settings
+        async function loadTourSettings() {
+            try {
+                let tourSettings = null;
+
+                // Try to load from Firebase first
+                if (tourApp.state.isFirebaseConnected && tourApp.state.tourId) {
+                    const firebaseSettings = await getFromFirebase('settings');
+                    const tourSetting = firebaseSettings.find(s => s.id === 'tour');
+                    if (tourSetting) {
+                        tourSettings = tourSetting;
+                    }
+                }
+
+                // Fallback to localStorage
+                if (!tourSettings) {
+                    const localSettings = localStorage.getItem(`tourSettings_${tourApp.state.tourId}`);
+                    if (localSettings) {
+                        tourSettings = JSON.parse(localSettings);
+                    }
+                }
+
+                // Apply settings if found
+                if (tourSettings) {
+                    // Update UI
+                    if (tourSettings.title) document.getElementById('tourTitle').textContent = tourSettings.title;
+                    if (tourSettings.subtitle) document.getElementById('tourSubtitle').textContent = tourSettings.subtitle;
+                    if (tourSettings.duration) document.getElementById('tourDuration').textContent = tourSettings.duration;
+                    if (tourSettings.start) document.getElementById('tourStart').textContent = tourSettings.start;
+                    if (tourSettings.end) document.getElementById('tourEnd').textContent = tourSettings.end;
+                    if (tourSettings.participants) document.getElementById('tourParticipants').textContent = tourSettings.participants;
+                    if (tourSettings.goal) document.getElementById('tourGoal').textContent = tourSettings.goal;
+
+                    // Update form fields if they exist
+                    if (document.getElementById('editTourTitle')) document.getElementById('editTourTitle').value = tourSettings.title || '';
+                    if (document.getElementById('editTourSubtitle')) document.getElementById('editTourSubtitle').value = tourSettings.subtitle || '';
+                    if (document.getElementById('editTourDuration')) document.getElementById('editTourDuration').value = tourSettings.duration || '';
+                    if (document.getElementById('editTourStart')) document.getElementById('editTourStart').value = tourSettings.start || '';
+                    if (document.getElementById('editTourEnd')) document.getElementById('editTourEnd').value = tourSettings.end || '';
+                    if (document.getElementById('editTourParticipants')) document.getElementById('editTourParticipants').value = tourSettings.participants || '';
+                    if (document.getElementById('editTourGoal')) document.getElementById('editTourGoal').value = tourSettings.goal || '';
+                }
+            } catch (error) {
+                console.error('Error loading tour settings:', error);
+            }
+        }
+
+        // Quick Station Update Modal
+        function showQuickStationUpdate() {
+            try {
+                const modal = document.createElement('div');
+                modal.className = 'admin-popup-overlay';
+                
+                const stationOptions = tourApp.stations.map(station => 
+                    `<option value="${station.id}">Station ${station.id}: ${station.title}</option>`
+                ).join('');
+
+                modal.innerHTML = `
+                    <div class="admin-popup" style="max-width: 500px; width: 90%;">
+                        <h3>⚡ Station schnell bearbeiten</h3>
+                        <div style="margin: 1rem 0;">
+                            <label style="display: block; font-weight: bold; margin-bottom: 0.5rem;">Station auswählen:</label>
+                            <select id="quickStationSelect" style="width: 100%; padding: 0.8rem; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 1rem;">
+                                <option value="">Station wählen...</option>
+                                ${stationOptions}
+                            </select>
+                        </div>
+                        <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                            <button class="admin-popup-close" onclick="closeQuickStationModal(this.parentElement.parentElement)" style="flex: 1;">
+                                Abbrechen
+                            </button>
+                            <button onclick="openQuickStationEdit()" style="flex: 1; background: #dc2626; color: white; border: none; padding: 0.8rem 2rem; border-radius: 25px; font-weight: bold; cursor: pointer;">
+                                Bearbeiten
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(modal);
+            } catch (error) {
+                console.error('Error showing quick station update:', error);
+            }
+        }
+
+        function closeQuickStationModal(modal) {
+            if (modal && modal.parentElement) {
+                modal.remove();
+            }
+        }
+
+        function openQuickStationEdit() {
+            try {
+                const stationId = document.getElementById('quickStationSelect').value;
+                if (!stationId) {
+                    showNotification('Bitte wähle eine Station aus!', 'error');
+                    return;
+                }
+
+                // Close modal
+                const modal = document.querySelector('.admin-popup-overlay');
+                if (modal) modal.remove();
+
+                // Switch to planning tab
+                showAdminTab('planning', document.querySelector('[onclick*="planning"]'));
+
+                // Open station editor after a short delay
+                setTimeout(() => {
+                    const stationEditor = document.getElementById(`admin-station-${stationId}`);
+                    if (stationEditor) {
+                        stationEditor.scrollIntoView({ behavior: 'smooth' });
+                        setTimeout(() => toggleStationEditor(parseInt(stationId)), 500);
+                    }
+                }, 300);
+
+            } catch (error) {
+                console.error('Error opening quick station edit:', error);
+            }
+        }
+
+        // AI Content Integration Functions
+        function showPerplexityHelper(stationId, fieldType) {
+            try {
+                const station = tourApp.stations.find(s => s.id === stationId);
+                if (!station) return;
+
+                const modal = document.createElement('div');
+                modal.className = 'admin-popup-overlay';
+                
+                let promptSuggestions = '';
+                let targetField = '';
+                
+                switch(fieldType) {
+                    case 'mainText':
+                        targetField = `edit-maintext-${stationId}`;
+                        promptSuggestions = `
+                            <h4>💡 Vorschläge für Perplexity:</h4>
+                            <div style="background: #f0f9ff; padding: 1rem; border-radius: 8px; margin: 1rem 0;">
+                                <p><strong>Beispiel-Prompts:</strong></p>
+                                <ul style="margin-left: 1.5rem; margin-top: 0.5rem;">
+                                    <li>"Geschichte von ${station.title} in Köln, interessante historische Fakten"</li>
+                                    <li>"Was passierte historisch am ${station.title} in Köln?"</li>
+                                    <li>"Architektur und Bedeutung von ${station.title} Köln"</li>
+                                </ul>
+                            </div>
+                        `;
+                        break;
+                    case 'photoChallenge':
+                        targetField = `edit-challenge-${stationId}`;
+                        promptSuggestions = `
+                            <h4>💡 Vorschläge für Perplexity:</h4>
+                            <div style="background: #f0f9ff; padding: 1rem; border-radius: 8px; margin: 1rem 0;">
+                                <p><strong>Beispiel-Prompts:</strong></p>
+                                <ul style="margin-left: 1.5rem; margin-top: 0.5rem;">
+                                    <li>"Kreative Foto-Ideen für ${station.title} in Köln"</li>
+                                    <li>"Interessante Fotoperspektiven und Winkel für ${station.title}"</li>
+                                    <li>"Gruppenfoto-Ideen mit historischem Bezug zu ${station.title}"</li>
+                                </ul>
+                            </div>
+                        `;
+                        break;
+                }
+
+                modal.innerHTML = `
+                    <div class="admin-popup" style="max-width: 600px; width: 95%;">
+                        <h3>🤖 KI-Textgenerator</h3>
+                        <p>Lasse dir von Perplexity.ai Texte für <strong>${station.title}</strong> generieren:</p>
+                        
+                        ${promptSuggestions}
+                        
+                        <div style="margin: 1rem 0;">
+                            <label style="display: block; font-weight: bold; margin-bottom: 0.5rem;">Dein Prompt:</label>
+                            <textarea id="aiPromptText" style="width: 100%; min-height: 80px; padding: 0.8rem; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 0.9rem;" placeholder="Beschreibe, welchen Text du generieren möchtest..."></textarea>
+                        </div>
+                        
+                        <div style="margin: 1rem 0;">
+                            <label style="display: block; font-weight: bold; margin-bottom: 0.5rem;">Generierter Text:</label>
+                            <textarea id="aiGeneratedText" style="width: 100%; min-height: 120px; padding: 0.8rem; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 0.9rem;" placeholder="Hier den generierten Text aus Perplexity einfügen..."></textarea>
+                        </div>
+                        
+                        <div style="display: flex; gap: 1rem; margin-top: 1.5rem; flex-wrap: wrap;">
+                            <button onclick="openPerplexity()" style="flex: 1; min-width: 120px; background: #059669; color: white; border: none; padding: 0.8rem 1rem; border-radius: 25px; font-weight: bold; cursor: pointer;">
+                                🌐 Perplexity öffnen
+                            </button>
+                            <button onclick="insertAIText('${targetField}')" style="flex: 1; min-width: 120px; background: #dc2626; color: white; border: none; padding: 0.8rem 1rem; border-radius: 25px; font-weight: bold; cursor: pointer;">
+                                ✅ Text einfügen
+                            </button>
+                            <button class="admin-popup-close" onclick="closeAIModal(this.parentElement.parentElement)" style="flex: 1; min-width: 120px;">
+                                Abbrechen
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(modal);
+            } catch (error) {
+                console.error('Error showing Perplexity helper:', error);
+            }
+        }
+
+        function openPerplexity() {
+            const promptText = document.getElementById('aiPromptText').value.trim();
+            let url = 'https://www.perplexity.ai/';
+            
+            if (promptText) {
+                url += '?q=' + encodeURIComponent(promptText);
+            }
+            
+            window.open(url, '_blank');
+            showNotification('Perplexity in neuem Tab geöffnet! 🌐');
+        }
+
+        function insertAIText(targetFieldId) {
+           try {
+               const generatedText = document.getElementById('aiGeneratedText').value.trim();
+               if (!generatedText) {
+                   showNotification('Bitte füge den generierten Text ein!', 'error');
+                   return;
+               }
+
+               const targetField = document.getElementById(targetFieldId);
+               if (targetField) {
+                   targetField.value = generatedText;
+                   showNotification('KI-Text eingefügt! 🤖');
+                   
+                   // Close modal
+                   const modal = document.querySelector('.admin-popup-overlay');
+                   if (modal) modal.remove();
+               } else {
+                   showNotification('Zielfeld nicht gefunden!', 'error');
+               }
+           } catch (error) {
+               console.error('Error inserting AI text:', error);
+           }
+       }
+
+       function closeAIModal(modal) {
+           if (modal && modal.parentElement) {
+               modal.remove();
+           }
+       }
+
+       // Media Search Functions
+       function showMediaSearchHelper(stationId, mediaType, mediaIndex = null) {
+           try {
+               const station = tourApp.stations.find(s => s.id === stationId);
+               if (!station) return;
+
+               const modal = document.createElement('div');
+               modal.className = 'admin-popup-overlay';
+               
+               let searchPlaceholder = '';
+               let searchExamples = '';
+               let searchUrl = '';
+               
+               switch(mediaType) {
+                   case 'image':
+                       searchPlaceholder = 'z.B. "Kölner Dom historisch" oder "Heumarkt Köln"';
+                       searchExamples = `
+                           <li>"${station.title} Köln historisch"</li>
+                           <li>"${station.title} Architektur"</li>
+                           <li>"Köln ${station.title} heute"</li>
+                       `;
+                       searchUrl = 'https://www.google.com/search?tbm=isch&q=';
+                       break;
+                   case 'youtube':
+                       searchPlaceholder = 'z.B. "Kölner Dom Dokumentation" oder "Geschichte Köln"';
+                       searchExamples = `
+                           <li>"${station.title} Köln Geschichte"</li>
+                           <li>"${station.title} Dokumentation"</li>
+                           <li>"Köln Stadtführung ${station.title}"</li>
+                       `;
+                       searchUrl = 'https://www.youtube.com/results?search_query=';
+                       break;
+                   case 'soundcloud':
+                       searchPlaceholder = 'z.B. "Köln Stadtgeräusche" oder "Rhein Atmosphäre"';
+                       searchExamples = `
+                           <li>"Köln Stadtgeräusche"</li>
+                           <li>"${station.title} Atmosphäre"</li>
+                           <li>"Rhein Köln Audio"</li>
+                       `;
+                       searchUrl = 'https://soundcloud.com/search?q=';
+                       break;
+               }
+
+               const mediaTypeIcon = {
+                   'image': '🖼️',
+                   'youtube': '📺', 
+                   'soundcloud': '☁️'
+               };
+
+               modal.innerHTML = `
+                   <div class="admin-popup" style="max-width: 600px; width: 95%;">
+                       <h3>${mediaTypeIcon[mediaType]} ${mediaType === 'image' ? 'Bilder' : mediaType === 'youtube' ? 'YouTube Videos' : 'SoundCloud Audio'} suchen</h3>
+                       <p>Suche nach Medien für <strong>${station.title}</strong>:</p>
+                       
+                       <div style="background: #f0f9ff; padding: 1rem; border-radius: 8px; margin: 1rem 0;">
+                           <h4>💡 Suchvorschläge:</h4>
+                           <ul style="margin-left: 1.5rem; margin-top: 0.5rem;">
+                               ${searchExamples}
+                           </ul>
+                       </div>
+                       
+                       <div style="margin: 1rem 0;">
+                           <label style="display: block; font-weight: bold; margin-bottom: 0.5rem;">Suchbegriff:</label>
+                           <input type="text" id="mediaSearchTerm" style="width: 100%; padding: 0.8rem; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 1rem;" placeholder="${searchPlaceholder}">
+                       </div>
+                       
+                       <div style="margin: 1rem 0;">
+                           <label style="display: block; font-weight: bold; margin-bottom: 0.5rem;">Gefundene URL:</label>
+                           <input type="url" id="foundMediaUrl" style="width: 100%; padding: 0.8rem; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 1rem;" placeholder="Hier die gefundene URL einfügen...">
+                       </div>
+                       
+                       <div style="margin: 1rem 0;">
+                           <label style="display: block; font-weight: bold; margin-bottom: 0.5rem;">Titel/Beschreibung:</label>
+                           <input type="text" id="mediaTitle" style="width: 100%; padding: 0.8rem; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 1rem;" placeholder="Titel oder Beschreibung des Mediums...">
+                       </div>
+                       
+                       <div style="display: flex; gap: 1rem; margin-top: 1.5rem; flex-wrap: wrap;">
+                           <button onclick="openMediaSearch('${searchUrl}')" style="flex: 1; min-width: 120px; background: #059669; color: white; border: none; padding: 0.8rem 1rem; border-radius: 25px; font-weight: bold; cursor: pointer;">
+                               🔍 Suche öffnen
+                           </button>
+                           <button onclick="insertFoundMedia(${stationId}, '${mediaType}', ${mediaIndex})" style="flex: 1; min-width: 120px; background: #dc2626; color: white; border: none; padding: 0.8rem 1rem; border-radius: 25px; font-weight: bold; cursor: pointer;">
+                               ✅ URL einfügen
+                           </button>
+                           <button class="admin-popup-close" onclick="closeMediaModal(this.parentElement.parentElement)" style="flex: 1; min-width: 120px;">
+                               Abbrechen
+                           </button>
+                       </div>
+                   </div>
+               `;
+               
+               document.body.appendChild(modal);
+           } catch (error) {
+               console.error('Error showing media search helper:', error);
+           }
+       }
+
+       function openMediaSearch(baseUrl) {
+           const searchTerm = document.getElementById('mediaSearchTerm').value.trim();
+           let url = baseUrl;
+           
+           if (searchTerm) {
+               url += encodeURIComponent(searchTerm);
+           }
+           
+           window.open(url, '_blank');
+           showNotification('Suche in neuem Tab geöffnet! 🔍');
+       }
+
+       function insertFoundMedia(stationId, mediaType, mediaIndex) {
+           try {
+               const foundUrl = document.getElementById('foundMediaUrl').value.trim();
+               const mediaTitle = document.getElementById('mediaTitle').value.trim();
+               
+               if (!foundUrl) {
+                   showNotification('Bitte füge eine URL ein!', 'error');
+                   return;
+               }
+
+               const station = tourApp.stations.find(s => s.id === stationId);
+               if (!station) return;
+
+               if (mediaType === 'image') {
+                   if (!station.images) station.images = [];
+                   
+                   if (mediaIndex !== null && mediaIndex >= 0) {
+                       // Update existing image
+                       station.images[mediaIndex].url = foundUrl;
+                       if (mediaTitle) station.images[mediaIndex].title = mediaTitle;
+                   } else {
+                       // Add new image
+                       station.images.push({
+                           title: mediaTitle || 'Neues Bild',
+                           description: 'Über Mediensuche hinzugefügt',
+                           url: foundUrl
+                       });
+                   }
+                   
+                   // Refresh image editor
+                   const editorContainer = document.getElementById(`image-editor-${stationId}`);
+                   if (editorContainer) {
+                       editorContainer.innerHTML = generateImageEditor(station);
+                   }
+                   
+               } else {
+                   // Audio/Video
+                   if (!station.audio) station.audio = [];
+                   
+                   const audioType = mediaType === 'youtube' ? 'youtube' : 'soundcloud';
+                   
+                   if (mediaIndex !== null && mediaIndex >= 0) {
+                       // Update existing audio
+                       station.audio[mediaIndex].url = foundUrl;
+                       station.audio[mediaIndex].type = audioType;
+                       if (mediaTitle) station.audio[mediaIndex].title = mediaTitle;
+                   } else {
+                       // Add new audio
+                       station.audio.push({
+                           title: mediaTitle || 'Neues Audio',
+                           description: 'Über Mediensuche hinzugefügt',
+                           url: foundUrl,
+                           type: audioType
+                       });
+                   }
+                   
+                   // Refresh audio editor
+                   const editorContainer = document.getElementById(`audio-editor-${stationId}`);
+                   if (editorContainer) {
+                       editorContainer.innerHTML = generateAudioEditor(station);
+                   }
+               }
+
+               showNotification(`${mediaType === 'image' ? 'Bild' : 'Audio'} hinzugefügt! ✅`);
+               
+               // Close modal
+               const modal = document.querySelector('.admin-popup-overlay');
+               if (modal) modal.remove();
+
+           } catch (error) {
+               console.error('Error inserting found media:', error);
+               showNotification('Fehler beim Einfügen des Mediums', 'error');
+           }
+       }
+
+       function closeMediaModal(modal) {
+           if (modal && modal.parentElement) {
+               modal.remove();
+           }
+       }
+                
+
         // Global window functions for HTML onclick handlers
+        window.showAdminTab = showAdminTab;
+        window.saveTourSettings = saveTourSettings;
+        window.showQuickStationUpdate = showQuickStationUpdate;
+        window.openQuickStationEdit = openQuickStationEdit;
+        window.closeQuickStationModal = closeQuickStationModal;
+        window.showPerplexityHelper = showPerplexityHelper;
+        window.openPerplexity = openPerplexity;  
+        window.insertAIText = insertAIText;
+        window.closeAIModal = closeAIModal;
+        window.showMediaSearchHelper = showMediaSearchHelper;
+        window.openMediaSearch = openMediaSearch;
+        window.insertFoundMedia = insertFoundMedia;
+        window.closeMediaModal = closeMediaModal;
         window.showTab = function(tabName, tabElement) {
             try {
                 tourApp.state.currentTab = tabName;
