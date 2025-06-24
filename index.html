@@ -2663,22 +2663,26 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 console.log('ActiveUsers before filtering:', Array.from(activeUsers));
                 console.log('Current userName for auto-assign:', tourApp.state.userName);
 
-                // Convert to array and filter out default names
+                // Convert to array and filter out invalid names (but include Tourist_ names)
                 const userArray = Array.from(activeUsers).filter(name => 
                     name && 
                     name.length > 0 && 
-                    !name.startsWith('Tourist_') && 
                     name !== 'System' && 
                     name !== '🔊 System' &&
-                    name !== 'Admin'
+                    name !== 'Admin' &&
+                    !name.startsWith('Tourist_undefined') // Only exclude undefined tourists
                 );
                 
                 if (userArray.length === 0) {
-                    showNotification('❌ Keine Nutzer mit gültigen Namen gefunden!\n\n💡 Teilnehmer sollten sich zuerst einen Namen geben.', 'warning');
+                    showNotification('❌ Keine aktiven Nutzer gefunden!\n\n💡 Nutzer müssen die App geöffnet haben oder im Chat aktiv gewesen sein.', 'warning');
                     return;
                 }
                 
-                const confirmMessage = `${userArray.length} Nutzer gefunden:\n${userArray.join(', ')}\n\nAlle auf Teams verteilen?`;
+                // Show user names in a more readable format
+                const displayNames = userArray.map(name => 
+                    name.startsWith('Tourist_') ? `${name} (noch kein Name gesetzt)` : name
+                );
+                const confirmMessage = `${userArray.length} Nutzer gefunden:\n${displayNames.join('\n')}\n\nAlle auf Teams verteilen?`;
                 if (!confirm(confirmMessage)) {
                     return;
                 }
