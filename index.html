@@ -1045,6 +1045,59 @@
                 grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
             }
         }
+
+        .team-rename-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .team-rename-content {
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            animation: popIn 0.3s ease;
+        }
+
+        .team-members-list {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .team-member-item {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem;
+            margin: 0.25rem 0;
+            background: white;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+
+        .auto-assign-section {
+            background: #fef3c7;
+            border: 2px solid #f59e0b;
+            border-radius: 10px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+
     </style>
 </head>
 <body>
@@ -1088,21 +1141,29 @@
                 <!-- 2. Team -->
                 <div class="team-selector" id="teamSelector">
                     <h3>📸 Wähle dein Team:</h3>
-                    <div class="team-option" onclick="selectTeam('red', '🔴 Team Römer', this)">
-                        <div class="team-color" style="background: #dc2626;"></div>
-                        <span>🔴 Team Römer</span>
+                    <div id="teamOptions">
+                        <!-- Team options will be generated dynamically -->
                     </div>
-                    <div class="team-option" onclick="selectTeam('blue', '🔵 Team Gaffeln', this)">
-                        <div class="team-color" style="background: #2563eb;"></div>
-                        <span>🔵 Team Gaffeln</span>
+                    <div style="margin-top: 1rem; text-align: center;">
+                        <button class="btn btn-secondary btn-small" onclick="showTeamNameEditor()" style="background: #8b5cf6;">
+                            ✏️ Team umbenennen
+                        </button>
                     </div>
-                    <div class="team-option" onclick="selectTeam('green', '🟢 Team Hanseat', this)">
-                        <div class="team-color" style="background: #059669;"></div>
-                        <span>🟢 Team Hanseat</span>
+                </div>
+
+                <!-- Current Team Display -->
+                <div id="currentTeamDisplay" class="form-section" style="display: none;">
+                    <h3>👥 Dein aktuelles Team:</h3>
+                    <div id="currentTeamInfo" style="display: flex; align-items: center; padding: 1rem; background: #f0f9ff; border-radius: 8px; margin-bottom: 1rem;">
+                        <!-- Current team info will be displayed here -->
                     </div>
-                    <div class="team-option" onclick="selectTeam('yellow', '🟡 Team Modern', this)">
-                        <div class="team-color" style="background: #d97706;"></div>
-                        <span>🟡 Team Modern</span>
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        <button class="btn btn-secondary btn-small" onclick="showTeamSelector()">
+                            🔄 Team wechseln
+                        </button>
+                        <button class="btn btn-secondary btn-small" onclick="showTeamNameEditor()" style="background: #8b5cf6;">
+                            ✏️ Team umbenennen
+                        </button>
                     </div>
                 </div>
 
@@ -1302,6 +1363,7 @@
                             <button class="btn btn-secondary btn-small" onclick="sendAdminAnnouncement()">📢 Ankündigung senden</button>
                             <button class="btn btn-secondary btn-small" onclick="clearAllChatMessages()">🗑️ Chat löschen</button>
                             <button class="btn btn-secondary btn-small" onclick="showQuickStationUpdate()">⚡ Station schnell bearbeiten</button>
+                            <button class="btn btn-secondary btn-small" onclick="autoAssignTeams()" style="background: #8b5cf6;">🎲 Teams auto-verteilen</button>
                         </div>
                     </div>
 
@@ -2005,6 +2067,447 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             }
         }
 
+        // Enhanced Team Management Functions
+        let teamNames = {
+            'red': '🔴 Team Römer',
+            'blue': '🔵 Team Gaffeln', 
+            'green': '🟢 Team Hanseat',
+            'yellow': '🟡 Team Modern'
+        };
+
+        let teamMembers = {
+            'red': [],
+            'blue': [],
+            'green': [],
+            'yellow': []
+        };
+
+        async function loadTeamData() {
+            try {
+                if (tourApp.state.isFirebaseConnected && tourApp.state.tourId) {
+                    // Load team names from Firebase
+                    const teamsData = await getFromFirebase('teams');
+                    if (teamsData && teamsData.length > 0) {
+                        teamsData.forEach(team => {
+                            if (team.id && team.name) {
+                                teamNames[team.id] = team.name;
+                            }
+                        });
+                    }
+
+                    // Load team members from Firebase
+                    const membersData = await getFromFirebase('teamMembers');
+                    if (membersData && membersData.length > 0) {
+                        teamMembers = {
+                            'red': [],
+                            'blue': [],
+                            'green': [],
+                            'yellow': []
+                        };
+                        
+                        membersData.forEach(member => {
+                            if (member.teamId && teamMembers[member.teamId]) {
+                                teamMembers[member.teamId].push({
+                                    userName: member.userName,
+                                    joinedAt: member.joinedAt
+                                });
+                            }
+                        });
+                    }
+                }
+                
+                generateTeamOptions();
+                updateCurrentTeamDisplay();
+            } catch (error) {
+                console.error('Error loading team data:', error);
+                generateTeamOptions(); // Fallback to default teams
+            }
+        }
+
+        function generateTeamOptions() {
+            try {
+                const container = document.getElementById('teamOptions');
+                if (!container) return;
+                
+                container.innerHTML = '';
+                
+                Object.keys(teamNames).forEach(teamId => {
+                    const memberCount = teamMembers[teamId] ? teamMembers[teamId].length : 0;
+                    const isSelected = tourApp.state.selectedTeam === teamId;
+                    
+                    const teamOption = document.createElement('div');
+                    teamOption.className = `team-option ${isSelected ? 'selected' : ''}`;
+                    teamOption.onclick = () => selectTeam(teamId, teamNames[teamId], teamOption);
+                    
+                    const teamColors = {
+                        'red': '#dc2626',
+                        'blue': '#2563eb',
+                        'green': '#059669',
+                        'yellow': '#d97706'
+                    };
+                    
+                    teamOption.innerHTML = `
+                        <div class="team-color" style="background: ${teamColors[teamId]};"></div>
+                        <div style="flex: 1;">
+                            <span>${teamNames[teamId]}</span>
+                            <div style="font-size: 0.8rem; color: #6b7280; margin-top: 0.25rem;">
+                                ${memberCount} Mitglied${memberCount !== 1 ? 'er' : ''}
+                            </div>
+                        </div>
+                    `;
+                    
+                    container.appendChild(teamOption);
+                });
+            } catch (error) {
+                console.error('Error generating team options:', error);
+            }
+        }
+
+        function updateCurrentTeamDisplay() {
+            try {
+                const currentTeamDisplay = document.getElementById('currentTeamDisplay');
+                const teamSelector = document.getElementById('teamSelector');
+                const currentTeamInfo = document.getElementById('currentTeamInfo');
+                
+                if (tourApp.state.selectedTeam && currentTeamDisplay && teamSelector && currentTeamInfo) {
+                    const teamColors = {
+                        'red': '#dc2626',
+                        'blue': '#2563eb',
+                        'green': '#059669',
+                        'yellow': '#d97706'
+                    };
+                    
+                    const memberCount = teamMembers[tourApp.state.selectedTeam] ? teamMembers[tourApp.state.selectedTeam].length : 0;
+                    
+                    currentTeamInfo.innerHTML = `
+                        <div class="team-color" style="background: ${teamColors[tourApp.state.selectedTeam]}; width: 30px; height: 30px; margin-right: 1rem;"></div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: bold; font-size: 1.1rem;">${teamNames[tourApp.state.selectedTeam]}</div>
+                            <div style="color: #6b7280; font-size: 0.9rem;">${memberCount} Mitglied${memberCount !== 1 ? 'er' : ''}</div>
+                        </div>
+                    `;
+                    
+                    currentTeamDisplay.style.display = 'block';
+                    teamSelector.style.display = 'none';
+                } else if (currentTeamDisplay && teamSelector) {
+                    currentTeamDisplay.style.display = 'none';
+                    teamSelector.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error updating current team display:', error);
+            }
+        }
+
+        function showTeamSelector() {
+            try {
+                const currentTeamDisplay = document.getElementById('currentTeamDisplay');
+                const teamSelector = document.getElementById('teamSelector');
+                
+                if (currentTeamDisplay && teamSelector) {
+                    currentTeamDisplay.style.display = 'none';
+                    teamSelector.style.display = 'block';
+                    generateTeamOptions();
+                }
+            } catch (error) {
+                console.error('Error showing team selector:', error);
+            }
+        }
+
+        function showTeamNameEditor() {
+            try {
+                if (!tourApp.state.selectedTeam) {
+                    showNotification('Du musst zuerst einem Team beitreten!', 'error');
+                    return;
+                }
+                
+                const modal = document.createElement('div');
+                modal.className = 'team-rename-modal';
+                
+                const currentMembers = teamMembers[tourApp.state.selectedTeam] || [];
+                const membersHtml = currentMembers.length > 0 ? 
+                    currentMembers.map(member => `
+                        <div class="team-member-item">
+                            <span>👤 ${member.userName}</span>
+                        </div>
+                    `).join('') : 
+                    '<div style="color: #6b7280; font-style: italic;">Keine anderen Mitglieder</div>';
+                
+                modal.innerHTML = `
+                    <div class="team-rename-content">
+                        <h3 style="color: #1f2937; margin-bottom: 1rem;">✏️ Team umbenennen</h3>
+                        
+                        <div style="margin-bottom: 1rem;">
+                            <label style="display: block; font-weight: bold; margin-bottom: 0.5rem;">Aktueller Name:</label>
+                            <div style="background: #f3f4f6; padding: 0.8rem; border-radius: 8px; color: #6b7280;">
+                                ${teamNames[tourApp.state.selectedTeam]}
+                            </div>
+                        </div>
+                        
+                        <div style="margin-bottom: 1rem;">
+                            <label style="display: block; font-weight: bold; margin-bottom: 0.5rem;">Neuer Name:</label>
+                            <input type="text" id="newTeamName" maxlength="30" placeholder="Neuer Teamname..." 
+                                style="width: 100%; padding: 0.8rem; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 1rem;">
+                        </div>
+                        
+                        <div style="margin-bottom: 1.5rem;">
+                            <label style="display: block; font-weight: bold; margin-bottom: 0.5rem;">Team-Mitglieder:</label>
+                            <div class="team-members-list">
+                                ${membersHtml}
+                            </div>
+                        </div>
+                        
+                        <div style="display: flex; gap: 1rem;">
+                            <button onclick="closeTeamNameEditor()" style="flex: 1; background: #6b7280; color: white; border: none; padding: 0.8rem; border-radius: 25px; font-weight: bold; cursor: pointer;">
+                                Abbrechen
+                            </button>
+                            <button onclick="saveTeamName()" style="flex: 1; background: #dc2626; color: white; border: none; padding: 0.8rem; border-radius: 25px; font-weight: bold; cursor: pointer;">
+                                💾 Speichern
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(modal);
+                
+                // Focus on input
+                setTimeout(() => {
+                    const input = document.getElementById('newTeamName');
+                    if (input) {
+                        input.focus();
+                        input.addEventListener('keypress', (e) => {
+                            if (e.key === 'Enter') {
+                                saveTeamName();
+                            }
+                        });
+                    }
+                }, 100);
+                
+            } catch (error) {
+                console.error('Error showing team name editor:', error);
+            }
+        }
+
+        async function saveTeamName() {
+            try {
+                const newNameInput = document.getElementById('newTeamName');
+                if (!newNameInput) return;
+                
+                const newName = newNameInput.value.trim();
+                if (!newName || newName.length < 2) {
+                    showNotification('Name muss mindestens 2 Zeichen haben!', 'error');
+                    return;
+                }
+                
+                const oldName = teamNames[tourApp.state.selectedTeam];
+                teamNames[tourApp.state.selectedTeam] = newName;
+                tourApp.state.teamName = newName;
+                
+                // Save to Firebase
+                if (tourApp.state.isFirebaseConnected && tourApp.state.tourId) {
+                    await saveToFirebase('teams', tourApp.state.selectedTeam, {
+                        id: tourApp.state.selectedTeam,
+                        name: newName,
+                        updatedBy: tourApp.state.userName,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                }
+                
+                // Update UI
+                generateTeamOptions();
+                updateCurrentTeamDisplay();
+                updateTeamChatTab();
+                
+                // Close modal
+                closeTeamNameEditor();
+                
+                showNotification('Teamname geändert! ✅');
+                addSystemMessage(`${tourApp.state.userName} hat das Team von "${oldName}" zu "${newName}" umbenannt! ✏️`);
+                
+                saveState();
+                
+            } catch (error) {
+                console.error('Error saving team name:', error);
+                showNotification('Fehler beim Speichern des Teamnamens', 'error');
+            }
+        }
+
+        function closeTeamNameEditor() {
+            try {
+                const modal = document.querySelector('.team-rename-modal');
+                if (modal) {
+                    modal.remove();
+                }
+            } catch (error) {
+                console.error('Error closing team name editor:', error);
+            }
+        }
+
+        function updateTeamChatTab() {
+            try {
+                const teamChatTab = document.getElementById('teamChatTab');
+                if (teamChatTab && tourApp.state.selectedTeam) {
+                    const shortName = teamNames[tourApp.state.selectedTeam].split(' ')[1] || 'Team';
+                    teamChatTab.innerHTML = `👥 ${shortName}-Chat`;
+                }
+            } catch (error) {
+                console.error('Error updating team chat tab:', error);
+            }
+        }
+
+        async function updateTeamMembership(teamId) {
+            try {
+                // Remove user from old team
+                if (tourApp.state.selectedTeam && teamMembers[tourApp.state.selectedTeam]) {
+                    teamMembers[tourApp.state.selectedTeam] = teamMembers[tourApp.state.selectedTeam].filter(
+                        member => member.userName !== tourApp.state.userName
+                    );
+                }
+                
+                // Add user to new team
+                if (!teamMembers[teamId]) {
+                    teamMembers[teamId] = [];
+                }
+                
+                const existingMember = teamMembers[teamId].find(member => member.userName === tourApp.state.userName);
+                if (!existingMember) {
+                    teamMembers[teamId].push({
+                        userName: tourApp.state.userName,
+                        joinedAt: Date.now()
+                    });
+                }
+                
+                // Save to Firebase
+                if (tourApp.state.isFirebaseConnected && tourApp.state.tourId) {
+                    await saveToFirebase('teamMembers', tourApp.state.userName, {
+                        userName: tourApp.state.userName,
+                        teamId: teamId,
+                        teamName: teamNames[teamId],
+                        joinedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                }
+                
+                generateTeamOptions();
+                
+            } catch (error) {
+                console.error('Error updating team membership:', error);
+            }
+        }
+
+        // Auto Team Assignment Function
+        async function autoAssignTeams() {
+            try {
+                if (!confirm('Alle aktiven Nutzer automatisch und gleichmäßig auf Teams verteilen?\n\n⚠️ Dies überschreibt alle aktuellen Team-Zuordnungen!')) {
+                    return;
+                }
+                
+                // Get all active users from Firebase
+                let activeUsers = [];
+                
+                if (tourApp.state.isFirebaseConnected && tourApp.state.tourId) {
+                    const membersData = await getFromFirebase('teamMembers');
+                    const uniqueUsers = new Set();
+                    
+                    membersData.forEach(member => {
+                        if (member.userName) {
+                            uniqueUsers.add(member.userName);
+                        }
+                    });
+                    
+                    activeUsers = Array.from(uniqueUsers);
+                    
+                    // Add current user if not in list
+                    if (!activeUsers.includes(tourApp.state.userName)) {
+                        activeUsers.push(tourApp.state.userName);
+                    }
+                } else {
+                    // Fallback: use localStorage data
+                    activeUsers = [tourApp.state.userName];
+                    Object.keys(localStorage).forEach(key => {
+                        if (key.startsWith('user_')) {
+                            const userName = key.replace('user_', '');
+                            if (!activeUsers.includes(userName)) {
+                                activeUsers.push(userName);
+                            }
+                        }
+                    });
+                }
+                
+                if (activeUsers.length === 0) {
+                    showNotification('Keine aktiven Nutzer gefunden!', 'error');
+                    return;
+                }
+                
+                // Shuffle users randomly
+                for (let i = activeUsers.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [activeUsers[i], activeUsers[j]] = [activeUsers[j], activeUsers[i]];
+                }
+                
+                // Clear all teams
+                teamMembers = {
+                    'red': [],
+                    'blue': [],
+                    'green': [],
+                    'yellow': []
+                };
+                
+                const teamIds = Object.keys(teamMembers);
+                
+                // Distribute users evenly
+                activeUsers.forEach((userName, index) => {
+                    const teamId = teamIds[index % teamIds.length];
+                    teamMembers[teamId].push({
+                        userName: userName,
+                        joinedAt: Date.now()
+                    });
+                });
+                
+                // Save to Firebase
+                if (tourApp.state.isFirebaseConnected && tourApp.state.tourId) {
+                    // Clear existing team assignments
+                    const existingMembers = await getFromFirebase('teamMembers');
+                    for (const member of existingMembers) {
+                        await db.collection('tours').doc(tourApp.state.tourId)
+                            .collection('teamMembers').doc(member.id).delete();
+                    }
+                    
+                    // Save new assignments
+                    for (const [teamId, members] of Object.entries(teamMembers)) {
+                        for (const member of members) {
+                            await saveToFirebase('teamMembers', member.userName, {
+                                userName: member.userName,
+                                teamId: teamId,
+                                teamName: teamNames[teamId],
+                                joinedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                                assignedBy: 'auto-assignment'
+                            });
+                        }
+                    }
+                }
+                
+                // Update current user's team if they were reassigned
+                const currentUserTeam = Object.keys(teamMembers).find(teamId => 
+                    teamMembers[teamId].some(member => member.userName === tourApp.state.userName)
+                );
+                
+                if (currentUserTeam) {
+                    tourApp.state.selectedTeam = currentUserTeam;
+                    tourApp.state.teamName = teamNames[currentUserTeam];
+                    updateCurrentTeamDisplay();
+                    updateTeamChatTab();
+                    saveState();
+                }
+                
+                generateTeamOptions();
+                
+                showNotification(`${activeUsers.length} Nutzer automatisch auf Teams verteilt! 🎲`);
+                addSystemMessage(`Admin hat ${activeUsers.length} Nutzer automatisch auf Teams verteilt! 🎲`);
+                
+            } catch (error) {
+                console.error('Error auto-assigning teams:', error);
+                showNotification('Fehler bei der automatischen Team-Verteilung', 'error');
+            }
+        }        
 
         // App Initialization
         function initApp() {
@@ -2018,6 +2521,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 setTimeout(async () => {
                     await loadStationsFromFirebase();
                     await loadTourSettings();
+                    await loadTeamData();
                     generateStationsList();
                     updateUI();
                 }, 1500);
@@ -2182,6 +2686,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 if (message) {
                     const messageData = {
                         userName: tourApp.state.userName,
+                        teamName: tourApp.state.teamName,
                         message: message,
                         timestamp: firebase.firestore ? firebase.firestore.FieldValue.serverTimestamp() : Date.now(),
                         tourId: tourApp.state.tourId,
@@ -2422,8 +2927,11 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                         <span class="timestamp">${timeStr}</span>
                     `;
                 } else {
+                    const userTeam = messageData.teamName || (messageData.userName === tourApp.state.userName ? tourApp.state.teamName : '');
+                    const teamDisplay = userTeam ? ` (${userTeam})` : '';
+
                     messageContent = `
-                        <strong>${messageData.userName}:</strong> ${messageData.message}
+                        <strong>${messageData.userName}${teamDisplay}:</strong> ${messageData.message}
                         <span class="timestamp">${timeStr}</span>
                     `;
                 }
@@ -2476,8 +2984,11 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                         <span class="timestamp">${timeStr}</span>
                     `;
                 } else {
+                    const userTeam = messageData.teamName || (messageData.userName === tourApp.state.userName ? tourApp.state.teamName : '');
+                    const teamDisplay = userTeam ? ` (${userTeam})` : '';
+
                     messageContent = `
-                        <strong>${messageData.userName}:</strong> ${messageData.message}
+                        <strong>${messageData.userName}${teamDisplay}:</strong> ${messageData.message}
                         <span class="timestamp">${timeStr}</span>
                     `;
                 }
@@ -6518,11 +7029,18 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             }
         }
 
-        window.selectTeam = function(teamId, teamName, element) {
+        window.selectTeam = async function(teamId, teamName, element) {
             try {
+                const oldTeam = tourApp.state.selectedTeam;
+                const oldTeamName = tourApp.state.teamName;
+                
                 tourApp.state.selectedTeam = teamId;
                 tourApp.state.teamName = teamName;
                 
+                // Update team membership
+                await updateTeamMembership(teamId);
+                
+                // Update UI
                 document.querySelectorAll('.team-option').forEach(option => {
                     option.classList.remove('selected');
                 });
@@ -6530,21 +7048,23 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     element.classList.add('selected');
                 }
                 
-                const selector = document.getElementById('teamSelector');
-                if (selector) {
-                    selector.style.display = 'none';
-                }
-
+                updateCurrentTeamDisplay();
+                updateTeamChatTab();
+                
                 const teamChatTab = document.getElementById('teamChatTab');
                 if (teamChatTab) {
                     teamChatTab.style.display = 'block';
-                    teamChatTab.innerHTML = `👥 ${teamName.split(' ')[1]}-Chat`;
                 }
                 
-                showNotification('Team ausgewählt! 🎉');
+                if (oldTeam && oldTeam !== teamId) {
+                    showNotification(`Team gewechselt: ${oldTeamName} → ${teamName}! 🔄`);
+                    addSystemMessage(`${tourApp.state.userName} ist von ${oldTeamName} zu ${teamName} gewechselt! 🔄`);
+                } else {
+                    showNotification('Team ausgewählt! 🎉');
+                    addSystemMessage(`${tourApp.state.userName} ist ${teamName} beigetreten! 🎊`);
+                }
+                
                 saveState();
-                addSystemMessage(`${tourApp.state.userName} ist ${teamName} beigetreten! 🎊`);
-
                 setTimeout(() => loadChatHistory(), 500);
             } catch (error) {
                 console.error('Error selecting team:', error);
@@ -6644,6 +7164,13 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             tourApp.state.connectionRetries = 0;
             initFirebase();
         }
+
+        // Global window functions for team management
+        window.showTeamSelector = showTeamSelector;
+        window.showTeamNameEditor = showTeamNameEditor;
+        window.saveTeamName = saveTeamName;
+        window.closeTeamNameEditor = closeTeamNameEditor;
+        window.autoAssignTeams = autoAssignTeams;
 
         // Initialize app when DOM is ready
         if (document.readyState === 'loading') {
