@@ -1997,44 +1997,75 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     allSyncListeners.push(teamChatUnsubscribe);
                 }
 
-                // Listen to admin direct messages - FIXED to prevent duplicates
+                // Listen to admin direct messages - COMPLETELY FIXED
                 const adminDirectRef = db.collection('tours').doc(tourApp.state.tourId).collection('adminDirectMessages');
                 const adminDirectUnsubscribe = adminDirectRef.onSnapshot((snapshot) => {
                     snapshot.docChanges().forEach(async (change) => {
                         if (change.type === 'added' || change.type === 'modified') {
                             const channelId = change.doc.id;
                             
-                            // Listen to messages in this channel
+                            // Only process channels relevant to current user
                             if (channelId.startsWith('user_')) {
-                                const userName = channelId.replace('user_', '');
+                                const channelUserName = channelId.replace('user_', '');
                                 
-                                // Create tab for admin if it doesn't exist
-                                if (tourApp.state.isAdmin && !document.getElementById(`adminChatTab_${userName}`)) {
-                                    createAdminChatTab(userName);
+                                // For admin: listen to all user channels
+                                // For users: only listen to their own channel
+                                const shouldListenToChannel = tourApp.state.isAdmin || channelUserName === tourApp.state.userName;
+                                
+                                if (!shouldListenToChannel) {
+                                    return; // Skip irrelevant channels
                                 }
                                 
-                                // Listen to messages in this channel - prevent duplicate listeners
+                                // Create tab for admin if it doesn't exist and it's for a different user
+                                if (tourApp.state.isAdmin && channelUserName !== tourApp.state.userName && !document.getElementById(`adminChatTab_${channelUserName}`)) {
+                                    createAdminChatTab(channelUserName);
+                                }
+                                
+                                // Prevent duplicate listeners
                                 if (!tourApp.state.adminChatListeners) {
                                     tourApp.state.adminChatListeners = new Set();
                                 }
                                 
-                                if (!tourApp.state.adminChatListeners.has(channelId)) {
-                                    tourApp.state.adminChatListeners.add(channelId);
+                                const listenerKey = `${channelId}_${tourApp.state.userName}`;
+                                if (!tourApp.state.adminChatListeners.has(listenerKey)) {
+                                    tourApp.state.adminChatListeners.add(listenerKey);
                                     
                                     const messagesRef = change.doc.ref.collection('messages');
                                     messagesRef.orderBy('timestamp', 'asc').onSnapshot((messagesSnapshot) => {
                                         messagesSnapshot.docChanges().forEach((messageChange) => {
                                             if (messageChange.type === 'added') {
                                                 const messageData = messageChange.doc.data();
-                                                if (messageData.userName !== tourApp.state.userName) {
-                                                    if (tourApp.state.isAdmin && messageData.targetUser !== tourApp.state.userName) {
-                                                        addAdminChatMessage(messageData, false, userName);
-                                                    } else if (!tourApp.state.isAdmin && (messageData.targetUser === tourApp.state.userName || messageData.isFromAdmin)) {
-                                                        addAdminChatMessage(messageData, false, 'admin');
+                                                
+                                                // Skip own messages
+                                                if (messageData.userName === tourApp.state.userName) {
+                                                    return;
+                                                }
+                                                
+                                                // Determine if message should be shown to current user
+                                                let shouldShowMessage = false;
+                                                let targetContainer = null;
+                                                
+                                                if (tourApp.state.isAdmin) {
+                                                    // Admin receives messages from users
+                                                    if (!messageData.isFromAdmin && messageData.targetUser === 'admin') {
+                                                        shouldShowMessage = true;
+                                                        targetContainer = channelUserName;
                                                     }
+                                                } else {
+                                                    // User receives messages from admin
+                                                    if (messageData.isFromAdmin && (messageData.targetUser === tourApp.state.userName || channelUserName === tourApp.state.userName)) {
+                                                        shouldShowMessage = true;
+                                                        targetContainer = 'admin';
+                                                    }
+                                                }
+                                                
+                                                if (shouldShowMessage) {
+                                                    addAdminChatMessage(messageData, false, targetContainer);
                                                 }
                                             }
                                         });
+                                    }, (error) => {
+                                        console.error(`Messages sync error for ${channelId}:`, error);
                                     });
                                 }
                             }
@@ -5900,45 +5931,42 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                         tourId: tourApp.state.tourId,
                         type: 'admin-direct',
                         isFromAdmin: tourApp.state.isAdmin,
-                        targetUser: tourApp.state.isAdmin ? currentAdminChatUser || 'all' : 'admin'
+                        targetUser: tourApp.state.isAdmin ? (currentAdminChatUser || 'admin') : 'admin'
                     };
                     
+                    // Add to local UI immediately
                     addAdminChatMessage(messageData, true, tourApp.state.isAdmin ? currentAdminChatUser : 'admin');
                     
                     if (tourApp.state.isFirebaseConnected && tourApp.state.tourId) {
+                        // Determine correct channel based on user role
+                        let channelName;
+                        let updatedMessageData = { ...messageData };
+                        
                         if (tourApp.state.isAdmin && currentAdminChatUser) {
                             // Admin sending to specific user
-                            const channelName = `user_${currentAdminChatUser}`;
-                            await db.collection('tours').doc(tourApp.state.tourId)
-                                .collection('adminDirectMessages').doc(channelName)
-                                .collection('messages').doc(Date.now().toString())
-                                .set(messageData);
-                            
-                            // Ensure channel exists
-                            await db.collection('tours').doc(tourApp.state.tourId)
-                                .collection('adminDirectMessages').doc(channelName)
-                                .set({
-                                    userName: currentAdminChatUser,
-                                    lastActivity: firebase.firestore.FieldValue.serverTimestamp(),
-                                    isActive: true
-                                }, { merge: true });
+                            channelName = `user_${currentAdminChatUser}`;
+                            updatedMessageData.targetUser = currentAdminChatUser;
                         } else {
-                            // User sending to admin
-                            const channelName = `user_${tourApp.state.userName}`;
-                            await db.collection('tours').doc(tourApp.state.tourId)
-                                .collection('adminDirectMessages').doc(channelName)
-                                .collection('messages').doc(Date.now().toString())
-                                .set(messageData);
-                            
-                            // Ensure channel exists
-                            await db.collection('tours').doc(tourApp.state.tourId)
-                                .collection('adminDirectMessages').doc(channelName)
-                                .set({
-                                    userName: tourApp.state.userName,
-                                    lastActivity: firebase.firestore.FieldValue.serverTimestamp(),
-                                    isActive: true
-                                }, { merge: true });
+                            // User sending to admin OR admin sending from main admin chat
+                            channelName = `user_${tourApp.state.userName}`;
+                            updatedMessageData.targetUser = 'admin';
                         }
+                        
+                        // Save message to Firebase
+                        await db.collection('tours').doc(tourApp.state.tourId)
+                            .collection('adminDirectMessages').doc(channelName)
+                            .collection('messages').add(updatedMessageData);
+                        
+                        // Ensure channel exists
+                        await db.collection('tours').doc(tourApp.state.tourId)
+                            .collection('adminDirectMessages').doc(channelName)
+                            .set({
+                                userName: channelName.replace('user_', ''),
+                                lastActivity: firebase.firestore.FieldValue.serverTimestamp(),
+                                isActive: true
+                            }, { merge: true });
+                        
+                        console.log(`Admin message sent via channel: ${channelName}`);
                     }
                     
                     input.value = '';
@@ -5994,10 +6022,11 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 
                 if (tourApp.state.isAdmin && targetUser && targetUser !== 'admin') {
                     // Admin viewing specific user's chat
-                    adminChatContainer = document.getElementById(`adminChatContainer_${targetUser}`);
+                    adminChatContainer = document.getElementById(`adminChatMessages_${targetUser}`);
                     if (!adminChatContainer) {
-                        console.log(`Admin chat container for ${targetUser} not found`);
-                        return;
+                        console.log(`Admin chat container for ${targetUser} not found, creating tab...`);
+                        createAdminChatTab(targetUser);
+                        adminChatContainer = document.getElementById(`adminChatMessages_${targetUser}`);
                     }
                 } else {
                     // Regular admin chat container
@@ -6312,23 +6341,27 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                         targetUser: userName
                     };
                     
+                    // Add to local UI immediately
                     addAdminChatMessage(messageData, true, userName);
                     
                     if (tourApp.state.isFirebaseConnected && tourApp.state.tourId) {
-                        // Save to Firebase with proper timestamp
+                        // Send to specific user's channel
+                        const channelName = `user_${userName}`;
+                        
                         db.collection('tours').doc(tourApp.state.tourId)
-                            .collection('adminDirectMessages').doc(`user_${userName}`)
+                            .collection('adminDirectMessages').doc(channelName)
                             .collection('messages').add(messageData)
                             .then(() => {
-                                console.log(`Admin message sent to ${userName}`);
+                                console.log(`Admin message sent to ${userName} via channel ${channelName}`);
                             })
                             .catch(error => {
                                 console.error('Error sending admin message:', error);
+                                showNotification('Fehler beim Senden der Nachricht', 'error');
                             });
                         
                         // Ensure channel exists
                         db.collection('tours').doc(tourApp.state.tourId)
-                            .collection('adminDirectMessages').doc(`user_${userName}`)
+                            .collection('adminDirectMessages').doc(channelName)
                             .set({
                                 userName: userName,
                                 lastActivity: firebase.firestore.FieldValue.serverTimestamp(),
