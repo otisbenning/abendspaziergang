@@ -724,6 +724,26 @@
             transform: scale(1.05);
         }
 
+        /* Chat Sub-Tabs */
+        .chat-sub-tab {
+            color: #6b7280;
+            border-bottom: 3px solid transparent;
+        }
+
+        .chat-sub-tab.active {
+            background: white !important;
+            color: #dc2626;
+            border-bottom: 3px solid #dc2626;
+        }
+
+        .chat-section {
+            display: none;
+        }
+
+        .chat-section.active {
+            display: block;
+        }
+
         .notification {
             position: fixed;
             top: 20px;
@@ -1067,19 +1087,59 @@
 
             <!-- Chat Tab -->
             <div id="chat" class="tab-content">
-                <div class="chat-container" id="chatContainer">
-                    <div class="chat-message system">
-                        <strong>System:</strong> Willkommen im Tour-Chat! 👋<br>
-                        <small>Chat funktioniert zwischen allen Geräten mit derselben Tour-URL.</small>
-                        <span class="timestamp">jetzt</span>
+                <!-- Chat Sub-Navigation -->
+                <div style="display: flex; background: #f8fafc; border-radius: 8px; margin-bottom: 1rem; overflow: hidden;">
+                    <button class="chat-sub-tab active" onclick="showChatTab('main', this)" style="flex: 1; padding: 0.8rem; border: none; background: transparent; cursor: pointer; font-weight: bold; transition: all 0.3s;">
+                        💬 Haupt-Chat
+                    </button>
+                    <button class="chat-sub-tab" onclick="showChatTab('team', this)" id="teamChatTab" style="flex: 1; padding: 0.8rem; border: none; background: transparent; cursor: pointer; font-weight: bold; transition: all 0.3s; display: none;">
+                        👥 Team-Chat
+                    </button>
+                </div>
+
+                <!-- Main Chat -->
+                <div id="mainChatContainer" class="chat-section active">
+                    <div class="chat-container" id="chatContainer">
+                        <div class="chat-message system">
+                            <strong>System:</strong> Willkommen im Tour-Chat! 👋<br>
+                            <small>Chat funktioniert zwischen allen Geräten mit derselben Tour-URL.</small>
+                            <span class="timestamp">jetzt</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Chat Moderation Notice -->
+                    <div id="chatModerationNotice" class="hidden" style="background: #fef3c7; border: 2px solid #f59e0b; border-radius: 8px; padding: 1rem; margin: 1rem 0; text-align: center;">
+                        <h4 style="color: #92400e; margin-bottom: 0.5rem;">🛡️ Chat ist moderiert</h4>
+                        <p style="color: #92400e; margin: 0;">Der Chat wurde vom Admin gesperrt. Nachrichten können aktuell nicht gesendet werden.</p>
+                    </div>
+                    
+                    <div class="chat-input-container" id="mainChatInput">
+                        <input type="text" class="chat-input" id="chatInput" placeholder="Nachricht eingeben..." maxlength="200">
+                        <button class="chat-image-upload" onclick="selectChatImage()">📷</button>
+                        <button class="chat-send" onclick="sendMessage()">Senden</button>
                     </div>
                 </div>
-                <div class="chat-input-container">
-                    <input type="text" class="chat-input" id="chatInput" placeholder="Nachricht eingeben..." maxlength="200">
-                    <button class="chat-image-upload" onclick="selectChatImage()">📷</button>
-                    <button class="chat-send" onclick="sendMessage()">Senden</button>
+
+                <!-- Team Chat -->
+                <div id="teamChatContainer" class="chat-section" style="display: none;">
+                    <div class="chat-container" id="teamChatMessages">
+                        <div class="chat-message system">
+                            <strong>Team-Chat:</strong> Hier könnt ihr euch als Team koordinieren! 👥<br>
+                            <small>Nur euer Team kann diese Nachrichten sehen.</small>
+                            <span class="timestamp">jetzt</span>
+                        </div>
+                    </div>
+                    
+                    <div class="chat-input-container" id="teamChatInput">
+                        <input type="text" class="chat-input" id="teamChatInputField" placeholder="Team-Nachricht eingeben..." maxlength="200">
+                        <button class="chat-image-upload" onclick="selectTeamChatImage()">📷</button>
+                        <button class="chat-send" onclick="sendTeamMessage()">Senden</button>
+                    </div>
                 </div>
+
                 <input type="file" class="file-input" id="chatImageInput" accept="image/*" onchange="handleChatImageUpload(event)">
+                <input type="file" class="file-input" id="teamChatImageInput" accept="image/*" onchange="handleTeamChatImageUpload(event)">
+                
                 <div style="margin-top: 1rem; text-align: center; color: #6b7280; font-size: 0.9rem;">
                     💡 Nachrichten und Bilder werden live synchronisiert
                 </div>
@@ -1191,8 +1251,11 @@
                 connectionRetries: 0,
                 maxRetries: 3,
                 chatModeration: false,
+                chatBlocked: false, // NEW: Chat gesperrt durch Moderation
                 unreadMessages: 0,
-                currentTab: 'overview'
+                unreadTeamMessages: 0, // NEW: Team-Chat ungelesen
+                currentTab: 'overview',
+                currentChatTab: 'main' // NEW: main oder team
             },
             
             stations: [
@@ -1407,6 +1470,36 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     console.error('Chat sync error:', error);
                 });
 
+                // Listen to team chat messages (only if user has selected a team)
+                let teamChatUnsubscribe = null;
+                if (tourApp.state.selectedTeam) {
+                    const teamChatRef = db.collection('tours').doc(tourApp.state.tourId).collection('teamChat').doc(tourApp.state.selectedTeam).collection('messages');
+                    teamChatUnsubscribe = teamChatRef.orderBy('timestamp', 'asc').onSnapshot((snapshot) => {
+                        snapshot.docChanges().forEach((change) => {
+                            if (change.type === 'added') {
+                                const messageData = change.doc.data();
+                                if (messageData.userName !== tourApp.state.userName) {
+                                    addTeamChatMessage(messageData, false);
+                                }
+                            }
+                        });
+                    }, (error) => {
+                        console.error('Team chat sync error:', error);
+                    });
+                }
+
+                // Listen to moderation status
+                const moderationRef = db.collection('tours').doc(tourApp.state.tourId).collection('settings').doc('moderation');
+                const moderationUnsubscribe = moderationRef.onSnapshot((doc) => {
+                    if (doc.exists) {
+                        const moderationData = doc.data();
+                        tourApp.state.chatBlocked = moderationData.chatBlocked || false;
+                        updateChatModeration();
+                    }
+                }, (error) => {
+                    console.error('Moderation sync error:', error);
+                });
+
                 // Listen to scores
                 const scoresRef = db.collection('tours').doc(tourApp.state.tourId).collection('scores');
                 const scoresUnsubscribe = scoresRef.onSnapshot(() => {
@@ -1469,7 +1562,11 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     console.error('Announcements sync error:', error);
                 });
 
-                tourApp.state.syncListeners.push(chatUnsubscribe, scoresUnsubscribe, stationsUnsubscribe, announcementsUnsubscribe);
+                const syncListeners = [chatUnsubscribe, scoresUnsubscribe, stationsUnsubscribe, announcementsUnsubscribe, moderationUnsubscribe];
+                if (teamChatUnsubscribe) {
+                    syncListeners.push(teamChatUnsubscribe);
+                }
+                tourApp.state.syncListeners = syncListeners;
             } catch (error) {
                 console.error('Error setting up real-time sync:', error);
             }
@@ -1660,9 +1757,15 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             }
         }
 
-        // Chat Functions - ENHANCED with Images
+        // Chat Functions - ENHANCED with Team Chat and Moderation
         async function sendMessage() {
             try {
+                // Check if chat is blocked by moderation
+                if (tourApp.state.chatBlocked && !tourApp.state.isAdmin) {
+                    showNotification('Chat ist vom Admin gesperrt! 🛡️', 'warning');
+                    return;
+                }
+
                 const input = document.getElementById('chatInput');
                 if (!input) return;
                 
@@ -1698,6 +1801,52 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             }
         }
 
+        async function sendTeamMessage() {
+            try {
+                if (!tourApp.state.selectedTeam) {
+                    showNotification('Du musst erst einem Team beitreten!', 'error');
+                    return;
+                }
+
+                const input = document.getElementById('teamChatInputField');
+                if (!input) return;
+                
+                const message = input.value.trim();
+                if (message) {
+                    const messageData = {
+                        userName: tourApp.state.userName,
+                        message: message,
+                        timestamp: firebase.firestore ? firebase.firestore.FieldValue.serverTimestamp() : Date.now(),
+                        tourId: tourApp.state.tourId,
+                        teamId: tourApp.state.selectedTeam,
+                        type: 'text'
+                    };
+                    
+                    addTeamChatMessage(messageData, true);
+                    
+                    if (tourApp.state.isFirebaseConnected && tourApp.state.tourId) {
+                        await db.collection('tours').doc(tourApp.state.tourId)
+                            .collection('teamChat').doc(tourApp.state.selectedTeam)
+                            .collection('messages').doc(Date.now().toString())
+                            .set(messageData);
+                    } else {
+                        const teamChatKey = `teamChat_${tourApp.state.tourId}_${tourApp.state.selectedTeam}`;
+                        const teamChatMessages = JSON.parse(localStorage.getItem(teamChatKey) || '[]');
+                        teamChatMessages.push(messageData);
+                        if (teamChatMessages.length > 50) {
+                            teamChatMessages.splice(0, teamChatMessages.length - 50);
+                        }
+                        localStorage.setItem(teamChatKey, JSON.stringify(teamChatMessages));
+                    }
+                    
+                    input.value = '';
+                }
+            } catch (error) {
+                console.error('Error sending team message:', error);
+                showNotification('Fehler beim Senden der Team-Nachricht', 'error');
+            }
+        }
+
         function selectChatImage() {
             const input = document.getElementById('chatImageInput');
             if (input) {
@@ -1705,12 +1854,24 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             }
         }
 
+        function selectTeamChatImage() {
+            const input = document.getElementById('teamChatImageInput');
+            if (input) {
+                input.click();
+            }
+        }
+
         async function handleChatImageUpload(event) {
             try {
+                // Check if chat is blocked by moderation
+                if (tourApp.state.chatBlocked && !tourApp.state.isAdmin) {
+                    showNotification('Chat ist vom Admin gesperrt! 🛡️', 'warning');
+                    return;
+                }
+
                 const file = event.target.files[0];
                 if (!file) return;
                 
-                // Compress image for chat
                 const compressedImage = await compressImage(file, 0.6, 600, 400);
                 
                 const messageData = {
@@ -1739,6 +1900,51 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             } catch (error) {
                 console.error('Error uploading chat image:', error);
                 showNotification('Fehler beim Hochladen des Bildes', 'error');
+            }
+        }
+
+        async function handleTeamChatImageUpload(event) {
+            try {
+                if (!tourApp.state.selectedTeam) {
+                    showNotification('Du musst erst einem Team beitreten!', 'error');
+                    return;
+                }
+
+                const file = event.target.files[0];
+                if (!file) return;
+                
+                const compressedImage = await compressImage(file, 0.6, 600, 400);
+                
+                const messageData = {
+                    userName: tourApp.state.userName,
+                    image: compressedImage,
+                    timestamp: firebase.firestore ? firebase.firestore.FieldValue.serverTimestamp() : Date.now(),
+                    tourId: tourApp.state.tourId,
+                    teamId: tourApp.state.selectedTeam,
+                    type: 'image'
+                };
+                
+                addTeamChatMessage(messageData, true);
+                
+                if (tourApp.state.isFirebaseConnected && tourApp.state.tourId) {
+                    await db.collection('tours').doc(tourApp.state.tourId)
+                        .collection('teamChat').doc(tourApp.state.selectedTeam)
+                        .collection('messages').doc(Date.now().toString())
+                        .set(messageData);
+                } else {
+                    const teamChatKey = `teamChat_${tourApp.state.tourId}_${tourApp.state.selectedTeam}`;
+                    const teamChatMessages = JSON.parse(localStorage.getItem(teamChatKey) || '[]');
+                    teamChatMessages.push(messageData);
+                    if (teamChatMessages.length > 50) {
+                        teamChatMessages.splice(0, teamChatMessages.length - 50);
+                    }
+                    localStorage.setItem(teamChatKey, JSON.stringify(teamChatMessages));
+                }
+                
+                event.target.value = '';
+            } catch (error) {
+                console.error('Error uploading team chat image:', error);
+                showNotification('Fehler beim Hochladen des Team-Bildes', 'error');
             }
         }
 
@@ -1823,10 +2029,89 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                         ? `📷 ${messageData.userName} hat ein Bild geteilt`
                         : `💬 ${messageData.userName}: ${messageData.message.substring(0, 30)}${messageData.message.length > 30 ? '...' : ''}`;
                         
-                    showClickableNotification(notificationText);
+                    showClickableNotification(notificationText, 'chat');
+                } else if (!isOwn && tourApp.state.currentTab === 'chat' && tourApp.state.currentChatTab !== 'main') {
+                    // User is in chat but not on main tab
+                    tourApp.state.unreadMessages++;
+                    updateChatNotification();
                 }
             } catch (error) {
                 console.error('Error adding chat message:', error);
+            }
+        }
+
+        function addTeamChatMessage(messageData, isOwn = false) {
+            try {
+                const teamChatContainer = document.getElementById('teamChatMessages');
+                if (!teamChatContainer) return;
+                
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `chat-message ${isOwn ? 'own' : ''}`;
+                
+                const timeStr = new Date().toLocaleTimeString('de-DE', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                let messageContent = '';
+                
+                if (messageData.type === 'image') {
+                    messageContent = `
+                        <strong>${messageData.userName}:</strong> hat ein Team-Bild geteilt<br>
+                        <div class="chat-image-container">
+                            <img src="${messageData.image}" class="chat-image" onclick="event.stopPropagation(); showImageModal('${messageData.image}', 'Team Chat Bild', 'Von ${messageData.userName} geteilt')" alt="Team Chat Bild">
+                        </div>
+                        <span class="timestamp">${timeStr}</span>
+                    `;
+                } else {
+                    messageContent = `
+                        <strong>${messageData.userName}:</strong> ${messageData.message}
+                        <span class="timestamp">${timeStr}</span>
+                    `;
+                }
+
+                messageDiv.innerHTML = messageContent;
+                
+                teamChatContainer.appendChild(messageDiv);
+                teamChatContainer.scrollTop = teamChatContainer.scrollHeight;
+                
+                if (!isOwn && (tourApp.state.currentTab !== 'chat' || tourApp.state.currentChatTab !== 'team')) {
+                    tourApp.state.unreadTeamMessages++;
+                    updateTeamChatNotification();
+                    
+                    const notificationText = messageData.type === 'image' 
+                        ? `📷 ${messageData.userName} hat ein Team-Bild geteilt`
+                        : `👥 ${messageData.userName}: ${messageData.message.substring(0, 30)}${messageData.message.length > 30 ? '...' : ''}`;
+                        
+                    showClickableNotification(notificationText, 'team');
+                }
+            } catch (error) {
+                console.error('Error adding team chat message:', error);
+            }
+        }
+
+        function showChatTab(tabType, tabElement) {
+            try {
+                tourApp.state.currentChatTab = tabType;
+                
+                // Update tab appearance
+                document.querySelectorAll('.chat-sub-tab').forEach(tab => tab.classList.remove('active'));
+                if (tabElement) {
+                    tabElement.classList.add('active');
+                }
+
+                // Show/hide chat sections
+                document.querySelectorAll('.chat-section').forEach(section => section.classList.remove('active'));
+                
+                if (tabType === 'main') {
+                    document.getElementById('mainChatContainer').classList.add('active');
+                    clearChatNotification();
+                } else if (tabType === 'team') {
+                    document.getElementById('teamChatContainer').classList.add('active');
+                    clearTeamChatNotification();
+                }
+            } catch (error) {
+                console.error('Error showing chat tab:', error);
             }
         }
 
@@ -1843,6 +2128,23 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             }
         }
 
+        function updateTeamChatNotification() {
+            const teamChatTab = document.getElementById('teamChatTab');
+            if (teamChatTab && tourApp.state.unreadTeamMessages > 0) {
+                let notification = teamChatTab.querySelector('.tab-notification');
+                if (!notification) {
+                    notification = document.createElement('div');
+                    notification.className = 'tab-notification';
+                    notification.style.position = 'absolute';
+                    notification.style.top = '5px';
+                    notification.style.right = '8px';
+                    teamChatTab.style.position = 'relative';
+                    teamChatTab.appendChild(notification);
+                }
+                notification.textContent = tourApp.state.unreadTeamMessages > 9 ? '9+' : tourApp.state.unreadTeamMessages;
+            }
+        }
+
         function clearChatNotification() {
             tourApp.state.unreadMessages = 0;
             const chatTab = document.querySelector('.tab[onclick*="chat"]');
@@ -1854,7 +2156,18 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             }
         }
 
-        function showClickableNotification(message) {
+        function clearTeamChatNotification() {
+            tourApp.state.unreadTeamMessages = 0;
+            const teamChatTab = document.getElementById('teamChatTab');
+            if (teamChatTab) {
+                const notification = teamChatTab.querySelector('.tab-notification');
+                if (notification) {
+                    notification.remove();
+                }
+            }
+        }
+
+        function showClickableNotification(message, targetTab = 'chat') {
             try {
                 const notification = document.createElement('div');
                 notification.className = 'notification clickable';
@@ -1865,6 +2178,9 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 
                 notification.onclick = () => {
                     showTab('chat', document.querySelector('.tab[onclick*="chat"]'));
+                    if (targetTab === 'team') {
+                        setTimeout(() => showChatTab('team', document.getElementById('teamChatTab')), 100);
+                    }
                     notification.remove();
                 };
                 
@@ -1877,6 +2193,44 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 }, 5000);
             } catch (error) {
                 console.error('Error showing clickable notification:', error);
+            }
+        }
+
+        function updateChatModeration() {
+            try {
+                const moderationNotice = document.getElementById('chatModerationNotice');
+                const mainChatInput = document.getElementById('mainChatInput');
+                const teamChatInput = document.getElementById('teamChatInput');
+                
+                if (tourApp.state.chatBlocked && !tourApp.state.isAdmin) {
+                    // Show moderation notice and disable inputs
+                    if (moderationNotice) {
+                        moderationNotice.classList.remove('hidden');
+                    }
+                    if (mainChatInput) {
+                        mainChatInput.style.opacity = '0.5';
+                        mainChatInput.style.pointerEvents = 'none';
+                    }
+                    if (teamChatInput) {
+                        teamChatInput.style.opacity = '0.5';
+                        teamChatInput.style.pointerEvents = 'none';
+                    }
+                } else {
+                    // Hide notice and enable inputs
+                    if (moderationNotice) {
+                        moderationNotice.classList.add('hidden');
+                    }
+                    if (mainChatInput) {
+                        mainChatInput.style.opacity = '1';
+                        mainChatInput.style.pointerEvents = 'all';
+                    }
+                    if (teamChatInput) {
+                        teamChatInput.style.opacity = '1';
+                        teamChatInput.style.pointerEvents = 'all';
+                    }
+                }
+            } catch (error) {
+                console.error('Error updating chat moderation:', error);
             }
         }
 
@@ -1897,6 +2251,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
 
         async function loadChatHistory() {
             try {
+                // Load main chat
                 if (tourApp.state.isFirebaseConnected && tourApp.state.tourId) {
                     const messages = await getFromFirebase('chat');
                     messages.forEach(msg => {
@@ -1910,6 +2265,32 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     chatMessages.forEach(msg => {
                         addChatMessage(msg, msg.userName === tourApp.state.userName);
                     });
+                }
+
+                // Load team chat if user has selected a team
+                if (tourApp.state.selectedTeam) {
+                    if (tourApp.state.isFirebaseConnected && tourApp.state.tourId) {
+                        try {
+                            const teamSnapshot = await db.collection('tours').doc(tourApp.state.tourId)
+                                .collection('teamChat').doc(tourApp.state.selectedTeam)
+                                .collection('messages').orderBy('timestamp', 'asc').get();
+                            
+                            teamSnapshot.docs.forEach(doc => {
+                                const msg = doc.data();
+                                if (msg.userName !== tourApp.state.userName) {
+                                    addTeamChatMessage(msg, false);
+                                }
+                            });
+                        } catch (error) {
+                            console.log('No team chat history found');
+                        }
+                    } else {
+                        const teamChatKey = `teamChat_${tourApp.state.tourId}_${tourApp.state.selectedTeam}`;
+                        const teamChatMessages = JSON.parse(localStorage.getItem(teamChatKey) || '[]');
+                        teamChatMessages.forEach(msg => {
+                            addTeamChatMessage(msg, msg.userName === tourApp.state.userName);
+                        });
+                    }
                 }
             } catch (error) {
                 console.error('Error loading chat history:', error);
@@ -2100,9 +2481,24 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                             batch.delete(doc.ref);
                         });
                         await batch.commit();
+
+                        // Also clear all team chats
+                        const teamChatRef = db.collection('tours').doc(tourApp.state.tourId).collection('teamChat');
+                        const teamSnapshot = await teamChatRef.get();
+                        
+                        for (const teamDoc of teamSnapshot.docs) {
+                            const messagesRef = teamDoc.ref.collection('messages');
+                            const messagesSnapshot = await messagesRef.get();
+                            
+                            const teamBatch = db.batch();
+                            messagesSnapshot.docs.forEach((messageDoc) => {
+                                teamBatch.delete(messageDoc.ref);
+                            });
+                            await teamBatch.commit();
+                        }
                     }
                     
-                    // Clear local chat for all users
+                    // Clear local chat DOM for immediate feedback
                     const chatContainer = document.getElementById('chatContainer');
                     if (chatContainer) {
                         chatContainer.innerHTML = `
@@ -2113,17 +2509,35 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                             </div>
                         `;
                     }
+
+                    // Clear team chat DOM
+                    const teamChatContainer = document.getElementById('teamChatMessages');
+                    if (teamChatContainer) {
+                        teamChatContainer.innerHTML = `
+                            <div class="chat-message system">
+                                <strong>Admin:</strong> Team-Chat wurde geleert! 🗑️<br>
+                                <small>Alle Team-Nachrichten wurden entfernt</small>
+                                <span class="timestamp">jetzt</span>
+                            </div>
+                        `;
+                    }
                     
                     // Clear localStorage for all tour participants
                     localStorage.removeItem(`chat_${tourApp.state.tourId}`);
+                    // Clear all team chats from localStorage
+                    Object.keys(localStorage).forEach(key => {
+                        if (key.startsWith(`teamChat_${tourApp.state.tourId}_`)) {
+                            localStorage.removeItem(key);
+                        }
+                    });
                     
-                    showNotification('Chat komplett geleert für alle Teilnehmer! 🗑️');
+                    showNotification('Alle Chats komplett geleert für alle Teilnehmer! 🗑️');
                     
                     // Send notification to all users
                     if (tourApp.state.isFirebaseConnected) {
                         await saveToFirebase('chat', Date.now().toString(), {
                             userName: '🔊 System',
-                            message: 'Chat wurde vom Admin geleert',
+                            message: 'Alle Chats wurden vom Admin geleert',
                             timestamp: firebase.firestore.FieldValue.serverTimestamp(),
                             type: 'system'
                         });
@@ -2132,6 +2546,45 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             } catch (error) {
                 console.error('Error clearing all chat messages:', error);
                 showNotification('Fehler beim Löschen der Nachrichten', 'error');
+            }
+        }
+
+        async function toggleChatModeration() {
+            try {
+                tourApp.state.chatModeration = !tourApp.state.chatModeration;
+                tourApp.state.chatBlocked = tourApp.state.chatModeration; // Set blocked status
+                
+                const textEl = document.getElementById('chatModerationText');
+                
+                if (textEl) {
+                    textEl.textContent = tourApp.state.chatModeration ? 
+                        '🔓 Chat freigeben' : 
+                        '🛡️ Chat sperren';
+                }
+
+                // Save moderation status to Firebase to sync with all users
+                if (tourApp.state.isFirebaseConnected && tourApp.state.tourId) {
+                    await db.collection('tours').doc(tourApp.state.tourId)
+                        .collection('settings').doc('moderation')
+                        .set({
+                            chatBlocked: tourApp.state.chatBlocked,
+                            moderatedBy: tourApp.state.userName,
+                            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                }
+
+                // Update local moderation UI
+                updateChatModeration();
+                
+                showNotification(tourApp.state.chatModeration ? 
+                    'Chat für alle gesperrt! 🔒' : 
+                    'Chat für alle freigegeben! 🔓');
+                    
+                addSystemMessage(tourApp.state.chatModeration ? 
+                    'Chat wurde vom Admin gesperrt 🔒' : 
+                    'Chat wurde vom Admin freigegeben 🔓');
+            } catch (error) {
+                console.error('Error toggling chat moderation:', error);
             }
         }
 
@@ -2366,29 +2819,6 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             }
         }
 
-        function toggleChatModeration() {
-            try {
-                tourApp.state.chatModeration = !tourApp.state.chatModeration;
-                const textEl = document.getElementById('chatModerationText');
-                
-                if (textEl) {
-                    textEl.textContent = tourApp.state.chatModeration ? 
-                        '🛡️ Moderation aktiv' : 
-                        '🛡️ Moderations-Modus aktivieren';
-                }
-                
-                showNotification(tourApp.state.chatModeration ? 
-                    'Chat-Moderation aktiviert' : 
-                    'Chat-Moderation deaktiviert');
-                    
-                addSystemMessage(tourApp.state.chatModeration ? 
-                    'Chat wird jetzt moderiert 🛡️' : 
-                    'Chat-Moderation deaktiviert 📢');
-            } catch (error) {
-                console.error('Error toggling chat moderation:', error);
-            }
-        }
-
         function refreshAdminStats() {
             try {
                 const stats = {
@@ -2426,7 +2856,22 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 }
 
                 if (tabName === 'chat') {
-                    clearChatNotification();
+                    // Clear notifications based on current chat tab
+                    if (tourApp.state.currentChatTab === 'main') {
+                        clearChatNotification();
+                    } else {
+                        clearTeamChatNotification();
+                    }
+                    
+                    // Add Enter key listener for team chat
+                    const teamChatInput = document.getElementById('teamChatInputField');
+                    if (teamChatInput) {
+                        teamChatInput.addEventListener('keypress', (e) => {
+                            if (e.key === 'Enter') {
+                                sendTeamMessage();
+                            }
+                        });
+                    }
                 }
 
                 if (tabName === 'map') {
@@ -2458,10 +2903,20 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 if (selector) {
                     selector.style.display = 'none';
                 }
+
+                // Enable team chat tab
+                const teamChatTab = document.getElementById('teamChatTab');
+                if (teamChatTab) {
+                    teamChatTab.style.display = 'block';
+                    teamChatTab.innerHTML = `👥 ${teamName.split(' ')[1]}-Chat`;
+                }
                 
                 showNotification('Team ausgewählt! 🎉');
                 saveState();
                 addSystemMessage(`${tourApp.state.userName} ist ${teamName} beigetreten! 🎊`);
+
+                // Load team chat history
+                setTimeout(() => loadChatHistory(), 500);
             } catch (error) {
                 console.error('Error selecting team:', error);
             }
