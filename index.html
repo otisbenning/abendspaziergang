@@ -2740,11 +2740,26 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
 
         function showWelcomeModal() {
             try {
-                // Don't show if already shown in this session
+                // Only check sessionStorage if user has already set a custom name
+                const hasSetCustomName = localStorage.getItem('hasSetCustomName');
                 const welcomeShown = sessionStorage.getItem('welcomeShown');
-                console.log('Welcome modal check - welcomeShown:', welcomeShown);
-                if (welcomeShown) {
-                    console.log('Welcome modal blocked by sessionStorage');
+
+                console.log('Welcome modal detailed check:', {
+                    hasSetCustomName: hasSetCustomName,
+                    welcomeShown: welcomeShown,
+                    userName: tourApp.state.userName,
+                    startsWithTourist: tourApp.state.userName.startsWith('Tourist_')
+                });
+
+                // Don't show if user has already set a custom name permanently
+                if (hasSetCustomName === 'true') {
+                    console.log('Welcome modal blocked - user has set custom name');
+                    return;
+                }
+
+                // Don't show if already shown in this session AND user hasn't changed
+                if (welcomeShown && tourApp.state.userName.startsWith('Tourist_')) {
+                    console.log('Welcome modal blocked - already shown this session');
                     return;
                 }
                 
@@ -2809,9 +2824,8 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     }
                 }, 100);
                 
-                // Mark as shown in this session
-                sessionStorage.setItem('welcomeShown', 'true');
-                console.log('Welcome modal marked as shown');
+                // Only mark as shown if we actually showed it
+                console.log('Welcome modal displayed successfully');
                 
             } catch (error) {
                 console.error('Error showing welcome modal:', error);
@@ -2869,10 +2883,11 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             try {
                 const modal = document.querySelector('.admin-popup-overlay');
                 if (modal) {
-                    // Mark that user has seen the welcome modal (even if they didn't set a name)
-                    localStorage.setItem('hasSetCustomName', 'true');
                     modal.remove();
                 }
+                // Mark as shown when closed
+                sessionStorage.setItem('welcomeShown', 'true');
+                console.log('Welcome modal closed and marked as shown');
             } catch (error) {
                 console.error('Error closing welcome modal:', error);
             }
