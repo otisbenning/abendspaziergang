@@ -1778,6 +1778,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                         snapshot.docChanges().forEach((change) => {
                             if (change.type === 'added') {
                                 const messageData = change.doc.data();
+                                // Only show messages from other users
                                 if (messageData.userName !== tourApp.state.userName) {
                                     addTeamChatMessage(messageData, false);
                                 }
@@ -1799,6 +1800,32 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                         console.error('Team chat sync error:', error);
                     });
                 }
+
+                // Listen to team name changes
+                const teamNamesRef = db.collection('tours').doc(tourApp.state.tourId).collection('teamNameChanges');
+                const teamNamesUnsubscribe = teamNamesRef.onSnapshot((snapshot) => {
+                    snapshot.docChanges().forEach((change) => {
+                        if (change.type === 'added') {
+                            const changeData = change.doc.data();
+                            if (changeData.changedBy !== tourApp.state.userName) {
+                                // Update local team names
+                                teamNames[changeData.teamId] = changeData.newName;
+                                
+                                // Update UI if this affects current user's team
+                                if (tourApp.state.selectedTeam === changeData.teamId) {
+                                    tourApp.state.teamName = changeData.newName;
+                                    updateCurrentTeamDisplay();
+                                    updateTeamChatTab();
+                                }
+                                
+                                generateTeamOptions();
+                                showNotification(`Team "${changeData.oldName}" wurde zu "${changeData.newName}" umbenannt!`, 'info');
+                            }
+                        }
+                    });
+                }, (error) => {
+                    console.error('Team names sync error:', error);
+                });
 
                 // Listen to moderation status - FIXED REAL-TIME SYNC
                 const moderationRef = db.collection('tours').doc(tourApp.state.tourId).collection('settings').doc('moderation');
@@ -2032,6 +2059,39 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 }, (error) => {
                     console.error('Positions sync error:', error);
                 });
+
+                // Listen to team assignments
+                const teamAssignmentsRef = db.collection('tours').doc(tourApp.state.tourId).collection('teamAssignments');
+                const teamAssignmentsUnsubscribe = teamAssignmentsRef.onSnapshot((snapshot) => {
+                    snapshot.docChanges().forEach((change) => {
+                        if (change.type === 'added') {
+                            const assignmentData = change.doc.data();
+                            if (assignmentData.assignedBy !== tourApp.state.userName) {
+                                // Auto-assignment happened from another admin
+                                teamMembers = assignmentData.assignments;
+                                
+                                // Update current user's team
+                                const currentUserTeam = Object.keys(teamMembers).find(teamId => 
+                                    teamMembers[teamId].some(member => member.userName === tourApp.state.userName)
+                                );
+                                
+                                if (currentUserTeam) {
+                                    tourApp.state.selectedTeam = currentUserTeam;
+                                    tourApp.state.teamName = teamNames[currentUserTeam];
+                                    updateCurrentTeamDisplay();
+                                    updateTeamChatTab();
+                                }
+                                
+                                generateTeamOptions();
+                                showNotification(`Admin hat Teams neu verteilt! Du bist jetzt in ${teamNames[currentUserTeam]}`, 'info');
+                            }
+                        }
+                    });
+                }, (error) => {
+                    console.error('Team assignments sync error:', error);
+                });
+
+                allSyncListeners.push(teamNamesUnsubscribe, teamAssignmentsUnsubscribe);
 
                 allSyncListeners.push(adminChatUnsubscribe, positionsUnsubscribe);
                 tourApp.state.syncListeners = allSyncListeners;
@@ -2330,13 +2390,22 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 teamNames[tourApp.state.selectedTeam] = newName;
                 tourApp.state.teamName = newName;
                 
-                // Save to Firebase
+                // Save to Firebase with proper synchronization
                 if (tourApp.state.isFirebaseConnected && tourApp.state.tourId) {
                     await saveToFirebase('teams', tourApp.state.selectedTeam, {
                         id: tourApp.state.selectedTeam,
                         name: newName,
                         updatedBy: tourApp.state.userName,
                         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    
+                    // Broadcast team name change to all users
+                    await saveToFirebase('teamNameChanges', Date.now().toString(), {
+                        teamId: tourApp.state.selectedTeam,
+                        oldName: oldName,
+                        newName: newName,
+                        changedBy: tourApp.state.userName,
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
                     });
                 }
                 
@@ -2522,6 +2591,16 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                                 });
                             }
                         }
+                        
+                        // Broadcast team assignment event to all users
+                        await saveToFirebase('teamAssignments', Date.now().toString(), {
+                            type: 'auto-assignment',
+                            assignedBy: tourApp.state.userName,
+                            userCount: activeUsers.length,
+                            assignments: teamMembers,
+                            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        
                     } catch (firebaseError) {
                         console.error('Firebase save error during auto-assignment:', firebaseError);
                         showNotification('Teams verteilt, aber Synchronisation mit Server fehlgeschlagen', 'warning');
@@ -2574,7 +2653,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 console.error('Error auto-assigning teams:', error);
                 showNotification('Fehler bei der automatischen Team-Verteilung: ' + error.message, 'error');
             }
-        }    
+        }   
 
         // App Initialization
         function initApp() {
@@ -5543,31 +5622,45 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                         tourId: tourApp.state.tourId,
                         type: 'admin-direct',
                         isFromAdmin: tourApp.state.isAdmin,
-                        targetUser: tourApp.state.isAdmin ? currentAdminChatUser : 'admin'
+                        targetUser: tourApp.state.isAdmin ? currentAdminChatUser || 'all' : 'admin'
                     };
                     
                     addAdminChatMessage(messageData, true, tourApp.state.isAdmin ? currentAdminChatUser : 'admin');
                     
                     if (tourApp.state.isFirebaseConnected && tourApp.state.tourId) {
-                        // Create channel for user if it doesn't exist
-                        const channelName = tourApp.state.isAdmin ? 
-                            `user_${currentAdminChatUser || 'unknown'}` : 
-                            `user_${tourApp.state.userName}`;
-                        
-                        // Save to specific user channel
-                        await db.collection('tours').doc(tourApp.state.tourId)
-                            .collection('adminDirectMessages').doc(channelName)
-                            .collection('messages').doc(Date.now().toString())
-                            .set(messageData);
-                        
-                        // Also ensure the channel document exists
-                        await db.collection('tours').doc(tourApp.state.tourId)
-                            .collection('adminDirectMessages').doc(channelName)
-                            .set({
-                                userName: tourApp.state.isAdmin ? currentAdminChatUser : tourApp.state.userName,
-                                lastActivity: firebase.firestore.FieldValue.serverTimestamp(),
-                                isActive: true
-                            }, { merge: true });
+                        if (tourApp.state.isAdmin && currentAdminChatUser) {
+                            // Admin sending to specific user
+                            const channelName = `user_${currentAdminChatUser}`;
+                            await db.collection('tours').doc(tourApp.state.tourId)
+                                .collection('adminDirectMessages').doc(channelName)
+                                .collection('messages').doc(Date.now().toString())
+                                .set(messageData);
+                            
+                            // Ensure channel exists
+                            await db.collection('tours').doc(tourApp.state.tourId)
+                                .collection('adminDirectMessages').doc(channelName)
+                                .set({
+                                    userName: currentAdminChatUser,
+                                    lastActivity: firebase.firestore.FieldValue.serverTimestamp(),
+                                    isActive: true
+                                }, { merge: true });
+                        } else {
+                            // User sending to admin
+                            const channelName = `user_${tourApp.state.userName}`;
+                            await db.collection('tours').doc(tourApp.state.tourId)
+                                .collection('adminDirectMessages').doc(channelName)
+                                .collection('messages').doc(Date.now().toString())
+                                .set(messageData);
+                            
+                            // Ensure channel exists
+                            await db.collection('tours').doc(tourApp.state.tourId)
+                                .collection('adminDirectMessages').doc(channelName)
+                                .set({
+                                    userName: tourApp.state.userName,
+                                    lastActivity: firebase.firestore.FieldValue.serverTimestamp(),
+                                    isActive: true
+                                }, { merge: true });
+                        }
                     }
                     
                     input.value = '';
