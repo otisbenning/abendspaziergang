@@ -1697,9 +1697,9 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     console.error('Events sync error:', error);
                 });
 
-                const syncListeners = [chatUnsubscribe, scoresUnsubscribe, stationsUnsubscribe, announcementsUnsubscribe, moderationUnsubscribe, eventsUnsubscribe];
+                let allSyncListeners = [chatUnsubscribe, scoresUnsubscribe, stationsUnsubscribe, announcementsUnsubscribe, moderationUnsubscribe, eventsUnsubscribe];
                 if (teamChatUnsubscribe) {
-                    syncListeners.push(teamChatUnsubscribe);
+                    allSyncListeners.push(teamChatUnsubscribe);
                 }
                 // Listen to admin chat messages
                 const adminChatRef = db.collection('tours').doc(tourApp.state.tourId).collection('adminChat');
@@ -1734,11 +1734,8 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     console.error('Positions sync error:', error);
                 });
 
-                const syncListeners = [chatUnsubscribe, scoresUnsubscribe, stationsUnsubscribe, announcementsUnsubscribe, moderationUnsubscribe, eventsUnsubscribe, adminChatUnsubscribe, positionsUnsubscribe];
-                if (teamChatUnsubscribe) {
-                    syncListeners.push(teamChatUnsubscribe);
-                }
-                tourApp.state.syncListeners = syncListeners;
+                allSyncListeners.push(adminChatUnsubscribe, positionsUnsubscribe);
+                tourApp.state.syncListeners = allSyncListeners;
 
 
             } catch (error) {
