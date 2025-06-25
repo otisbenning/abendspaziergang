@@ -1526,38 +1526,53 @@
 
     <script>
         
-        // Global showTab function - MUSS ganz oben stehen für HTML onclick
+        // Global showTab function - Robuste Version ohne Fallback-Loops
         function showTab(tabName, tabElement) {
             try {
-                if (!tourApp || !tourApp.state) {
-                    // Fallback für frühe Aufrufe
-                    setTimeout(() => showTab(tabName, tabElement), 100);
-                    return;
+                // Initialize tourApp.state if needed
+                if (!window.tourApp) {
+                    window.tourApp = { state: { currentTab: 'overview' } };
+                }
+                if (!window.tourApp.state) {
+                    window.tourApp.state = { currentTab: 'overview' };
                 }
                 
-                tourApp.state.currentTab = tabName;
+                // Prevent rapid multiple calls
+                if (window.showTab.isChanging) {
+                    return;
+                }
+                window.showTab.isChanging = true;
                 
+                // Update current tab
+                window.tourApp.state.currentTab = tabName;
+                
+                // Update tab appearance
                 document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
                 if (tabElement) {
                     tabElement.classList.add('active');
                 }
 
-                document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-                const targetTab = document.getElementById(tabName === 'map' ? 'map-content' : tabName);
+                // Update content visibility
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.remove('active');
+                    content.style.display = 'none';
+                });
                 
+                const targetTab = document.getElementById(tabName === 'map' ? 'map-content' : tabName);
                 if (targetTab) {
                     targetTab.classList.add('active');
                     targetTab.style.display = 'block';
                 }
 
+                // Handle specific tab actions
                 if (tabName === 'chat') {
                     if (typeof clearChatNotification === 'function') clearChatNotification();
-                    if (tourApp.state.currentChatTab === 'team' && typeof clearTeamChatNotification === 'function') {
+                    if (window.tourApp.state.currentChatTab === 'team' && typeof clearTeamChatNotification === 'function') {
                         clearTeamChatNotification();
                     }
                 }
 
-                if (tabName === 'admin' && tourApp.state.isAdmin) {
+                if (tabName === 'admin' && window.tourApp.state && window.tourApp.state.isAdmin) {
                     setTimeout(() => {
                         if (typeof generateContentEditor === 'function') generateContentEditor();
                         if (typeof updateRanking === 'function') updateRanking();
@@ -1566,10 +1581,10 @@
 
                 if (tabName === 'map' || tabName === 'map-tab') {
                     setTimeout(() => {
-                        if (!tourApp.state.map && typeof initMap === 'function') {
+                        if (window.tourApp.state && window.tourApp.state.map) {
+                            window.tourApp.state.map.invalidateSize();
+                        } else if (typeof initMap === 'function') {
                             initMap();
-                        } else if (tourApp.state.map) {
-                            tourApp.state.map.invalidateSize();
                         }
                     }, 100);
                 }
@@ -1579,12 +1594,19 @@
                         if (typeof updateRanking === 'function') updateRanking();
                     }, 100);
                 }
+                
+                // Release lock after a short delay
+                setTimeout(() => {
+                    window.showTab.isChanging = false;
+                }, 50);
+                
             } catch (error) {
                 console.error('Error showing tab:', error);
+                window.showTab.isChanging = false;
             }
         }
 
-        // Sofort global verfügbar machen
+        // Make globally available immediately
         window.showTab = showTab;
     
 
@@ -11247,7 +11269,6 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
         window.saveTeamName = saveTeamName;
         window.closeTeamNameEditor = closeTeamNameEditor;
         window.autoAssignTeams = autoAssignTeams;
-        window.showTab = showTab;
         window.selectTeam = selectTeam;
         window.toggleTourChatLock = toggleTourChatLock;
 
