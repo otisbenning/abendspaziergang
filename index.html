@@ -5722,8 +5722,20 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                             
                         }, 3000); // Longer delay to show detailed analysis
                         
-                        addScore(finalScore);
-                        
+                        // NEUES LIMIT: Pro Station nur ein Foto bewerten  
+                        const existingPhoto = tourApp.state.uploadedPhotos.find(p => p.stationId === stationId);
+                        if (existingPhoto && existingPhoto.score) {
+                            // Ersetze den Score des vorherigen Fotos
+                            const oldScore = existingPhoto.score || 0;
+                            const scoreDifference = finalScore - oldScore;
+                            addScore(scoreDifference);
+                            
+                            showNotification(`📸 Foto ersetzt! Score-Änderung: ${scoreDifference > 0 ? '+' : ''}${scoreDifference}`, 'info');
+                        } else {
+                            // Neues Foto für diese Station
+                            addScore(finalScore);
+                        }
+
                         // Store comprehensive analysis data
                         const photoData = tourApp.state.uploadedPhotos.find(p => p.stationId === stationId);
                         if (photoData) {
@@ -5760,6 +5772,27 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     })
                     .catch(error => {
                         console.error('Error analyzing photo:', error);
+                        
+                        // Spezielle Behandlung für Benutzerabbruch
+                        if (error.message === 'USER_CANCELLED') {
+                            showNotification('Foto-Bewertung abgebrochen', 'info');
+                            
+                            // Reset UI
+                            const ratingDiv = document.getElementById(`rating-${stationId}`);
+                            if (ratingDiv) {
+                                ratingDiv.classList.add('hidden');
+                            }
+                            
+                            const uploadContent = document.getElementById(`upload-content-${stationId}`);
+                            if (uploadContent) {
+                                uploadContent.innerHTML = `
+                                    📷 Hier klicken zum Foto machen/auswählen<br>
+                                    <small>KI bewertet automatisch Qualität, Komposition & Kreativität</small>
+                                `;
+                            }
+                            return;
+                        }
+                        
                         // Enhanced fallback analysis
                         const fallbackAnalysis = createEnhancedFallbackAnalysis(stationId);
                         const { technicalScore, compositionScore, creativityScore, finalScore, feedback } = fallbackAnalysis;
@@ -5997,6 +6030,25 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                                 (creativityScore * 0.35)
                             );
                             
+                            // NEUE VALIDIERUNG: Prüfe auf irrelevante Motive
+                            const irrelevantCheck = isIrrelevantSubject(faceAnalysis, colorAnalysis, brightnessAnalysis, compositionAnalysis, objectAnalysis);
+                            if (irrelevantCheck.isIrrelevant) {
+                                // Zeige Bestätigungsdialog
+                                const recognitionResults = generateRecognitionSummary({
+                                    faces: faceAnalysis,
+                                    colors: colorAnalysis, 
+                                    objects: objectAnalysis,
+                                    scenery: sceneryAnalysis,
+                                    architecture: architectureAnalysis
+                                });
+                                
+                                const confirmed = await showRecognitionConfirmDialog(recognitionResults, irrelevantCheck.reason);
+                                if (!confirmed) {
+                                    reject(new Error('USER_CANCELLED'));
+                                    return;
+                                }
+                            }
+
                             // Generate comprehensive feedback with detailed recognition results
                             const detailedAnalysis = {
                                 brightness: brightnessAnalysis,
@@ -8010,26 +8062,48 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             return feedback;
         }
 
-        // NEUE FUNKTION: Erkennt irrelevante Motive
-        function isIrrelevantSubject(faces, colors) {
-            // Prüfe auf typische irrelevante Motive
+        // VERBESSERTE FUNKTION: Erkennt irrelevante Motive und typische Objekte
+        function isIrrelevantSubject(faces, colors, brightness, composition, objects = null) {
+            // Erweiterte Erkennung für verschiedene irrelevante Motive
             
-            // 1. Sehr geringer Skin-Anteil + keine erkannten Personen = wahrscheinlich Objekt/Gegenstand
-            if (faces.skinToneRatio < 0.005 && faces.estimatedPeopleCount === 0) {
-                return true; // Sehr wahrscheinlich ein Gegenstand wie Tastatur, Tisch, etc.
+            // 1. Tastatur-Erkennung: Wenig Personen + geringe Farbvielfalt + helle Bereiche
+            if (faces.estimatedPeopleCount === 0 && 
+                colors.diversity < 60 && 
+                brightness.average > 180 &&
+                faces.skinToneRatio < 0.005) {
+                return { isIrrelevant: true, reason: "Sieht aus wie eine Tastatur oder anderes technisches Gerät" };
             }
             
-            // 2. Sehr einheitliche Farben (wie bei Tastaturen, Wänden, etc.)
-            if (colors.diversity < 50 && !colors.isColorful) {
-                return true; // Wahrscheinlich einfarbiger Gegenstand
+            // 2. Tisch/Möbel-Erkennung: Einheitliche Farben + wenig Details
+            if (faces.skinToneRatio < 0.003 && 
+                faces.estimatedPeopleCount === 0 && 
+                colors.diversity < 40 && 
+                brightness.isOptimal === false) {
+                return { isIrrelevant: true, reason: "Sieht aus wie ein Möbelstück oder eine leere Fläche" };
             }
             
-            // 3. Kombination: Wenig Farbvielfalt + keine Personen + niedrige Skin-Ratio
-            if (colors.diversity < 80 && faces.estimatedPeopleCount === 0 && faces.skinToneRatio < 0.01) {
-                return true; // Sehr wahrscheinlich irrelevantes Motiv
+            // 3. Wand/Decke-Erkennung: Sehr einheitlich + wenig Interesse
+            if (colors.diversity < 30 && 
+                faces.estimatedPeopleCount === 0 &&
+                !colors.isColorful) {
+                return { isIrrelevant: true, reason: "Sieht aus wie eine Wand oder Decke" };
             }
             
-            return false; // Motiv scheint relevant zu sein
+            // 4. Handrücken/Finger-Erkennung: Viel Hautton aber keine Gesichter
+            if (faces.skinToneRatio > 0.4 && 
+                faces.estimatedPeopleCount === 0 && 
+                colors.diversity < 70) {
+                return { isIrrelevant: true, reason: "Sieht aus wie ein Handrücken oder Finger" };
+            }
+            
+            // 5. Zu nah/unscharfe Aufnahmen
+            if (colors.diversity < 50 && 
+                faces.estimatedPeopleCount === 0 &&
+                brightness.average < 50) {
+                return { isIrrelevant: true, reason: "Foto ist zu dunkel oder zu nah aufgenommen" };
+            }
+            
+            return { isIrrelevant: false, reason: null }; // Motiv scheint relevant zu sein
         }
 
         function generateDetailedFeedback(technicalScore, compositionScore, creativityScore, brightness, contrast, sharpness, colors, faces) {
@@ -8480,6 +8554,63 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             } catch (error) {
                 console.error('Error closing enhanced image modal:', error);
             }
+        }
+
+        // NEUE FUNKTION: Bestätigungsdialog für erkannte Objekte
+        function showRecognitionConfirmDialog(recognitionResults, warning = null) {
+            return new Promise((resolve) => {
+                const modal = document.createElement('div');
+                modal.className = 'image-modal';
+                modal.style.zIndex = '10000';
+                
+                const topResults = recognitionResults.slice(0, 5);
+                const warningHtml = warning ? `
+                    <div style="background: #fef3c7; border: 2px solid #f59e0b; border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
+                        <h4 style="color: #92400e; margin-bottom: 0.5rem;">⚠️ Mögliches Problem erkannt:</h4>
+                        <p style="color: #92400e; margin: 0;">${warning}</p>
+                    </div>
+                ` : '';
+                
+                modal.innerHTML = `
+                    <div style="background: white; border-radius: 16px; padding: 2rem; max-width: 500px; margin: 0 auto; position: relative; top: 10%; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+                        <h3 style="color: #1f2937; margin-bottom: 1rem; text-align: center;">🔍 KI-Erkennung bestätigen</h3>
+                        
+                        ${warningHtml}
+                        
+                        <div style="background: #f8fafc; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem;">
+                            <h4 style="color: #374151; margin-bottom: 0.5rem;">Die KI hat erkannt:</h4>
+                            <ul style="color: #6b7280; margin: 0; padding-left: 1.5rem;">
+                                ${topResults.map(result => `<li>${result}</li>`).join('')}
+                                ${recognitionResults.length > 5 ? `<li style="font-style: italic;">... und ${recognitionResults.length - 5} weitere Objekte</li>` : ''}
+                            </ul>
+                        </div>
+                        
+                        <p style="color: #6b7280; text-align: center; margin-bottom: 1.5rem;">
+                            Stimmt die Erkennung? Zeigt dein Foto wirklich diese Dinge?
+                        </p>
+                        
+                        <div style="display: flex; gap: 1rem; justify-content: center;">
+                            <button onclick="resolveRecognitionDialog(false)" 
+                                    style="background: #dc2626; color: white; border: none; padding: 0.8rem 1.5rem; border-radius: 8px; cursor: pointer; font-weight: bold;">
+                                ❌ Nein, stimmt nicht
+                            </button>
+                            <button onclick="resolveRecognitionDialog(true)" 
+                                    style="background: #059669; color: white; border: none; padding: 0.8rem 1.5rem; border-radius: 8px; cursor: pointer; font-weight: bold;">
+                                ✅ Ja, stimmt
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                // Globale Resolver-Funktion für die Buttons
+                window.resolveRecognitionDialog = (confirmed) => {
+                    modal.remove();
+                    delete window.resolveRecognitionDialog;
+                    resolve(confirmed);
+                };
+                
+                document.body.appendChild(modal);
+            });
         }
 
         function downloadImageFromModal(imageUrl, title) {
