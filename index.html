@@ -2504,7 +2504,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                             <button onclick="closeTeamNameEditor()" style="flex: 1; background: #6b7280; color: white; border: none; padding: 0.8rem; border-radius: 25px; font-weight: bold; cursor: pointer;">
                                 Abbrechen
                             </button>
-                            <button onclick="saveTeamName()" style="flex: 1; background: #dc2626; color: white; border: none; padding: 0.8rem; border-radius: 25px; font-weight: bold; cursor: pointer;">
+                            <button onclick="window.saveTeamName()" style="flex: 1; background: #dc2626; color: white; border: none; padding: 0.8rem; border-radius: 25px; font-weight: bold; cursor: pointer;">
                                 💾 Speichern
                             </button>
                         </div>
@@ -2540,7 +2540,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             }
         }
 
-        async function saveTeamName() {
+        function saveTeamName() {
             try {
                 const newNameInput = document.getElementById('newTeamName');
                 if (!newNameInput) return;
@@ -2557,7 +2557,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 
                 // Save to Firebase with proper synchronization
                 if (tourApp.state.isFirebaseConnected && tourApp.state.tourId) {
-                    await saveToFirebase('teams', tourApp.state.selectedTeam, {
+                    saveToFirebase('teams', tourApp.state.selectedTeam, {
                         id: tourApp.state.selectedTeam,
                         name: newName,
                         updatedBy: tourApp.state.userName,
@@ -2565,7 +2565,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     });
                     
                     // Broadcast team name change to all users
-                    await saveToFirebase('teamNameChanges', Date.now().toString(), {
+                    saveToFirebase('teamNameChanges', Date.now().toString(), {
                         teamId: tourApp.state.selectedTeam,
                         oldName: oldName,
                         newName: newName,
