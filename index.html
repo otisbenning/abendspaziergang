@@ -5650,25 +5650,36 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             const faceRegions = detectFaceRegions(pixels, width, height);
             const smileAnalysis = detectSmiles(pixels, width, height, faceRegions);
             
-            // Konservativere Personen-Schätzung
+            // Ultra-konservative Personen-Schätzung
             let estimatedPeopleCount = 0;
 
-            // Nur wenn wirklich starke Indikatoren vorliegen
-            if (skinToneAnalysis.skinToneRatio > 0.03) { // Höherer Threshold
-                estimatedPeopleCount = Math.max(
-                    Math.floor(skinToneAnalysis.clusters * 0.7), // Reduziere Cluster-Gewichtung
-                    faceRegions.length,
-                    Math.floor(skinToneAnalysis.skinToneRatio * 8) // Reduzierte Ratio-Gewichtung
-                );
+            // Sehr hohe Schwellenwerte
+            if (skinToneAnalysis.skinToneRatio > 0.05) {
+                // Gewichte face regions am höchsten (vertrauenswürdigster Indikator)
+                const faceBasedEstimate = faceRegions.length;
+                const clusterBasedEstimate = Math.floor(skinToneAnalysis.clusters * 0.4); // Stark reduziert
+                const ratioBasedEstimate = Math.floor(skinToneAnalysis.skinToneRatio * 5); // Stark reduziert
+                
+                estimatedPeopleCount = Math.max(faceBasedEstimate, clusterBasedEstimate, ratioBasedEstimate);
             }
 
-            // Viel konservativere Obergrenze
-            estimatedPeopleCount = Math.min(estimatedPeopleCount, 4);
+            // Portrait-spezifische Logik
+            const imageAspectRatio = width / height;
+            const isPortraitAspect = imageAspectRatio > 0.6 && imageAspectRatio < 1.4;
 
-            // Zusätzliche Validation: Bei wenig skin tone ratio maximal 1 Person
-            if (skinToneAnalysis.skinToneRatio < 0.08) {
+            if (isPortraitAspect && skinToneAnalysis.skinToneRatio < 0.2) {
+                // Portrait-Format mit wenig Skin = wahrscheinlich 1 Person
                 estimatedPeopleCount = Math.min(estimatedPeopleCount, 1);
-}
+            }
+
+            // Absolute Obergrenze basierend auf Skin-Ratio
+            if (skinToneAnalysis.skinToneRatio < 0.1) {
+                estimatedPeopleCount = Math.min(estimatedPeopleCount, 1);
+            } else if (skinToneAnalysis.skinToneRatio < 0.2) {
+                estimatedPeopleCount = Math.min(estimatedPeopleCount, 2);
+            } else {
+                estimatedPeopleCount = Math.min(estimatedPeopleCount, 3);
+            }
             
             // Estimate smiling people
             const estimatedSmilingPeople = Math.min(smileAnalysis.smilingRegions, estimatedPeopleCount);
@@ -5690,6 +5701,30 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             };
         }
 
+        function mergeNearbyRegions(regions, gridSize, width, height) {
+            if (regions.length <= 1) return regions.length;
+            
+            // Für Portraits: Wenn mehrere Cluster sehr nahe beieinander sind, 
+            // handelt es sich wahrscheinlich um Teile desselben Gesichts
+            
+            const imageArea = width * height;
+            const skinArea = regions.reduce((sum, region) => sum + region, 0);
+            const skinRatio = skinArea / imageArea;
+            
+            // Wenn wenig Skin-Anteil aber mehrere Cluster -> wahrscheinlich 1 Person
+            if (skinRatio < 0.15 && regions.length > 1) {
+                return 1; // Ein fragmentiertes Gesicht
+            }
+            
+            // Wenn moderate Skin-Menge -> maximal 2 Personen auch bei vielen Clustern
+            if (skinRatio < 0.25 && regions.length > 2) {
+                return Math.min(2, Math.ceil(regions.length / 3));
+            }
+            
+            // Ansonsten: Reduziere Cluster-Anzahl um Fragmentierung
+            return Math.ceil(regions.length * 0.6);
+        }
+
         function detectSkinTones(pixels, totalPixels, width, height) {
             let skinTonePixels = 0;
             let skinToneRegions = [];
@@ -5701,8 +5736,8 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             let darkSkinPixels = 0;
             let veryDarkSkinPixels = 0;
             
-            // 2D grid for spatial clustering
-            const gridSize = 20;
+            // Größeres Grid für weniger fragmentierte Cluster
+            const gridSize = 40; // Doppelt so groß
             const gridWidth = Math.ceil(width / gridSize);
             const gridHeight = Math.ceil(height / gridSize);
             const skinGrid = Array(gridHeight).fill().map(() => Array(gridWidth).fill(0));
@@ -5738,11 +5773,11 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             
             // Second pass: find connected regions (clusters)
             const visited = Array(gridHeight).fill().map(() => Array(gridWidth).fill(false));
-            const minRegionSize = 15; // Viel größere Mindestgröße für echte Personen
+            const minRegionSize = 35; // Noch viel größer - ein Gesicht muss wirklich groß sein
             
             for (let y = 0; y < gridHeight; y++) {
                 for (let x = 0; x < gridWidth; x++) {
-                    if (skinGrid[y][x] > 25 && !visited[y][x]) { // Höherer Threshold für skin presence
+                    if (skinGrid[y][x] > 50 && !visited[y][x]) { // Sehr hoher Threshold - nur dichte Skin-Bereiche
                         const regionSize = floodFillRegion(skinGrid, visited, x, y, gridWidth, gridHeight);
                         if (regionSize >= minRegionSize) {
                             skinToneRegions.push(regionSize * gridSize * gridSize); // Convert back to pixels
@@ -5751,6 +5786,9 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     }
                 }
             }
+
+            // NEUE Cluster-Merge-Logik: Nahe beieinander liegende Cluster zusammenfassen
+            clusters = mergeNearbyRegions(skinToneRegions, gridSize, width, height);
             
             // Calculate diversity metrics
             const diversityScore = calculateSkinToneDiversity(lightSkinPixels, mediumSkinPixels, darkSkinPixels, veryDarkSkinPixels);
