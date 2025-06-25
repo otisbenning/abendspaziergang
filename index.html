@@ -2114,7 +2114,12 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     snapshot.docChanges().forEach((change) => {
                         if (change.type === 'added') {
                             const assignmentData = change.doc.data();
-                            if (assignmentData.assignedBy !== tourApp.state.userName) {
+                            // Prevent infinite loop by checking both assignedBy and timestamp
+                            const assignmentTime = assignmentData.timestamp?.toMillis() || 0;
+                            const currentTime = Date.now();
+                            const timeDiff = Math.abs(currentTime - assignmentTime);
+                            
+                            if (assignmentData.assignedBy !== tourApp.state.userName && timeDiff < 30000) { // Only process recent assignments (< 30 seconds)
                                 // Auto-assignment happened from another admin
                                 teamMembers = assignmentData.assignments;
                                 
@@ -2447,6 +2452,15 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 `;
                 
                 document.body.appendChild(modal);
+
+                // Add escape key handler
+                const escapeHandler = (e) => {
+                    if (e.key === 'Escape') {
+                        modal.remove();
+                        document.removeEventListener('keydown', escapeHandler);
+                    }
+                };
+                document.addEventListener('keydown', escapeHandler);
                 
                 // Focus on input
                 setTimeout(() => {
@@ -2941,6 +2955,15 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 });
                 
                 document.body.appendChild(modal);
+
+                // Add escape key handler
+                const escapeHandler = (e) => {
+                    if (e.key === 'Escape') {
+                        modal.remove();
+                        document.removeEventListener('keydown', escapeHandler);
+                    }
+                };
+                document.addEventListener('keydown', escapeHandler);
                 
                 // Focus on input
                 setTimeout(() => {
@@ -4240,9 +4263,11 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     </div>
                 `;
                 
-                // Prevent closing by clicking background
+                // Allow closing by clicking background
                 overlay.addEventListener('click', (e) => {
-                    e.stopPropagation();
+                    if (e.target === overlay) {
+                        overlay.remove();
+                    }
                 });
                 
                 document.body.appendChild(overlay);
@@ -5138,6 +5163,12 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     ratingDiv.classList.remove('hidden');
                 }
                 
+                // Ensure station details stay open
+                const stationDetails = document.getElementById(`station-${stationId}`);
+                if (stationDetails && !stationDetails.classList.contains('active')) {
+                    stationDetails.classList.add('active');
+                }
+                
                 const baseScore = 50 + Math.random() * 40;
                 const technicalScore = 70 + Math.random() * 25;
                 const compositionScore = 60 + Math.random() * 30;
@@ -5399,6 +5430,12 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     tourApp.state.completedStations.push(stationId);
                     updateProgress();
                     showNotification('Station abgeschlossen! 🏁');
+                    
+                    // Keep station details open after completion
+                    const stationDetails = document.getElementById(`station-${stationId}`);
+                    if (stationDetails) {
+                        stationDetails.classList.add('active');
+                    }
                     
                     const completeBtn = document.getElementById(`complete-btn-${stationId}`);
                     if (completeBtn) {
@@ -5807,6 +5844,15 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 
                 modal.setAttribute('data-escape-handler', 'true');
                 document.body.appendChild(modal);
+
+                // Add escape key handler
+                const escapeHandler = (e) => {
+                    if (e.key === 'Escape') {
+                        modal.remove();
+                        document.removeEventListener('keydown', escapeHandler);
+                    }
+                };
+                document.addEventListener('keydown', escapeHandler);
                 
             } catch (error) {
                 console.error('Error playing audio:', error);
@@ -5920,6 +5966,16 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 
                 modal.setAttribute('data-escape-handler', 'true');
                 document.body.appendChild(modal);
+
+                // Add escape key handler
+                const escapeHandler = (e) => {
+                    if (e.key === 'Escape') {
+                        modal.remove();
+                        document.removeEventListener('keydown', escapeHandler);
+                    }
+                };
+                document.addEventListener('keydown', escapeHandler);
+
             } catch (error) {
                 console.error('Error showing image modal:', error);
             }
@@ -6800,12 +6856,12 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     tourId: tourApp.state.tourId,
                     stations: tourApp.stations.map(station => ({
                         ...station,
-                        // Ensure all data is included
+                        // Ensure all data is included with proper number conversion
                         id: station.id,
                         title: station.title,
                         subtitle: station.subtitle,
-                        lat: station.lat,
-                        lng: station.lng,
+                        lat: parseFloat(station.lat),
+                        lng: parseFloat(station.lng),
                         description: station.description,
                         photoChallenge: station.photoChallenge,
                         mainText: station.mainText,
@@ -6859,10 +6915,12 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                             return;
                         }
 
-                        // Import stations
+                        // Import stations with proper coordinate conversion
                         tourApp.stations = importData.stations.map(station => ({
                             ...station,
-                            // Ensure required fields exist
+                            // Ensure required fields exist with proper data types
+                            lat: parseFloat(station.lat) || 50.9375,
+                            lng: parseFloat(station.lng) || 6.9597,
                             images: station.images || [],
                             audio: station.audio || []
                         }));
@@ -7189,6 +7247,16 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 `;
                 
                 document.body.appendChild(modal);
+
+                // Add escape key handler
+                const escapeHandler = (e) => {
+                    if (e.key === 'Escape') {
+                        modal.remove();
+                        document.removeEventListener('keydown', escapeHandler);
+                    }
+                };
+                document.addEventListener('keydown', escapeHandler);
+
             } catch (error) {
                 console.error('Error showing quick station update:', error);
             }
@@ -7304,6 +7372,16 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 `;
                 
                 document.body.appendChild(modal);
+
+                // Add escape key handler
+                const escapeHandler = (e) => {
+                    if (e.key === 'Escape') {
+                        modal.remove();
+                        document.removeEventListener('keydown', escapeHandler);
+                    }
+                };
+                document.addEventListener('keydown', escapeHandler);
+
             } catch (error) {
                 console.error('Error showing Perplexity helper:', error);
             }
@@ -7346,10 +7424,19 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
        }
 
        function closeAIModal(modal) {
-           if (modal && modal.parentElement) {
-               modal.remove();
-           }
-       }
+            try {
+                if (modal && modal.parentElement) {
+                    modal.remove();
+                } else {
+                    // Fallback: Remove all overlay modals
+                    document.querySelectorAll('.admin-popup-overlay').forEach(overlay => {
+                        overlay.remove();
+                    });
+                }
+            } catch (error) {
+                console.error('Error closing AI modal:', error);
+            }
+        }
 
        // Media Search Functions
        function showMediaSearchHelper(stationId, mediaType, mediaIndex = null) {
@@ -7442,6 +7529,15 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                `;
                
                document.body.appendChild(modal);
+                // Add escape key handler
+                const escapeHandler = (e) => {
+                    if (e.key === 'Escape') {
+                        modal.remove();
+                        document.removeEventListener('keydown', escapeHandler);
+                    }
+                };
+                document.addEventListener('keydown', escapeHandler);
+
            } catch (error) {
                console.error('Error showing media search helper:', error);
            }
@@ -7535,10 +7631,19 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
        }
 
        function closeMediaModal(modal) {
-           if (modal && modal.parentElement) {
-               modal.remove();
-           }
-       }
+            try {
+                if (modal && modal.parentElement) {
+                    modal.remove();
+                } else {
+                    // Fallback: Remove all overlay modals
+                    document.querySelectorAll('.admin-popup-overlay').forEach(overlay => {
+                        overlay.remove();
+                    });
+                }
+            } catch (error) {
+                console.error('Error closing media modal:', error);
+            }
+        }
                 
 
         // Global window functions for HTML onclick handlers
@@ -7570,6 +7675,38 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 const targetTab = document.getElementById(tabName === 'map' ? 'map-tab' : tabName);
                 if (targetTab) {
                     targetTab.classList.add('active');
+                }
+
+                // Auto-scroll in stations tab
+                if (tabName === 'stations') {
+                    setTimeout(() => {
+                        // Find first uncompleted station
+                        const uncompletedStations = tourApp.stations.filter(station => 
+                            !tourApp.state.completedStations.includes(station.id)
+                        );
+                        
+                        if (uncompletedStations.length > 0) {
+                            // Scroll to first uncompleted station
+                            const firstUncompletedId = uncompletedStations[0].id;
+                            const stationCard = document.querySelector(`.station-card:has(#station-${firstUncompletedId})`);
+                            if (stationCard) {
+                                stationCard.scrollIntoView({ 
+                                    behavior: 'smooth', 
+                                    block: 'start',
+                                    inline: 'nearest'
+                                });
+                            }
+                        } else {
+                            // All stations completed, scroll to top
+                            const stationsContainer = document.getElementById('stationsList');
+                            if (stationsContainer) {
+                                stationsContainer.scrollIntoView({ 
+                                    behavior: 'smooth', 
+                                    block: 'start' 
+                                });
+                            }
+                        }
+                    }, 200);
                 }
 
                 if (tabName === 'chat') {
