@@ -1507,12 +1507,12 @@
 
         <!-- Fixed Navigation -->
         <div class="tab-container">
-            <button class="tab active" onclick="showTab('overview', this)">🏠<br><span style="font-size: 0.6rem;">Start</span></button>
-            <button class="tab" onclick="showTab('stations', this)">📍<br><span style="font-size: 0.6rem;">Stationen</span></button>
-            <button class="tab" onclick="showTab('ranking', this)">🏆<br><span style="font-size: 0.6rem;">Ranking</span></button>
-            <button class="tab" onclick="showTab('chat', this)">💬<br><span style="font-size: 0.6rem;">Chat</span></button>
-            <button class="tab" onclick="showTab('map', this)">🗺️<br><span style="font-size: 0.6rem;">Karte</span></button>
-            <button class="tab admin hidden" onclick="showTab('admin', this)" id="adminTab">⚙️<br><span style="font-size: 0.6rem;">Admin</span></button>
+            <button class="tab active" onclick="window.showTab('overview', this)">🏠<br><span style="font-size: 0.6rem;">Start</span></button>
+            <button class="tab" onclick="window.showTab('stations', this)">📍<br><span style="font-size: 0.6rem;">Stationen</span></button>
+            <button class="tab" onclick="window.showTab('ranking', this)">🏆<br><span style="font-size: 0.6rem;">Ranking</span></button>
+            <button class="tab" onclick="window.showTab('chat', this)">💬<br><span style="font-size: 0.6rem;">Chat</span></button>
+            <button class="tab" onclick="window.showTab('map', this)">🗺️<br><span style="font-size: 0.6rem;">Karte</span></button>
+            <button class="tab admin hidden" onclick="window.showTab('admin', this)" id="adminTab">⚙️<br><span style="font-size: 0.6rem;">Admin</span></button>
         </div>
     </div>
 
@@ -3796,7 +3796,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 `;
                 
                 notification.onclick = () => {
-                    showTab('chat', document.querySelector('.tab[onclick*="chat"]'));
+                    window.showTab('chat', document.querySelector('.tab[onclick*="chat"]'));
                     if (targetTab === 'team') {
                         setTimeout(() => showChatTab('team', document.getElementById('teamChatTab')), 100);
                     }
@@ -11116,6 +11116,8 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             }
         }
 
+        const showTab = window.showTab;
+        
         window.selectTeam = async function(teamId, teamName, element) {
             try {
                 const oldTeam = tourApp.state.selectedTeam;
@@ -11212,7 +11214,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     return;
                 }
                 
-                showTab('stations', document.querySelector('.tab[onclick*="stations"]'));
+                window.showTab('stations', document.querySelector('.tab[onclick*="stations"]'));
                 showNotification('Tour gestartet! Viel Erfolg! 🚀');
             } catch (error) {
                 console.error('Error starting tour:', error);
@@ -11227,7 +11229,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     document.getElementById('adminTab').classList.remove('hidden');
                     generateStationsList();
                     showNotification('Admin-Modus aktiviert! ⚙️');
-                    showTab('admin', document.getElementById('adminTab'));
+                    window.showTab('admin', document.getElementById('adminTab'));
                 } else {
                     showNotification('Falsches Passwort!', 'error');
                 }
