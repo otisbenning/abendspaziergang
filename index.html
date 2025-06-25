@@ -3150,17 +3150,16 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 loadState();
                 
                 setTimeout(() => {
-                    (async () => {
-                        try {
-                            await loadStationsFromFirebase();
-                            await loadTourSettings();
-                            await loadTeamData();
+                    loadStationsFromFirebase()
+                        .then(() => loadTourSettings())
+                        .then(() => loadTeamData())
+                        .then(() => {
                             generateStationsList();
                             updateUI();
-                        } catch (error) {
+                        })
+                        .catch(error => {
                             console.error('Error in initialization timeout:', error);
-                        }
-                    })();
+                        });
                 }, 1500);
                 
                 const chatInput = document.getElementById('chatInput');
@@ -4171,7 +4170,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             }
         }
 
-        async function clearAllChatMessages() {
+        function clearAllChatMessages() {
             try {
                 if (confirm('Alle Chat-Nachrichten für ALLE Teilnehmer löschen? Diese Aktion kann nicht rückgängig gemacht werden.')) {
                     // Clear Firebase chat collection for all users
@@ -10350,14 +10349,14 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
 
                 // Clean main chat
                 const chatRef = db.collection('tours').doc(tourApp.state.tourId).collection('chat');
-                const oldChatMessages = await chatRef.where('timestamp', '<', twentyFourHoursAgo).get();
+                const oldChatMessages = chatRef.where('timestamp', '<', twentyFourHoursAgo).get().then(oldChatMessages => {
                 
                 if (!oldChatMessages.empty) {
                     const batch = db.batch();
                     oldChatMessages.docs.forEach((doc) => {
                         batch.delete(doc.ref);
                     });
-                    await batch.commit();
+                    batch.commit().then(() => {
                     console.log(`🗑️ Deleted ${oldChatMessages.docs.length} old chat messages`);
                 }
 
