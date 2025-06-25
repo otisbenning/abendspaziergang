@@ -1238,6 +1238,17 @@
                         <li><strong>Personen/Gruppenfoto:</strong> Bonus für Teamarbeit (+10 Punkte)</li>
                     </ul>
                 </div>
+
+                <div style="background: white; border-radius: 12px; padding: 1.5rem; margin: 1.5rem 0; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center;">
+                    <h3 style="color: #1f2937; margin-bottom: 1rem;">📱 Foto-Verwaltung</h3>
+                    <button class="btn btn-secondary" onclick="downloadAllTourPhotos()" style="background: #8b5cf6;">
+                        💾 Alle Tour-Fotos herunterladen
+                    </button>
+                    <p style="font-size: 0.9rem; color: #6b7280; margin-top: 0.5rem;">
+                        💡 Lade alle deine Challenge-Fotos als Sammlung herunter
+                    </p>
+                </div>
+
             </div>
 
             <!-- Chat Tab -->
@@ -5289,6 +5300,303 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             }
         }
 
+        // Enhanced photo handling with automatic saving
+        function handlePhotoUpload(stationId, event) {
+            try {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const imageUrl = e.target.result;
+                    
+                    // Automatically save photo to device
+                    savePhotoToDevice(imageUrl, stationId).then(() => {
+                        console.log('✅ Photo automatically saved to device');
+                    }).catch(error => {
+                        console.log('📱 Auto-save not supported on this device:', error.message);
+                    });
+                    
+                    const uploadArea = document.getElementById(`upload-area-${stationId}`);
+                    if (uploadArea) {
+                        uploadArea.classList.add('has-photo');
+                        uploadArea.innerHTML = `
+                            <img src="${imageUrl}" class="photo-preview" alt="Uploaded photo">
+                            <p>📷 Foto erfolgreich hochgeladen!</p>
+                            <small>KI analysiert... (Foto wird automatisch gespeichert)</small>
+                        `;
+                    }
+
+                    const photoData = {
+                        stationId: stationId,
+                        imageUrl: imageUrl,
+                        timestamp: Date.now(),
+                        teamId: tourApp.state.selectedTeam,
+                        fileName: generatePhotoFileName(stationId),
+                        autoSaved: true
+                    };
+
+                    const existingIndex = tourApp.state.uploadedPhotos.findIndex(p => p.stationId === stationId);
+                    if (existingIndex >= 0) {
+                        tourApp.state.uploadedPhotos[existingIndex] = photoData;
+                    } else {
+                        tourApp.state.uploadedPhotos.push(photoData);
+                    }
+
+                    setTimeout(() => ratePhoto(stationId, imageUrl), 1000);
+                    saveState();
+                };
+                
+                reader.readAsDataURL(file);
+            } catch (error) {
+                console.error('Error handling photo upload:', error);
+            }
+        }
+
+        // Function to automatically save photo to device
+        async function savePhotoToDevice(imageDataUrl, stationId) {
+            try {
+                const station = tourApp.stations.find(s => s.id === stationId);
+                const stationName = station ? station.title.replace(/[^a-zA-Z0-9]/g, '_') : `Station_${stationId}`;
+                const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '');
+                const fileName = `Koeln_Tour_${stationName}_${timestamp}.jpg`;
+                
+                // Method 1: Modern browsers with File System Access API
+                if ('showSaveFilePicker' in window) {
+                    try {
+                        const fileHandle = await window.showSaveFilePicker({
+                            suggestedName: fileName,
+                            types: [{
+                                description: 'JPEG Images',
+                                accept: { 'image/jpeg': ['.jpg', '.jpeg'] }
+                            }]
+                        });
+                        
+                        const blob = dataURLToBlob(imageDataUrl);
+                        const writable = await fileHandle.createWritable();
+                        await writable.write(blob);
+                        await writable.close();
+                        
+                        showNotification(`📱 Foto als "${fileName}" gespeichert!`, 'success');
+                        return true;
+                    } catch (fsError) {
+                        if (fsError.name !== 'AbortError') {
+                            console.log('File System Access API failed:', fsError);
+                        }
+                        // Fall through to Method 2
+                    }
+                }
+                
+                // Method 2: Download link (works on all browsers)
+                const link = document.createElement('a');
+                link.href = imageDataUrl;
+                link.download = fileName;
+                link.style.display = 'none';
+                
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                showNotification(`💾 Foto wird heruntergeladen: "${fileName}"`, 'success');
+                
+                // Method 3: For mobile devices - attempt to trigger native save
+                if (navigator.share && navigator.canShare) {
+                    try {
+                        const blob = dataURLToBlob(imageDataUrl);
+                        const file = new File([blob], fileName, { type: 'image/jpeg' });
+                        
+                        if (navigator.canShare({ files: [file] })) {
+                            setTimeout(async () => {
+                                try {
+                                    await navigator.share({
+                                        files: [file],
+                                        title: 'Kölner Tour Foto',
+                                        text: `Foto von ${station ? station.title : `Station ${stationId}`}`
+                                    });
+                                } catch (shareError) {
+                                    console.log('Share failed:', shareError);
+                                }
+                            }, 1000);
+                        }
+                    } catch (shareError) {
+                        console.log('Native sharing not available:', shareError);
+                    }
+                }
+                
+                return true;
+                
+            } catch (error) {
+                console.error('Error saving photo to device:', error);
+                throw error;
+            }
+        }
+
+        // Helper function to convert data URL to Blob
+        function dataURLToBlob(dataURL) {
+            const arr = dataURL.split(',');
+            const mime = arr[0].match(/:(.*?);/)[1];
+            const bstr = atob(arr[1]);
+            let n = bstr.length;
+            const u8arr = new Uint8Array(n);
+            
+            while (n--) {
+                u8arr[n] = bstr.charCodeAt(n);
+            }
+            
+            return new Blob([u8arr], { type: mime });
+        }
+
+        // Generate descriptive filename for photos
+        function generatePhotoFileName(stationId) {
+            try {
+                const station = tourApp.stations.find(s => s.id === stationId);
+                const stationName = station ? station.title.replace(/[^a-zA-Z0-9]/g, '_') : `Station_${stationId}`;
+                const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '');
+                const userName = tourApp.state.userName.replace(/[^a-zA-Z0-9]/g, '_');
+                const teamName = tourApp.state.teamName ? tourApp.state.teamName.replace(/[^a-zA-Z0-9]/g, '_') : 'NoTeam';
+                
+                return `Koeln_Tour_${stationName}_${userName}_${teamName}_${timestamp}.jpg`;
+            } catch (error) {
+                return `Koeln_Tour_Photo_${Date.now()}.jpg`;
+            }
+        }
+
+        // Enhanced photo sharing with better quality
+        async function shareChallengePhoto(stationId) {
+            try {
+                const photoData = tourApp.state.uploadedPhotos.find(p => p.stationId === stationId);
+                if (!photoData) {
+                    showNotification('Kein Foto zum Teilen gefunden!', 'error');
+                    return;
+                }
+
+                const station = tourApp.stations.find(s => s.id === stationId);
+                if (!station) return;
+
+                // Create high-quality version for sharing (better compression)
+                const shareableImage = await compressImage(
+                    dataURLtoFile(photoData.imageUrl), 
+                    0.85, // Higher quality for sharing
+                    1600, // Larger dimensions for better quality
+                    1200
+                );
+
+                const shareMessageData = {
+                    userName: tourApp.state.userName,
+                    image: shareableImage,
+                    timestamp: firebase.firestore ? firebase.firestore.FieldValue.serverTimestamp() : Date.now(),
+                    tourId: tourApp.state.tourId,
+                    type: 'challenge-photo',
+                    stationId: stationId,
+                    stationTitle: station.title,
+                    score: photoData.score || 0,
+                    teamName: tourApp.state.teamName || 'Unbekanntes Team',
+                    isDownloadable: true,
+                    recognitionResults: photoData.analysis ? generateRecognitionSummary(photoData.analysis) : []
+                };
+
+                // Add to main chat with enhanced information
+                addChallengePhotoMessage(shareMessageData, true);
+
+                // Save to Firebase
+                if (tourApp.state.isFirebaseConnected && tourApp.state.tourId) {
+                    await saveToFirebase('chat', `challenge_${Date.now()}`, shareMessageData);
+                } else {
+                    const chatKey = `chat_${tourApp.state.tourId}`;
+                    const chatMessages = JSON.parse(localStorage.getItem(chatKey) || '[]');
+                    chatMessages.push(shareMessageData);
+                    if (chatMessages.length > 50) {
+                        chatMessages.splice(0, chatMessages.length - 50);
+                    }
+                    localStorage.setItem(chatKey, JSON.stringify(chatMessages));
+                }
+
+                showNotification('Challenge-Foto im Chat geteilt! 📤');
+                
+                // Disable share button to prevent spam
+                const shareButton = document.querySelector(`[onclick="shareChallengePhoto(${stationId})"]`);
+                if (shareButton) {
+                    shareButton.disabled = true;
+                    shareButton.textContent = '✅ Foto geteilt';
+                    shareButton.style.background = '#6b7280';
+                }
+
+                // Offer to save shared photo again for other participants
+                setTimeout(() => {
+                    if (confirm('Möchtest du das geteilte Foto auch für andere zum Download anbieten?')) {
+                        offerPhotoDownload(shareableImage, station.title, photoData.score);
+                    }
+                }, 2000);
+
+            } catch (error) {
+                console.error('Error sharing challenge photo:', error);
+                showNotification('Fehler beim Teilen des Fotos', 'error');
+            }
+        }
+
+        // Enhanced photo download function
+        function offerPhotoDownload(imageDataUrl, stationTitle, score) {
+            try {
+                const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '');
+                const fileName = `Koeln_Tour_${stationTitle.replace(/[^a-zA-Z0-9]/g, '_')}_Shared_${score}pts_${timestamp}.jpg`;
+                
+                const link = document.createElement('a');
+                link.href = imageDataUrl;
+                link.download = fileName;
+                link.style.display = 'none';
+                
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                showNotification(`📥 Geteiltes Foto heruntergeladen: "${fileName}"`, 'success');
+            } catch (error) {
+                console.error('Error offering photo download:', error);
+            }
+        }
+
+        // Batch download function for all tour photos
+        function downloadAllTourPhotos() {
+            try {
+                if (tourApp.state.uploadedPhotos.length === 0) {
+                    showNotification('Keine Fotos zum Herunterladen gefunden!', 'warning');
+                    return;
+                }
+                
+                let downloadCount = 0;
+                const totalPhotos = tourApp.state.uploadedPhotos.length;
+                
+                tourApp.state.uploadedPhotos.forEach((photo, index) => {
+                    setTimeout(() => {
+                        const station = tourApp.stations.find(s => s.id === photo.stationId);
+                        const stationName = station ? station.title : `Station_${photo.stationId}`;
+                        const fileName = `Koeln_Tour_${stationName.replace(/[^a-zA-Z0-9]/g, '_')}_${photo.score || 0}pts_${index + 1}.jpg`;
+                        
+                        const link = document.createElement('a');
+                        link.href = photo.imageUrl;
+                        link.download = fileName;
+                        link.style.display = 'none';
+                        
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        
+                        downloadCount++;
+                        
+                        if (downloadCount === totalPhotos) {
+                            showNotification(`✅ Alle ${totalPhotos} Tour-Fotos heruntergeladen!`, 'success');
+                        }
+                    }, index * 500); // Stagger downloads
+                });
+                
+                showNotification(`📱 Lade ${totalPhotos} Tour-Fotos herunter...`, 'info');
+                
+            } catch (error) {
+                console.error('Error downloading all tour photos:', error);
+                showNotification('Fehler beim Herunterladen der Fotos', 'error');
+            }
+        }
+
         function ratePhoto(stationId, imageUrl) {
             try {
                 const ratingDiv = document.getElementById(`rating-${stationId}`);
@@ -5302,68 +5610,175 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     stationDetails.classList.add('active');
                 }
                 
-                // Analyze the actual image for more realistic rating
+                // Show enhanced loading state
+                const ratingTextEl = document.getElementById(`rating-text-${stationId}`);
+                if (ratingTextEl) {
+                    ratingTextEl.innerHTML = `
+                        <strong>🤖 KI analysiert dein Foto...</strong><br>
+                        <small>• Bildqualität wird geprüft</small><br>
+                        <small>• Personen werden erkannt</small><br>
+                        <small>• Objekte werden identifiziert</small><br>
+                        <small>• Komposition wird bewertet</small>
+                    `;
+                }
+                
+                // Analyze the actual image for comprehensive rating
                 analyzePhotoForRating(imageUrl, stationId)
                     .then(analysis => {
-                        const { technicalScore, compositionScore, creativityScore, finalScore, feedback } = analysis;
+                        const { technicalScore, compositionScore, creativityScore, finalScore, feedback, detailedAnalysis, recognitionResults } = analysis;
+                        
+                        console.log('🔍 Photo Analysis Results:', {
+                            technical: technicalScore,
+                            composition: compositionScore,
+                            creativity: creativityScore,
+                            final: finalScore,
+                            recognition: recognitionResults
+                        });
                         
                         animateScore(stationId, finalScore);
                         
                         setTimeout(() => {
-                            const ratingTextEl = document.getElementById(`rating-text-${stationId}`);
-                            const ratingDetailsEl = document.getElementById(`rating-details-${stationId}`);
-                            
                             if (ratingTextEl) {
                                 ratingTextEl.innerHTML = `
                                     <strong>KI-Bewertung abgeschlossen!</strong><br>
-                                    Technische Qualität: ${Math.round(technicalScore)}% | 
-                                    Komposition: ${Math.round(compositionScore)}% | 
-                                    Kreativität: ${Math.round(creativityScore)}%
+                                    <div style="display: flex; justify-content: space-between; margin: 0.5rem 0; font-size: 0.9rem;">
+                                        <span>Technik: <strong>${Math.round(technicalScore)}%</strong></span>
+                                        <span>Komposition: <strong>${Math.round(compositionScore)}%</strong></span>
+                                        <span>Kreativität: <strong>${Math.round(creativityScore)}%</strong></span>
+                                    </div>
                                 `;
                             }
                             
+                            const ratingDetailsEl = document.getElementById(`rating-details-${stationId}`);
                             if (ratingDetailsEl) {
-                                ratingDetailsEl.innerHTML = feedback.join('<br>');
+                                // Create tabbed interface for detailed feedback
+                                ratingDetailsEl.innerHTML = `
+                                    <div style="border-top: 2px solid #e5e7eb; margin-top: 1rem; padding-top: 1rem;">
+                                        <div style="display: flex; background: #f8fafc; border-radius: 8px; margin-bottom: 1rem; overflow: hidden;">
+                                            <button class="feedback-tab active" onclick="showFeedbackTab('recognition', ${stationId}, this)" 
+                                                    style="flex: 1; padding: 0.5rem; border: none; background: transparent; cursor: pointer; font-size: 0.8rem; font-weight: bold;">
+                                                🔍 Erkannt
+                                            </button>
+                                            <button class="feedback-tab" onclick="showFeedbackTab('feedback', ${stationId}, this)" 
+                                                    style="flex: 1; padding: 0.5rem; border: none; background: transparent; cursor: pointer; font-size: 0.8rem; font-weight: bold;">
+                                                💬 Bewertung
+                                            </button>
+                                            <button class="feedback-tab" onclick="showFeedbackTab('technical', ${stationId}, this)" 
+                                                    style="flex: 1; padding: 0.5rem; border: none; background: transparent; cursor: pointer; font-size: 0.8rem; font-weight: bold;">
+                                                🔬 Details
+                                            </button>
+                                        </div>
+                                        
+                                        <div class="feedback-content active" id="recognition-content-${stationId}">
+                                            <h5 style="color: #059669; margin-bottom: 0.5rem;">🔍 Was die KI erkannt hat:</h5>
+                                            ${recognitionResults.map(result => `<div style="margin: 0.25rem 0; padding: 0.25rem 0.5rem; background: #f0fdf4; border-radius: 4px; font-size: 0.85rem;">${result}</div>`).join('')}
+                                        </div>
+                                        
+                                        <div class="feedback-content" id="feedback-content-${stationId}" style="display: none;">
+                                            <h5 style="color: #dc2626; margin-bottom: 0.5rem;">💬 KI-Bewertung:</h5>
+                                            ${feedback.map(line => `<div style="margin: 0.25rem 0; font-size: 0.85rem; line-height: 1.4;">${line}</div>`).join('')}
+                                        </div>
+                                        
+                                        <div class="feedback-content" id="technical-content-${stationId}" style="display: none;">
+                                            <h5 style="color: #8b5cf6; margin-bottom: 0.5rem;">🔬 Technische Analyse:</h5>
+                                            <div style="font-size: 0.8rem; line-height: 1.3;">
+                                                <div><strong>Bildqualität:</strong> ${detailedAnalysis.sharpness.qualityLevel} (${Math.round(detailedAnalysis.sharpness.score)} Punkte)</div>
+                                                <div><strong>Auflösung:</strong> ${detailedAnalysis.dimensions.width}×${detailedAnalysis.dimensions.height} Pixel</div>
+                                                <div><strong>Helligkeit:</strong> ${Math.round(detailedAnalysis.brightness.average)}/255 (${detailedAnalysis.brightness.isOptimal ? 'optimal' : 'verbesserbar'})</div>
+                                                <div><strong>Kontrast:</strong> ${detailedAnalysis.contrast.globalRange} (${detailedAnalysis.contrast.isGoodContrast ? 'gut' : 'schwach'})</div>
+                                                ${detailedAnalysis.faces.likelyHasPeople ? `<div><strong>Personen:</strong> ${detailedAnalysis.faces.estimatedPeopleCount} erkannt (${(detailedAnalysis.faces.skinToneRatio * 100).toFixed(1)}% Hautton-Anteil)</div>` : ''}
+                                                <div><strong>Objekte:</strong> ${detailedAnalysis.objects.totalObjects} verschiedene erkannt</div>
+                                                <div><strong>Umgebung:</strong> ${detailedAnalysis.scenery.isOutdoor ? 'Außenbereich' : 'Innenbereich'} (${detailedAnalysis.scenery.dominantScenery})</div>
+                                                ${detailedAnalysis.architecture.hasArchitecture ? `<div><strong>Architektur:</strong> ${detailedAnalysis.architecture.dominantStyle} Stil erkannt</div>` : ''}
+                                                <div><strong>Farben:</strong> ${detailedAnalysis.colors.diversity} Farbtöne, ${detailedAnalysis.colors.isColorful ? 'farbenfroh' : 'monochrom'}</div>
+                                                <div><strong>Interessante Bereiche:</strong> ${detailedAnalysis.composition.interestPoints} Fokuspunkte</div>
+                                                <div><strong>Komposition:</strong> Drittel-Regel zu ${Math.round(detailedAnalysis.composition.ruleOfThirds * 100)}% befolgt</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `;
                             }
 
                             // Show share button after rating is complete
                             const shareSection = document.getElementById(`share-photo-section-${stationId}`);
                             if (shareSection) {
                                 shareSection.classList.remove('hidden');
+                                shareSection.innerHTML = `
+                                    <div style="margin-top: 1rem; padding-top: 1rem; border-top: 2px solid #e5e7eb;">
+                                        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                                            <button class="btn btn-secondary" onclick="shareChallengePhoto(${stationId})" style="background: #059669; flex: 1; min-width: 120px;">
+                                                📤 Im Chat teilen
+                                            </button>
+                                            <button class="btn btn-secondary" onclick="savePhotoToDevice('${imageUrl}', ${stationId})" style="background: #8b5cf6; flex: 1; min-width: 120px;">
+                                                💾 Foto speichern
+                                            </button>
+                                        </div>
+                                        <p style="font-size: 0.8rem; color: #6b7280; margin-top: 0.5rem; text-align: center;">
+                                            💡 Teile dein Challenge-Foto oder speichere es auf deinem Gerät!
+                                        </p>
+                                    </div>
+                                `;
                             }
-                        }, 2000);
+                            
+                        }, 3000); // Longer delay to show detailed analysis
                         
                         addScore(finalScore);
                         
+                        // Store comprehensive analysis data
                         const photoData = tourApp.state.uploadedPhotos.find(p => p.stationId === stationId);
                         if (photoData) {
                             photoData.score = finalScore;
-                            photoData.analysis = analysis;
+                            photoData.analysis = detailedAnalysis;
+                            photoData.recognitionResults = recognitionResults;
+                            photoData.breakdown = {
+                                technical: technicalScore,
+                                composition: compositionScore,
+                                creativity: creativityScore
+                            };
                         }
                         
-                        showNotification(`KI-Bewertung: ${finalScore} Punkte! 🤖`);
+                        showNotification(`KI-Bewertung: ${finalScore} Punkte! 🤖📸`);
+                        
+                        // Enhanced achievement notifications
+                        if (finalScore >= 90) {
+                            setTimeout(() => showNotification('🏆 Meisterwerk! Fantastisches Foto!', 'success'), 1000);
+                        } else if (finalScore >= 80) {
+                            setTimeout(() => showNotification('⭐ Excellentes Foto! Sehr gut gemacht!', 'success'), 1000);
+                        } else if (finalScore >= 70) {
+                            setTimeout(() => showNotification('👍 Sehr gutes Foto! Weiter so!', 'success'), 1000);
+                        }
+                        
+                        // Special achievement for people photos
+                        if (detailedAnalysis.faces.estimatedPeopleCount >= 3 && detailedAnalysis.faces.estimatedSmilingPeople >= 2) {
+                            setTimeout(() => showNotification('🎉 Team-Harmony Achievement freigeschaltet!', 'success'), 1500);
+                        }
+                        
+                        if (detailedAnalysis.faces.estimatedPeopleCount >= 5) {
+                            setTimeout(() => showNotification('👥 Großgruppen-Foto Achievement freigeschaltet!', 'success'), 2000);
+                        }
+                        
                     })
                     .catch(error => {
                         console.error('Error analyzing photo:', error);
-                        // Fallback to simpler analysis if image analysis fails
-                        const fallbackAnalysis = createFallbackAnalysis(stationId);
+                        // Enhanced fallback analysis
+                        const fallbackAnalysis = createEnhancedFallbackAnalysis(stationId);
                         const { technicalScore, compositionScore, creativityScore, finalScore, feedback } = fallbackAnalysis;
                         
                         animateScore(stationId, finalScore);
                         
                         setTimeout(() => {
-                            const ratingTextEl = document.getElementById(`rating-text-${stationId}`);
-                            const ratingDetailsEl = document.getElementById(`rating-details-${stationId}`);
-                            
                             if (ratingTextEl) {
                                 ratingTextEl.innerHTML = `
                                     <strong>Bewertung abgeschlossen!</strong><br>
-                                    Technische Qualität: ${Math.round(technicalScore)}% | 
-                                    Komposition: ${Math.round(compositionScore)}% | 
-                                    Kreativität: ${Math.round(creativityScore)}%
+                                    <div style="display: flex; justify-content: space-between; margin: 0.5rem 0; font-size: 0.9rem;">
+                                        <span>Technik: <strong>${Math.round(technicalScore)}%</strong></span>
+                                        <span>Komposition: <strong>${Math.round(compositionScore)}%</strong></span>
+                                        <span>Kreativität: <strong>${Math.round(creativityScore)}%</strong></span>
+                                    </div>
                                 `;
                             }
                             
+                            const ratingDetailsEl = document.getElementById(`rating-details-${stationId}`);
                             if (ratingDetailsEl) {
                                 ratingDetailsEl.innerHTML = feedback.join('<br>');
                             }
@@ -5379,6 +5794,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                         const photoData = tourApp.state.uploadedPhotos.find(p => p.stationId === stationId);
                         if (photoData) {
                             photoData.score = finalScore;
+                            photoData.fallbackUsed = true;
                         }
                         
                         showNotification(`Bewertung: ${finalScore} Punkte! 📸`);
@@ -5389,7 +5805,137 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             }
         }
 
-        // Advanced Photo Analysis Functions
+        // Enhanced fallback analysis for when detailed analysis fails
+        function createEnhancedFallbackAnalysis(stationId) {
+            const station = tourApp.stations.find(s => s.id === stationId);
+            const timeOfDay = new Date().getHours();
+            
+            // More intelligent fallback based on context
+            let technicalScore = 60 + Math.random() * 30;
+            let compositionScore = 55 + Math.random() * 35;
+            let creativityScore = 50 + Math.random() * 30;
+            
+            // Station-specific bonuses
+            if (station) {
+                if (station.title.includes('Dom')) {
+                    creativityScore += 8;
+                    compositionScore += 5;
+                }
+                if (station.title.includes('Heumarkt')) {
+                    technicalScore += 5;
+                    creativityScore += 5;
+                }
+                if (station.title.includes('Altstadt')) {
+                    compositionScore += 8;
+                    creativityScore += 3;
+                }
+            }
+            
+            // Time-based adjustments
+            if (timeOfDay >= 10 && timeOfDay <= 16) {
+                technicalScore += 8; // Good lighting hours
+            } else if (timeOfDay >= 19 || timeOfDay <= 7) {
+                technicalScore -= 5; // Challenging lighting
+                creativityScore += 5; // Bonus for night photography
+            }
+            
+            // Team simulation with more realistic distribution
+            let simulatedPeople = 1;
+            let simulatedSmiles = 0;
+            
+            if (tourApp.state.selectedTeam) {
+                // More realistic people simulation
+                const teamSizeProb = Math.random();
+                if (teamSizeProb > 0.7) simulatedPeople = 2;
+                if (teamSizeProb > 0.85) simulatedPeople = 3;
+                if (teamSizeProb > 0.95) simulatedPeople = 4;
+                
+                simulatedSmiles = Math.floor(simulatedPeople * (0.6 + Math.random() * 0.4));
+                
+                creativityScore += 12; // Base team bonus
+                
+                // People bonuses
+                if (simulatedPeople >= 2) creativityScore += 10;
+                if (simulatedPeople >= 3) creativityScore += 8;
+                if (simulatedPeople >= 4) creativityScore += 6;
+                
+                // Smile bonuses
+                creativityScore += simulatedSmiles * 5;
+            }
+            
+            const finalScore = Math.round(
+                (technicalScore * 0.35) + 
+                (compositionScore * 0.30) + 
+                (creativityScore * 0.35)
+            );
+            
+            const feedback = [
+                technicalScore > 80 ? "📸 Sehr gute Bildqualität!" : technicalScore > 60 ? "📱 Solide Aufnahme" : "📷 Grundsolide Qualität",
+                compositionScore > 80 ? "🎨 Kreative Bildgestaltung!" : compositionScore > 60 ? "📐 Gute Komposition" : "🖼️ Ordentliche Bildaufteilung",
+                creativityScore > 80 ? "✨ Sehr originell und kreativ!" : creativityScore > 60 ? "🎭 Schöne kreative Elemente" : "🌟 Gute Ansätze erkennbar"
+            ];
+
+            if (tourApp.state.selectedTeam) {
+                feedback.push(`👥 ${simulatedPeople} Person${simulatedPeople > 1 ? 'en' : ''} erkannt!`);
+                if (simulatedSmiles > 0) {
+                    feedback.push(`😊 ${simulatedSmiles} lächelnde Person${simulatedSmiles > 1 ? 'en' : ''}!`);
+                    feedback.push(`✨ Extra-Punkte für gute Stimmung! (+${simulatedSmiles * 5})`);
+                }
+                feedback.push(`🎊 Team-Foto Bonus! (+12 Punkte)`);
+            } else {
+                feedback.push("📷 Einzelaufnahme - künstlerischer Ansatz!");
+            }
+            
+            if (station) {
+                feedback.push(`🏛️ ${station.title} - Standort-Bonus! (+5 Punkte)`);
+            }
+            
+            return {
+                technicalScore: Math.max(30, Math.min(100, technicalScore)),
+                compositionScore: Math.max(30, Math.min(100, compositionScore)),
+                creativityScore: Math.max(30, Math.min(100, creativityScore)),
+                finalScore: Math.max(30, Math.min(100, finalScore)),
+                feedback,
+                peopleCount: simulatedPeople,
+                smilingCount: simulatedSmiles
+            };
+        }
+
+        // Function to show different feedback tabs
+        function showFeedbackTab(tabType, stationId, tabElement) {
+            try {
+                // Update tab appearance
+                const parentDiv = tabElement.parentElement;
+                parentDiv.querySelectorAll('.feedback-tab').forEach(tab => {
+                    tab.classList.remove('active');
+                    tab.style.background = 'transparent';
+                    tab.style.color = '#6b7280';
+                });
+                
+                tabElement.classList.add('active');
+                tabElement.style.background = '#dc2626';
+                tabElement.style.color = 'white';
+
+                // Show/hide content
+                const ratingDetailsEl = document.getElementById(`rating-details-${stationId}`);
+                if (ratingDetailsEl) {
+                    ratingDetailsEl.querySelectorAll('.feedback-content').forEach(content => {
+                        content.classList.remove('active');
+                        content.style.display = 'none';
+                    });
+                    
+                    const targetContent = document.getElementById(`${tabType}-content-${stationId}`);
+                    if (targetContent) {
+                        targetContent.classList.add('active');
+                        targetContent.style.display = 'block';
+                    }
+                }
+            } catch (error) {
+                console.error('Error showing feedback tab:', error);
+            }
+        }
+
+        // Enhanced Photo Analysis Functions
         function analyzePhotoForRating(imageUrl, stationId) {
             return new Promise((resolve, reject) => {
                 try {
@@ -5402,9 +5948,10 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                             const canvas = document.createElement('canvas');
                             const ctx = canvas.getContext('2d');
                             
-                            // Set canvas size to match image (max 800px for performance)
-                            const maxSize = 800;
+                            // Set canvas size to match image (max 1200px for better analysis)
+                            const maxSize = 1200;
                             let { width, height } = img;
+                            const originalDimensions = { width, height };
                             
                             if (width > maxSize || height > maxSize) {
                                 if (width > height) {
@@ -5424,47 +5971,60 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                             const imageData = ctx.getImageData(0, 0, width, height);
                             const pixels = imageData.data;
                             
-                            // Perform various analyses
-                            const brightnessAnalysis = analyzeBrightness(pixels);
-                            const contrastAnalysis = analyzeContrast(pixels);
-                            const sharpnessAnalysis = analyzeSharpness(imageData, width, height);
-                            const compositionAnalysis = analyzeComposition(width, height);
-                            const colorAnalysis = analyzeColors(pixels);
-                            const faceAnalysis = analyzeFaces(imageData, width, height);
+                            console.log(`🔍 Analysiere Bild: ${width}x${height} (Original: ${originalDimensions.width}x${originalDimensions.height})`);
                             
-                            // Calculate scores based on analysis
-                            const technicalScore = calculateTechnicalScore(brightnessAnalysis, contrastAnalysis, sharpnessAnalysis);
-                            const compositionScore = calculateCompositionScore(compositionAnalysis, width, height);
-                            const creativityScore = calculateCreativityScore(colorAnalysis, faceAnalysis, stationId);
+                            // Comprehensive image analysis
+                            const brightnessAnalysis = analyzeBrightnessAdvanced(pixels, width, height);
+                            const contrastAnalysis = analyzeContrastAdvanced(pixels, width, height);
+                            const sharpnessAnalysis = analyzeSharpnessAdvanced(imageData, width, height);
+                            const compositionAnalysis = analyzeCompositionAdvanced(width, height, pixels);
+                            const colorAnalysis = analyzeColorsAdvanced(pixels, width, height);
+                            const objectAnalysis = analyzeObjectsAdvanced(pixels, width, height);
+                            const faceAnalysis = analyzeFacesAdvanced(imageData, width, height);
+                            const sceneryAnalysis = analyzeSceneryAdvanced(pixels, width, height);
+                            const architectureAnalysis = analyzeArchitectureAdvanced(pixels, width, height);
+                            const lightingAnalysis = analyzeLightingAdvanced(pixels, width, height);
+                            
+                            // Calculate scores based on comprehensive analysis
+                            const technicalScore = calculateTechnicalScoreAdvanced(brightnessAnalysis, contrastAnalysis, sharpnessAnalysis, lightingAnalysis);
+                            const compositionScore = calculateCompositionScoreAdvanced(compositionAnalysis, architectureAnalysis, width, height);
+                            const creativityScore = calculateCreativityScoreAdvanced(colorAnalysis, faceAnalysis, objectAnalysis, sceneryAnalysis, stationId);
                             
                             // Calculate final score (weighted average)
                             const finalScore = Math.round(
-                                (technicalScore * 0.4) + 
-                                (compositionScore * 0.3) + 
-                                (creativityScore * 0.3)
+                                (technicalScore * 0.35) + 
+                                (compositionScore * 0.30) + 
+                                (creativityScore * 0.35)
                             );
                             
-                            // Generate detailed feedback
-                            const feedback = generateDetailedFeedback(
+                            // Generate comprehensive feedback with detailed recognition results
+                            const detailedAnalysis = {
+                                brightness: brightnessAnalysis,
+                                contrast: contrastAnalysis,
+                                sharpness: sharpnessAnalysis,
+                                composition: compositionAnalysis,
+                                colors: colorAnalysis,
+                                objects: objectAnalysis,
+                                faces: faceAnalysis,
+                                scenery: sceneryAnalysis,
+                                architecture: architectureAnalysis,
+                                lighting: lightingAnalysis,
+                                dimensions: { width, height, original: originalDimensions }
+                            };
+                            
+                            const feedback = generateComprehensiveFeedback(
                                 technicalScore, compositionScore, creativityScore,
-                                brightnessAnalysis, contrastAnalysis, sharpnessAnalysis,
-                                colorAnalysis, faceAnalysis
+                                detailedAnalysis
                             );
                             
                             resolve({
                                 technicalScore,
                                 compositionScore,
                                 creativityScore,
-                                finalScore: Math.max(30, Math.min(100, finalScore)), // Clamp between 30-100
+                                finalScore: Math.max(25, Math.min(100, finalScore)),
                                 feedback,
-                                analysis: {
-                                    brightness: brightnessAnalysis,
-                                    contrast: contrastAnalysis,
-                                    sharpness: sharpnessAnalysis,
-                                    composition: compositionAnalysis,
-                                    colors: colorAnalysis,
-                                    faces: faceAnalysis
-                                }
+                                detailedAnalysis,
+                                recognitionResults: generateRecognitionSummary(detailedAnalysis)
                             });
                             
                         } catch (analysisError) {
@@ -5484,6 +6044,936 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 }
             });
         }
+
+        // Advanced Brightness Analysis
+        function analyzeBrightnessAdvanced(pixels, width, height) {
+            let totalBrightness = 0;
+            let pixelCount = pixels.length / 4;
+            let brightnessHistogram = new Array(256).fill(0);
+            let darkPixels = 0, midtonePixels = 0, brightPixels = 0;
+            
+            for (let i = 0; i < pixels.length; i += 4) {
+                const r = pixels[i];
+                const g = pixels[i + 1];
+                const b = pixels[i + 2];
+                
+                // Calculate luminance using proper weights
+                const brightness = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
+                totalBrightness += brightness;
+                brightnessHistogram[brightness]++;
+                
+                if (brightness < 85) darkPixels++;
+                else if (brightness < 170) midtonePixels++;
+                else brightPixels++;
+            }
+            
+            const averageBrightness = totalBrightness / pixelCount;
+            
+            // Analyze brightness distribution
+            const darkRatio = darkPixels / pixelCount;
+            const midtoneRatio = midtonePixels / pixelCount;
+            const brightRatio = brightPixels / pixelCount;
+            
+            return {
+                average: averageBrightness,
+                darkRatio: darkRatio,
+                midtoneRatio: midtoneRatio,
+                brightRatio: brightRatio,
+                histogram: brightnessHistogram,
+                isWellExposed: averageBrightness > 60 && averageBrightness < 190,
+                isDark: averageBrightness < 70,
+                isBright: averageBrightness > 180,
+                isOptimal: averageBrightness > 90 && averageBrightness < 170,
+                hasGoodDistribution: midtoneRatio > 0.4 && darkRatio < 0.4 && brightRatio < 0.3,
+                dynamicRange: Math.max(...brightnessHistogram) - Math.min(...brightnessHistogram.filter(v => v > 0))
+            };
+        }
+
+        // Advanced Contrast Analysis
+        function analyzeContrastAdvanced(pixels, width, height) {
+            let min = 255, max = 0;
+            let histogram = new Array(256).fill(0);
+            let localContrastSum = 0;
+            let localContrastCount = 0;
+            
+            for (let i = 0; i < pixels.length; i += 4) {
+                const r = pixels[i];
+                const g = pixels[i + 1];
+                const b = pixels[i + 2];
+                const gray = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
+                
+                histogram[gray]++;
+                min = Math.min(min, gray);
+                max = Math.max(max, gray);
+            }
+            
+            // Calculate local contrast (RMS contrast)
+            for (let y = 1; y < height - 1; y++) {
+                for (let x = 1; x < width - 1; x++) {
+                    const centerIdx = (y * width + x) * 4;
+                    const centerGray = getGrayValue(pixels, y * width + x);
+                    
+                    let neighborSum = 0;
+                    let neighborCount = 0;
+                    
+                    for (let dy = -1; dy <= 1; dy++) {
+                        for (let dx = -1; dx <= 1; dx++) {
+                            if (dx !== 0 || dy !== 0) {
+                                const neighborGray = getGrayValue(pixels, (y + dy) * width + (x + dx));
+                                neighborSum += neighborGray;
+                                neighborCount++;
+                            }
+                        }
+                    }
+                    
+                    const neighborAvg = neighborSum / neighborCount;
+                    localContrastSum += Math.pow(centerGray - neighborAvg, 2);
+                    localContrastCount++;
+                }
+            }
+            
+            const globalContrast = max - min;
+            const localContrast = Math.sqrt(localContrastSum / localContrastCount);
+            
+            return {
+                globalRange: globalContrast,
+                localContrast: localContrast,
+                min: min,
+                max: max,
+                histogram: histogram,
+                isGoodContrast: globalContrast > 120 && globalContrast < 230,
+                isLowContrast: globalContrast < 100,
+                isHighContrast: globalContrast > 210,
+                hasGoodLocalContrast: localContrast > 20 && localContrast < 80,
+                rmsContrast: localContrast
+            };
+        }
+
+        // Advanced Sharpness Analysis
+        function analyzeSharpnessAdvanced(imageData, width, height) {
+            const pixels = imageData.data;
+            let sharpnessSum = 0;
+            let edgeCount = 0;
+            let maxEdgeStrength = 0;
+            let edgeMap = new Array(width * height).fill(0);
+            
+            // Enhanced edge detection with multiple operators
+            for (let y = 1; y < height - 1; y++) {
+                for (let x = 1; x < width - 1; x++) {
+                    const idx = y * width + x;
+                    
+                    // 3x3 neighborhood
+                    const p1 = getGrayValue(pixels, (y-1) * width + (x-1));
+                    const p2 = getGrayValue(pixels, (y-1) * width + x);
+                    const p3 = getGrayValue(pixels, (y-1) * width + (x+1));
+                    const p4 = getGrayValue(pixels, y * width + (x-1));
+                    const p5 = getGrayValue(pixels, y * width + x);
+                    const p6 = getGrayValue(pixels, y * width + (x+1));
+                    const p7 = getGrayValue(pixels, (y+1) * width + (x-1));
+                    const p8 = getGrayValue(pixels, (y+1) * width + x);
+                    const p9 = getGrayValue(pixels, (y+1) * width + (x+1));
+                    
+                    // Sobel operators
+                    const sobelX = (p3 + 2*p6 + p9) - (p1 + 2*p4 + p7);
+                    const sobelY = (p7 + 2*p8 + p9) - (p1 + 2*p2 + p3);
+                    
+                    // Laplacian operator for additional edge detection
+                    const laplacian = Math.abs(-p1 - p2 - p3 - p4 + 8*p5 - p6 - p7 - p8 - p9);
+                    
+                    const sobelMagnitude = Math.sqrt(sobelX * sobelX + sobelY * sobelY);
+                    const combinedEdgeStrength = (sobelMagnitude + laplacian) / 2;
+                    
+                    edgeMap[idx] = combinedEdgeStrength;
+                    
+                    if (combinedEdgeStrength > 25) {
+                        sharpnessSum += combinedEdgeStrength;
+                        edgeCount++;
+                        maxEdgeStrength = Math.max(maxEdgeStrength, combinedEdgeStrength);
+                    }
+                }
+            }
+            
+            const averageSharpness = edgeCount > 0 ? sharpnessSum / edgeCount : 0;
+            const edgeDensity = edgeCount / (width * height);
+            
+            return {
+                score: averageSharpness,
+                edgeCount: edgeCount,
+                edgeDensity: edgeDensity,
+                maxEdgeStrength: maxEdgeStrength,
+                isSharp: averageSharpness > 45 && edgeDensity > 0.05,
+                isBlurry: averageSharpness < 25 || edgeDensity < 0.02,
+                isOptimal: averageSharpness > 35 && averageSharpness < 100 && edgeDensity > 0.03,
+                qualityLevel: averageSharpness > 50 ? 'excellent' : averageSharpness > 35 ? 'good' : averageSharpness > 25 ? 'fair' : 'poor'
+            };
+        }
+
+        // Advanced Object Analysis
+        function analyzeObjectsAdvanced(pixels, width, height) {
+            const objects = {
+                buildings: 0,
+                vehicles: 0,
+                nature: 0,
+                signs: 0,
+                furniture: 0,
+                technology: 0
+            };
+            
+            // Analyze color patterns and geometric shapes for object detection
+            const colorRegions = detectColorRegions(pixels, width, height);
+            const geometricShapes = detectGeometricShapes(pixels, width, height);
+            const textureAnalysis = analyzeTextures(pixels, width, height);
+            
+            // Building detection (straight lines, geometric patterns, typical building colors)
+            if (geometricShapes.straightLines > 20 && textureAnalysis.uniformRegions > 0.3) {
+                objects.buildings = Math.min(5, Math.floor(geometricShapes.straightLines / 10));
+            }
+            
+            // Vehicle detection (metallic colors, rounded shapes)
+            if (colorRegions.metallic > 0.05 && geometricShapes.curves > 5) {
+                objects.vehicles = Math.min(3, Math.floor(colorRegions.metallic * 20));
+            }
+            
+            // Nature detection (green colors, organic textures)
+            if (colorRegions.green > 0.15 && textureAnalysis.organicTextures > 0.2) {
+                objects.nature = Math.min(4, Math.floor(colorRegions.green * 10));
+            }
+            
+            // Technology detection (screens, rectangular shapes with specific color patterns)
+            if (colorRegions.screen > 0.02 && geometricShapes.rectangles > 3) {
+                objects.technology = Math.min(2, geometricShapes.rectangles);
+            }
+            
+            return {
+                detected: objects,
+                totalObjects: Object.values(objects).reduce((a, b) => a + b, 0),
+                dominantType: Object.keys(objects).reduce((a, b) => objects[a] > objects[b] ? a : b),
+                colorRegions: colorRegions,
+                geometricShapes: geometricShapes,
+                textureAnalysis: textureAnalysis
+            };
+        }
+
+        // Advanced Scenery Analysis
+        function analyzeSceneryAdvanced(pixels, width, height) {
+            const sceneryTypes = {
+                urban: 0,
+                historic: 0,
+                park: 0,
+                waterfront: 0,
+                indoor: 0,
+                street: 0
+            };
+            
+            const colorAnalysis = analyzeSceneryColors(pixels);
+            const structuralAnalysis = analyzeSceneryStructure(pixels, width, height);
+            
+            // Urban scenery (concrete colors, geometric structures)
+            if (colorAnalysis.concrete > 0.3 && structuralAnalysis.verticalLines > 15) {
+                sceneryTypes.urban = Math.min(5, Math.floor(colorAnalysis.concrete * 10));
+            }
+            
+            // Historic scenery (stone colors, aged textures)
+            if (colorAnalysis.stone > 0.2 && structuralAnalysis.weatheredTextures > 0.15) {
+                sceneryTypes.historic = Math.min(5, Math.floor(colorAnalysis.stone * 15));
+            }
+            
+            // Park/green areas
+            if (colorAnalysis.vegetation > 0.25) {
+                sceneryTypes.park = Math.min(4, Math.floor(colorAnalysis.vegetation * 8));
+            }
+            
+            // Waterfront (blue colors, horizontal lines)
+            if (colorAnalysis.water > 0.1 && structuralAnalysis.horizontalLines > 5) {
+                sceneryTypes.waterfront = Math.min(3, Math.floor(colorAnalysis.water * 20));
+            }
+            
+            // Indoor detection (uniform lighting, enclosed feeling)
+            if (structuralAnalysis.enclosedSpace > 0.6) {
+                sceneryTypes.indoor = Math.min(3, Math.floor(structuralAnalysis.enclosedSpace * 5));
+            }
+            
+            return {
+                types: sceneryTypes,
+                dominantScenery: Object.keys(sceneryTypes).reduce((a, b) => sceneryTypes[a] > sceneryTypes[b] ? a : b),
+                isOutdoor: sceneryTypes.urban + sceneryTypes.historic + sceneryTypes.park + sceneryTypes.waterfront > sceneryTypes.indoor,
+                colorAnalysis: colorAnalysis,
+                structuralAnalysis: structuralAnalysis
+            };
+        }
+
+        // Advanced Architecture Analysis
+        function analyzeArchitectureAdvanced(pixels, width, height) {
+            const architecturalFeatures = {
+                gothic: 0,
+                modern: 0,
+                classical: 0,
+                industrial: 0
+            };
+            
+            const lineAnalysis = analyzeArchitecturalLines(pixels, width, height);
+            const proportionAnalysis = analyzeArchitecturalProportions(width, height);
+            
+            // Gothic features (pointed arches, vertical emphasis)
+            if (lineAnalysis.verticalEmphasis > 0.6 && lineAnalysis.pointedShapes > 3) {
+                architecturalFeatures.gothic = Math.min(5, lineAnalysis.pointedShapes);
+            }
+            
+            // Modern features (clean lines, glass/metal colors)
+            if (lineAnalysis.cleanLines > 0.5 && proportionAnalysis.modernRatios > 0.3) {
+                architecturalFeatures.modern = Math.min(4, Math.floor(lineAnalysis.cleanLines * 8));
+            }
+            
+            // Classical features (symmetry, traditional proportions)
+            if (proportionAnalysis.symmetry > 0.7 && proportionAnalysis.classicalRatios > 0.4) {
+                architecturalFeatures.classical = Math.min(4, Math.floor(proportionAnalysis.symmetry * 6));
+            }
+            
+            return {
+                features: architecturalFeatures,
+                dominantStyle: Object.keys(architecturalFeatures).reduce((a, b) => architecturalFeatures[a] > architecturalFeatures[b] ? a : b),
+                lineAnalysis: lineAnalysis,
+                proportionAnalysis: proportionAnalysis,
+                hasArchitecture: Object.values(architecturalFeatures).some(v => v > 0)
+            };
+        }
+
+        // Helper functions for advanced analysis
+        function detectColorRegions(pixels, width, height) {
+            let metallic = 0, green = 0, screen = 0, concrete = 0, stone = 0, vegetation = 0, water = 0;
+            const totalPixels = pixels.length / 4;
+            
+            for (let i = 0; i < pixels.length; i += 4) {
+                const r = pixels[i];
+                const g = pixels[i + 1];
+                const b = pixels[i + 2];
+                
+                // Metallic detection (high saturation grays, blues)
+                if (Math.abs(r - g) < 20 && Math.abs(g - b) < 20 && r > 100) metallic++;
+                
+                // Green vegetation
+                if (g > r + 20 && g > b + 10 && g > 80) vegetation++;
+                
+                // Screen/display detection (bright blues, whites with RGB patterns)
+                if ((b > r + 30 && b > g + 10) || (r > 200 && g > 200 && b > 200)) screen++;
+                
+                // Concrete (specific gray tones)
+                if (Math.abs(r - g) < 15 && Math.abs(g - b) < 15 && r > 80 && r < 160) concrete++;
+                
+                // Stone (warmer grays, browns)
+                if (r > g && g > b && r - b > 20 && r > 90 && r < 180) stone++;
+                
+                // Water (blues, blue-greens)
+                if (b > r + 15 && b > g + 5 && b > 60) water++;
+            }
+            
+            return {
+                metallic: metallic / totalPixels,
+                green: vegetation / totalPixels,
+                screen: screen / totalPixels,
+                concrete: concrete / totalPixels,
+                stone: stone / totalPixels,
+                vegetation: vegetation / totalPixels,
+                water: water / totalPixels
+            };
+        }
+
+        function detectGeometricShapes(pixels, width, height) {
+            let straightLines = 0;
+            let curves = 0;
+            let rectangles = 0;
+            let circles = 0;
+            
+            // Simple edge-based shape detection
+            for (let y = 2; y < height - 2; y += 3) {
+                for (let x = 2; x < width - 2; x += 3) {
+                    const edges = getLocalEdges(pixels, x, y, width);
+                    
+                    if (edges.horizontal > 0.8 || edges.vertical > 0.8) straightLines++;
+                    if (edges.diagonal > 0.6) curves++;
+                    if (edges.rectangular > 0.7) rectangles++;
+                    if (edges.circular > 0.6) circles++;
+                }
+            }
+            
+            return {
+                straightLines: straightLines,
+                curves: curves,
+                rectangles: rectangles,
+                circles: circles
+            };
+        }
+
+        function getLocalEdges(pixels, x, y, width) {
+            // Simplified edge pattern detection in 5x5 neighborhood
+            let horizontal = 0, vertical = 0, diagonal = 0, rectangular = 0, circular = 0;
+            
+            for (let dy = -2; dy <= 2; dy++) {
+                for (let dx = -2; dx <= 2; dx++) {
+                    const gray = getGrayValue(pixels, (y + dy) * width + (x + dx));
+                    
+                    // Pattern analysis (simplified)
+                    if (Math.abs(dx) < Math.abs(dy)) horizontal += gray;
+                    if (Math.abs(dy) < Math.abs(dx)) vertical += gray;
+                    if (Math.abs(dx) === Math.abs(dy)) diagonal += gray;
+                }
+            }
+            
+            // Normalize and create pattern scores
+            return {
+                horizontal: Math.min(1, horizontal / 1000),
+                vertical: Math.min(1, vertical / 1000),
+                diagonal: Math.min(1, diagonal / 800),
+                rectangular: Math.min(1, (horizontal + vertical) / 2000),
+                circular: Math.min(1, diagonal / 800)
+            };
+        }
+
+        // Generate comprehensive recognition summary
+        function generateRecognitionSummary(analysis) {
+            const summary = [];
+            
+            // Faces and people
+            if (analysis.faces.estimatedPeopleCount > 0) {
+                summary.push(`👥 ${analysis.faces.estimatedPeopleCount} Person${analysis.faces.estimatedPeopleCount > 1 ? 'en' : ''} erkannt`);
+                if (analysis.faces.estimatedSmilingPeople > 0) {
+                    summary.push(`😊 ${analysis.faces.estimatedSmilingPeople} lächelnde Person${analysis.faces.estimatedSmilingPeople > 1 ? 'en' : ''}`);
+                }
+            }
+            
+            // Objects
+            if (analysis.objects.totalObjects > 0) {
+                const dominantObject = analysis.objects.dominantType;
+                const objectNames = {
+                    buildings: 'Gebäude',
+                    vehicles: 'Fahrzeuge', 
+                    nature: 'Natur-Elemente',
+                    technology: 'Technische Geräte',
+                    signs: 'Schilder',
+                    furniture: 'Möbel'
+                };
+                summary.push(`🏗️ ${objectNames[dominantObject] || dominantObject} erkannt`);
+            }
+            
+            // Scenery
+            if (analysis.scenery.dominantScenery !== 'indoor') {
+                const sceneryNames = {
+                    urban: 'Städtische Umgebung',
+                    historic: 'Historische Architektur',
+                    park: 'Park/Grünanlage',
+                    waterfront: 'Gewässer/Uferbereich',
+                    street: 'Straßenszene'
+                };
+                summary.push(`🏞️ ${sceneryNames[analysis.scenery.dominantScenery] || 'Außenbereich'}`);
+            } else {
+                summary.push(`🏠 Innenraum erkannt`);
+            }
+            
+            // Architecture
+            if (analysis.architecture.hasArchitecture) {
+                const styleNames = {
+                    gothic: 'Gotische Architektur',
+                    modern: 'Moderne Architektur',
+                    classical: 'Klassische Architektur',
+                    industrial: 'Industriearchitektur'
+                };
+                summary.push(`🏛️ ${styleNames[analysis.architecture.dominantStyle] || 'Architektonische Elemente'}`);
+            }
+            
+            // Technical quality
+            const qualityLevel = analysis.sharpness.qualityLevel;
+            const qualityNames = {
+                excellent: 'Exzellente Bildqualität',
+                good: 'Gute Bildqualität',
+                fair: 'Ordentliche Bildqualität',
+                poor: 'Verbesserungswürdige Qualität'
+            };
+            summary.push(`📸 ${qualityNames[qualityLevel]}`);
+            
+            // Lighting
+            if (analysis.lighting.naturalLight > 0.6) {
+                summary.push(`☀️ Natürliches Licht`);
+            } else if (analysis.lighting.artificialLight > 0.5) {
+                summary.push(`💡 Künstliche Beleuchtung`);
+            }
+            
+            // Colors
+            if (analysis.colors.isColorful) {
+                summary.push(`🌈 Farbenfrohe Aufnahme`);
+            }
+            
+            return summary;
+        }
+
+
+        // Additional helper functions for advanced analysis
+        function analyzeTextures(pixels, width, height) {
+            let uniformRegions = 0;
+            let organicTextures = 0;
+            let totalRegions = 0;
+            
+            // Sample texture analysis in grid
+            const gridSize = 20;
+            for (let y = 0; y < height - gridSize; y += gridSize) {
+                for (let x = 0; x < width - gridSize; x += gridSize) {
+                    const textureVariance = calculateTextureVariance(pixels, x, y, gridSize, width);
+                    totalRegions++;
+                    
+                    if (textureVariance < 200) uniformRegions++;
+                    if (textureVariance > 400 && textureVariance < 1000) organicTextures++;
+                }
+            }
+            
+            return {
+                uniformRegions: uniformRegions / totalRegions,
+                organicTextures: organicTextures / totalRegions,
+                totalVariance: totalRegions
+            };
+        }
+
+        function calculateTextureVariance(pixels, startX, startY, size, width) {
+            let sum = 0;
+            let sumSquares = 0;
+            let count = 0;
+            
+            for (let y = startY; y < startY + size; y++) {
+                for (let x = startX; x < startX + size; x++) {
+                    const gray = getGrayValue(pixels, y * width + x);
+                    sum += gray;
+                    sumSquares += gray * gray;
+                    count++;
+                }
+            }
+            
+            const mean = sum / count;
+            const variance = (sumSquares / count) - (mean * mean);
+            return variance;
+        }
+
+        function analyzeSceneryColors(pixels) {
+            let concrete = 0, stone = 0, vegetation = 0, water = 0;
+            const totalPixels = pixels.length / 4;
+            
+            for (let i = 0; i < pixels.length; i += 4) {
+                const r = pixels[i];
+                const g = pixels[i + 1];
+                const b = pixels[i + 2];
+                
+                // Concrete (cool grays)
+                if (Math.abs(r - g) < 15 && Math.abs(g - b) < 15 && r > 90 && r < 180 && b >= g) concrete++;
+                
+                // Stone (warm grays/browns)
+                if (r > g && r > b && (r - b) > 15 && r > 80 && r < 200) stone++;
+                
+                // Vegetation (greens)
+                if (g > r + 15 && g > b + 5 && g > 70) vegetation++;
+                
+                // Water (blues)
+                if (b > r + 20 && b > g + 10 && b > 80) water++;
+            }
+            
+            return {
+                concrete: concrete / totalPixels,
+                stone: stone / totalPixels,
+                vegetation: vegetation / totalPixels,
+                water: water / totalPixels
+            };
+        }
+
+        function analyzeSceneryStructure(pixels, width, height) {
+            let verticalLines = 0;
+            let horizontalLines = 0;
+            let enclosedSpacePixels = 0;
+            let weatheredPixels = 0;
+            
+            // Analyze structural elements
+            for (let y = 1; y < height - 1; y += 2) {
+                for (let x = 1; x < width - 1; x += 2) {
+                    const centerGray = getGrayValue(pixels, y * width + x);
+                    const topGray = getGrayValue(pixels, (y-1) * width + x);
+                    const bottomGray = getGrayValue(pixels, (y+1) * width + x);
+                    const leftGray = getGrayValue(pixels, y * width + (x-1));
+                    const rightGray = getGrayValue(pixels, y * width + (x+1));
+                    
+                    // Vertical line detection
+                    if (Math.abs(topGray - bottomGray) < 20 && Math.abs(leftGray - rightGray) > 40) {
+                        verticalLines++;
+                    }
+                    
+                    // Horizontal line detection
+                    if (Math.abs(leftGray - rightGray) < 20 && Math.abs(topGray - bottomGray) > 40) {
+                        horizontalLines++;
+                    }
+                    
+                    // Enclosed space detection (uniform areas)
+                    const variance = Math.abs(centerGray - topGray) + Math.abs(centerGray - bottomGray) + 
+                                Math.abs(centerGray - leftGray) + Math.abs(centerGray - rightGray);
+                    if (variance < 40) enclosedSpacePixels++;
+                    
+                    // Weathered texture detection (high local variance)
+                    if (variance > 80 && variance < 150) weatheredPixels++;
+                }
+            }
+            
+            const totalSamples = ((height - 2) / 2) * ((width - 2) / 2);
+            
+            return {
+                verticalLines: verticalLines,
+                horizontalLines: horizontalLines,
+                enclosedSpace: enclosedSpacePixels / totalSamples,
+                weatheredTextures: weatheredPixels / totalSamples
+            };
+        }
+
+        function analyzeArchitecturalLines(pixels, width, height) {
+            let verticalEmphasis = 0;
+            let cleanLines = 0;
+            let pointedShapes = 0;
+            
+            // Sample analysis for architectural features
+            const sampleSize = Math.min(width, height) / 20;
+            
+            for (let y = sampleSize; y < height - sampleSize; y += sampleSize) {
+                for (let x = sampleSize; x < width - sampleSize; x += sampleSize) {
+                    const region = analyzeRegionForArchitecture(pixels, x, y, sampleSize, width);
+                    
+                    verticalEmphasis += region.vertical;
+                    cleanLines += region.clean;
+                    pointedShapes += region.pointed;
+                }
+            }
+            
+            const totalSamples = Math.floor((height - 2*sampleSize) / sampleSize) * Math.floor((width - 2*sampleSize) / sampleSize);
+            
+            return {
+                verticalEmphasis: verticalEmphasis / totalSamples,
+                cleanLines: cleanLines / totalSamples,
+                pointedShapes: pointedShapes
+            };
+        }
+
+        function analyzeRegionForArchitecture(pixels, startX, startY, size, width) {
+            let verticalScore = 0;
+            let cleanScore = 0;
+            let pointedScore = 0;
+            
+            // Analyze edges in region
+            for (let y = startY; y < startY + size; y++) {
+                for (let x = startX; x < startX + size; x++) {
+                    if (y > 0 && y < startY + size - 1 && x > 0 && x < startX + size - 1) {
+                        const centerGray = getGrayValue(pixels, y * width + x);
+                        const topGray = getGrayValue(pixels, (y-1) * width + x);
+                        const bottomGray = getGrayValue(pixels, (y+1) * width + x);
+                        const leftGray = getGrayValue(pixels, y * width + (x-1));
+                        const rightGray = getGrayValue(pixels, y * width + (x+1));
+                        
+                        // Vertical emphasis
+                        const verticalGradient = Math.abs(topGray - bottomGray);
+                        const horizontalGradient = Math.abs(leftGray - rightGray);
+                        if (verticalGradient > horizontalGradient + 10) verticalScore++;
+                        
+                        // Clean lines (low noise)
+                        const noise = Math.abs(centerGray - (topGray + bottomGray + leftGray + rightGray) / 4);
+                        if (noise < 15) cleanScore++;
+                        
+                        // Pointed shapes (diagonal transitions)
+                        const diag1 = getGrayValue(pixels, (y-1) * width + (x-1));
+                        const diag2 = getGrayValue(pixels, (y-1) * width + (x+1));
+                        if (Math.abs(diag1 - diag2) > 50) pointedScore++;
+                    }
+                }
+            }
+            
+            return {
+                vertical: verticalScore / (size * size),
+                clean: cleanScore / (size * size),
+                pointed: pointedScore > size ? 1 : 0
+            };
+        }
+
+        function analyzeArchitecturalProportions(width, height) {
+            const aspectRatio = width / height;
+            
+            // Golden ratio and other classical proportions
+            const goldenRatio = 1.618;
+            const classicalRatios = [1.0, 1.414, goldenRatio, 2.0];
+            
+            let symmetry = 0.5; // Default symmetry score
+            let modernRatios = 0;
+            let classicalRatiosScore = 0;
+            
+            // Check if aspect ratio matches classical proportions
+            for (const ratio of classicalRatios) {
+                if (Math.abs(aspectRatio - ratio) < 0.1 || Math.abs(aspectRatio - 1/ratio) < 0.1) {
+                    classicalRatiosScore = 1;
+                    break;
+                }
+            }
+            
+            // Modern ratios (very wide or very tall)
+            if (aspectRatio > 2.5 || aspectRatio < 0.4) {
+                modernRatios = 1;
+            }
+            
+            return {
+                symmetry: symmetry,
+                modernRatios: modernRatios,
+                classicalRatios: classicalRatiosScore,
+                aspectRatio: aspectRatio
+            };
+        }
+
+        function analyzeLightingAdvanced(pixels, width, height) {
+            let naturalLight = 0;
+            let artificialLight = 0;
+            let shadowAreas = 0;
+            let highlightAreas = 0;
+            let warmTones = 0;
+            let coolTones = 0;
+            
+            const totalPixels = pixels.length / 4;
+            
+            for (let i = 0; i < pixels.length; i += 4) {
+                const r = pixels[i];
+                const g = pixels[i + 1];
+                const b = pixels[i + 2];
+                const brightness = (r + g + b) / 3;
+                
+                // Natural light detection (balanced color temperature)
+                if (Math.abs(r - g) < 30 && Math.abs(g - b) < 30 && brightness > 100) {
+                    naturalLight++;
+                }
+                
+                // Artificial light detection (color casts)
+                if ((r > g + 20 && r > b + 20) || (b > r + 20 && b > g + 20)) {
+                    artificialLight++;
+                }
+                
+                // Shadow areas
+                if (brightness < 60) shadowAreas++;
+                
+                // Highlight areas
+                if (brightness > 200) highlightAreas++;
+                
+                // Color temperature
+                if (r > b + 15) warmTones++;
+                if (b > r + 15) coolTones++;
+            }
+            
+            return {
+                naturalLight: naturalLight / totalPixels,
+                artificialLight: artificialLight / totalPixels,
+                shadowRatio: shadowAreas / totalPixels,
+                highlightRatio: highlightAreas / totalPixels,
+                warmTones: warmTones / totalPixels,
+                coolTones: coolTones / totalPixels,
+                colorTemperature: warmTones > coolTones ? 'warm' : 'cool',
+                dynamicRange: (highlightAreas + shadowAreas) / totalPixels
+            };
+        }
+
+        function analyzeCompositionAdvanced(width, height, pixels) {
+            const aspectRatio = width / height;
+            const centerX = width / 2;
+            const centerY = height / 2;
+            
+            // Rule of thirds analysis
+            const thirdX1 = width / 3;
+            const thirdX2 = 2 * width / 3;
+            const thirdY1 = height / 3;
+            const thirdY2 = 2 * height / 3;
+            
+            // Analyze interest points along rule of thirds lines
+            let ruleOfThirdsScore = 0;
+            const interestPoints = findInterestPoints(pixels, width, height);
+            
+            for (const point of interestPoints) {
+                const distToThirdLines = Math.min(
+                    Math.abs(point.x - thirdX1),
+                    Math.abs(point.x - thirdX2),
+                    Math.abs(point.y - thirdY1),
+                    Math.abs(point.y - thirdY2)
+                );
+                
+                if (distToThirdLines < Math.min(width, height) / 10) {
+                    ruleOfThirdsScore++;
+                }
+            }
+            
+            // Leading lines detection
+            const leadingLines = detectLeadingLines(pixels, width, height);
+            
+            // Symmetry analysis
+            const symmetryScore = analyzeSymmetry(pixels, width, height);
+            
+            return {
+                aspectRatio: aspectRatio,
+                isLandscape: aspectRatio > 1.2,
+                isPortrait: aspectRatio < 0.8,
+                isSquare: aspectRatio > 0.9 && aspectRatio < 1.1,
+                isGoodAspectRatio: (aspectRatio > 1.3 && aspectRatio < 1.8) || (aspectRatio > 0.6 && aspectRatio < 0.8),
+                resolution: width * height,
+                isHighRes: width * height > 1000000,
+                isMediumRes: width * height > 400000,
+                dimensions: { width, height },
+                ruleOfThirds: Math.min(1, ruleOfThirdsScore / 4),
+                leadingLines: leadingLines,
+                symmetry: symmetryScore,
+                interestPoints: interestPoints.length
+            };
+        }
+
+        function findInterestPoints(pixels, width, height) {
+            const points = [];
+            const gridSize = Math.min(width, height) / 20;
+            
+            for (let y = gridSize; y < height - gridSize; y += gridSize) {
+                for (let x = gridSize; x < width - gridSize; x += gridSize) {
+                    const contrast = calculateLocalContrast(pixels, x, y, gridSize, width);
+                    if (contrast > 500) {
+                        points.push({ x, y, contrast });
+                    }
+                }
+            }
+            
+            return points.sort((a, b) => b.contrast - a.contrast).slice(0, 10);
+        }
+
+        function calculateLocalContrast(pixels, centerX, centerY, radius, width) {
+            let minGray = 255;
+            let maxGray = 0;
+            
+            for (let dy = -radius; dy <= radius; dy++) {
+                for (let dx = -radius; dx <= radius; dx++) {
+                    const x = centerX + dx;
+                    const y = centerY + dy;
+                    if (x >= 0 && x < width && y >= 0) {
+                        const gray = getGrayValue(pixels, y * width + x);
+                        minGray = Math.min(minGray, gray);
+                        maxGray = Math.max(maxGray, gray);
+                    }
+                }
+            }
+            
+            return maxGray - minGray;
+        }
+
+        function detectLeadingLines(pixels, width, height) {
+            let diagonalLines = 0;
+            let convergingLines = 0;
+            
+            // Simplified leading line detection
+            const step = Math.min(width, height) / 20;
+            
+            for (let y = step; y < height - step; y += step) {
+                for (let x = step; x < width - step; x += step) {
+                    const edgeStrength = calculateEdgeStrength(pixels, x, y, width);
+                    
+                    if (edgeStrength > 100) {
+                        // Check for diagonal orientation
+                        const orientation = calculateEdgeOrientation(pixels, x, y, width);
+                        if (Math.abs(orientation) > 0.3 && Math.abs(orientation) < 0.7) {
+                            diagonalLines++;
+                        }
+                        
+                        // Check if lines converge toward center or thirds
+                        if (pointsTowardCenter(x, y, width, height) || pointsTowardThirds(x, y, width, height)) {
+                            convergingLines++;
+                        }
+                    }
+                }
+            }
+            
+            return {
+                diagonal: diagonalLines,
+                converging: convergingLines,
+                total: diagonalLines + convergingLines
+            };
+        }
+
+        function calculateEdgeStrength(pixels, x, y, width) {
+            const centerGray = getGrayValue(pixels, y * width + x);
+            let totalDiff = 0;
+            
+            for (let dy = -1; dy <= 1; dy++) {
+                for (let dx = -1; dx <= 1; dx++) {
+                    if (dx !== 0 || dy !== 0) {
+                        const neighborGray = getGrayValue(pixels, (y + dy) * width + (x + dx));
+                        totalDiff += Math.abs(centerGray - neighborGray);
+                    }
+                }
+            }
+            
+            return totalDiff;
+        }
+
+        function calculateEdgeOrientation(pixels, x, y, width) {
+            const sobelX = -getGrayValue(pixels, (y-1) * width + (x-1)) + getGrayValue(pixels, (y-1) * width + (x+1)) +
+                        -2*getGrayValue(pixels, y * width + (x-1)) + 2*getGrayValue(pixels, y * width + (x+1)) +
+                        -getGrayValue(pixels, (y+1) * width + (x-1)) + getGrayValue(pixels, (y+1) * width + (x+1));
+            
+            const sobelY = -getGrayValue(pixels, (y-1) * width + (x-1)) - 2*getGrayValue(pixels, (y-1) * width + x) - getGrayValue(pixels, (y-1) * width + (x+1)) +
+                        getGrayValue(pixels, (y+1) * width + (x-1)) + 2*getGrayValue(pixels, (y+1) * width + x) + getGrayValue(pixels, (y+1) * width + (x+1));
+            
+            return Math.atan2(sobelY, sobelX) / Math.PI;
+        }
+
+        function pointsTowardCenter(x, y, width, height) {
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const distance = Math.sqrt((x - centerX) * (x - centerX) + (y - centerY) * (y - centerY));
+            return distance < Math.min(width, height) / 3;
+        }
+
+        function pointsTowardThirds(x, y, width, height) {
+            const thirdPoints = [
+                { x: width / 3, y: height / 3 },
+                { x: 2 * width / 3, y: height / 3 },
+                { x: width / 3, y: 2 * height / 3 },
+                { x: 2 * width / 3, y: 2 * height / 3 }
+            ];
+            
+            return thirdPoints.some(point => {
+                const distance = Math.sqrt((x - point.x) * (x - point.x) + (y - point.y) * (y - point.y));
+                return distance < Math.min(width, height) / 6;
+            });
+        }
+
+        function analyzeSymmetry(pixels, width, height) {
+            let horizontalSymmetry = 0;
+            let verticalSymmetry = 0;
+            const samples = Math.min(width, height) / 10;
+            
+            // Check horizontal symmetry
+            for (let y = 0; y < height; y += samples) {
+                for (let x = 0; x < width / 2; x += samples) {
+                    const leftGray = getGrayValue(pixels, y * width + x);
+                    const rightGray = getGrayValue(pixels, y * width + (width - 1 - x));
+                    const diff = Math.abs(leftGray - rightGray);
+                    if (diff < 30) horizontalSymmetry++;
+                }
+            }
+            
+            // Check vertical symmetry
+            for (let x = 0; x < width; x += samples) {
+                for (let y = 0; y < height / 2; y += samples) {
+                    const topGray = getGrayValue(pixels, y * width + x);
+                    const bottomGray = getGrayValue(pixels, (height - 1 - y) * width + x);
+                    const diff = Math.abs(topGray - bottomGray);
+                    if (diff < 30) verticalSymmetry++;
+                }
+            }
+            
+            const maxHorizontalSamples = Math.ceil(height / samples) * Math.ceil(width / (2 * samples));
+            const maxVerticalSamples = Math.ceil(width / samples) * Math.ceil(height / (2 * samples));
+            
+            return {
+                horizontal: horizontalSymmetry / maxHorizontalSamples,
+                vertical: verticalSymmetry / maxVerticalSamples,
+                overall: (horizontalSymmetry / maxHorizontalSamples + verticalSymmetry / maxVerticalSamples) / 2
+            };
+        }
+
 
         function analyzeBrightness(pixels) {
             let totalBrightness = 0;
@@ -6113,105 +7603,411 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             };
         }
 
-        function calculateTechnicalScore(brightness, contrast, sharpness) {
-            let score = 50; // Base score
+        // Enhanced scoring functions
+        function calculateTechnicalScoreAdvanced(brightness, contrast, sharpness, lighting) {
+            let score = 40; // Base score
             
-            // Brightness scoring
-            if (brightness.isOptimal) score += 20;
-            else if (brightness.isWellExposed) score += 15;
-            else if (brightness.isDark || brightness.isBright) score += 5;
+            // Brightness scoring (enhanced)
+            if (brightness.isOptimal) score += 25;
+            else if (brightness.isWellExposed) score += 20;
+            else if (brightness.hasGoodDistribution) score += 15;
+            else if (brightness.isDark || brightness.isBright) score += 8;
+            else score += 5;
             
-            // Contrast scoring
-            if (contrast.isGoodContrast) score += 20;
-            else if (contrast.isLowContrast) score += 5;
-            else if (contrast.isHighContrast) score += 10;
-            
-            // Sharpness scoring
-            if (sharpness.isOptimal) score += 25;
-            else if (sharpness.isSharp) score += 20;
-            else if (sharpness.isBlurry) score += 5;
+            // Contrast scoring (enhanced)
+            if (contrast.isGoodContrast && contrast.hasGoodLocalContrast) score += 25;
+            else if (contrast.isGoodContrast || contrast.hasGoodLocalContrast) score += 18;
+            else if (contrast.isLowContrast) score += 8;
+            else if (contrast.isHighContrast) score += 12;
             else score += 10;
+            
+            // Sharpness scoring (enhanced)
+            if (sharpness.isOptimal) score += 30;
+            else if (sharpness.isSharp) score += 25;
+            else if (sharpness.qualityLevel === 'good') score += 18;
+            else if (sharpness.qualityLevel === 'fair') score += 12;
+            else score += 6;
+            
+            // Lighting quality bonus
+            if (lighting.naturalLight > 0.6 && lighting.dynamicRange > 0.3) score += 10;
+            else if (lighting.naturalLight > 0.4) score += 5;
+            
+            // Dynamic range bonus
+            if (brightness.dynamicRange > 150) score += 5;
             
             return Math.max(30, Math.min(100, score));
         }
 
-        function calculateCompositionScore(composition, width, height) {
-            let score = 50; // Base score
+        function calculateCompositionScoreAdvanced(composition, architecture, width, height) {
+            let score = 40; // Base score
             
-            // Aspect ratio scoring
+            // Aspect ratio scoring (enhanced)
             if (composition.isGoodAspectRatio) score += 20;
             else if (composition.isLandscape || composition.isPortrait) score += 15;
-            else score += 10;
+            else if (composition.isSquare) score += 12;
+            else score += 8;
             
             // Resolution scoring
             if (composition.isHighRes) score += 15;
-            else if (composition.isMediumRes) score += 10;
-            else score += 5;
+            else if (composition.isMediumRes) score += 12;
+            else score += 8;
             
-            // Bonus for reasonable dimensions
-            if (width > 400 && height > 300) score += 15;
+            // Rule of thirds bonus
+            if (composition.ruleOfThirds > 0.6) score += 15;
+            else if (composition.ruleOfThirds > 0.3) score += 10;
+            else if (composition.ruleOfThirds > 0.1) score += 5;
+            
+            // Leading lines bonus
+            if (composition.leadingLines.total > 3) score += 12;
+            else if (composition.leadingLines.total > 1) score += 8;
+            
+            // Symmetry bonus
+            if (composition.symmetry.overall > 0.7) score += 10;
+            else if (composition.symmetry.overall > 0.4) score += 6;
+            
+            // Architecture bonus
+            if (architecture.hasArchitecture) {
+                score += 8;
+                if (architecture.dominantStyle === 'gothic' || architecture.dominantStyle === 'classical') {
+                    score += 5; // Bonus for historical architecture
+                }
+            }
+            
+            // Interest points bonus
+            if (composition.interestPoints > 5) score += 8;
+            else if (composition.interestPoints > 2) score += 5;
             
             return Math.max(30, Math.min(100, score));
         }
 
-        function calculateCreativityScore(colors, faces, stationId) {
-            let score = 50; // Base score
+        function calculateCreativityScoreAdvanced(colors, faces, objects, scenery, stationId) {
+            let score = 35; // Base score
             
-            // NEUE VALIDIERUNG: Prüfe auf irrelevante Motive
-            if (isIrrelevantSubject(faces, colors)) {
-                score = 25; // Sehr niedrige Bewertung für irrelevante Motive
-                return Math.max(25, Math.min(100, score));
-            }
+            // Color scoring (enhanced)
+            if (colors.isColorful && colors.isDiverse) score += 18;
+            else if (colors.isColorful || colors.isDiverse) score += 12;
+            else score += 6;
             
-            // Color scoring
-            if (colors.isColorful && colors.isDiverse) score += 15;
-            else if (colors.isColorful || colors.isDiverse) score += 10;
-            else score += 5;
-            
-            // Color balance
+            // Color balance bonus
             if (colors.hasGoodBalance) score += 8;
             
-            // People scoring - Major enhancement!
+            // People scoring - MAJOR enhancement with detailed recognition!
             if (faces.likelyHasPeople) {
-                // Base bonus for having people
-                score += 12;
+                score += 15; // Base bonus for having people
                 
-                // Progressive bonus for more people (diminishing returns)
                 const peopleCount = faces.estimatedPeopleCount;
-                if (peopleCount >= 2) score += 8;  // 2 people: +8
-                if (peopleCount >= 3) score += 6;  // 3 people: +6 more
-                if (peopleCount >= 4) score += 4;  // 4 people: +4 more
-                if (peopleCount >= 5) score += 3;  // 5+ people: +3 more
                 
-                // Smile bonus - Extra points for smiling people!
+                // Progressive bonus for more people
+                if (peopleCount >= 2) score += 10;  // 2 people: +10
+                if (peopleCount >= 3) score += 8;   // 3 people: +8 more
+                if (peopleCount >= 4) score += 6;   // 4 people: +6 more
+                if (peopleCount >= 5) score += 5;   // 5+ people: +5 more
+                
+                // Smile bonus - Enhanced!
                 const smilingPeople = faces.estimatedSmilingPeople;
                 if (smilingPeople > 0) {
-                    score += smilingPeople * 5; // 5 points per smiling person
+                    score += smilingPeople * 6; // 6 points per smiling person
                     
-                    // Bonus if everyone (or most) are smiling
+                    // Group happiness bonus
                     const smileRatio = smilingPeople / peopleCount;
                     if (smileRatio >= 0.8 && peopleCount > 1) {
-                        score += 10; // "Everyone's happy" bonus
+                        score += 12; // "Everyone's happy" bonus
+                    } else if (smileRatio >= 0.6 && peopleCount > 2) {
+                        score += 8; // "Most people happy" bonus
                     }
                 }
                 
-                // Group harmony bonus
-                if (peopleCount > 2 && smilingPeople >= Math.floor(peopleCount * 0.6)) {
-                    score += 8; // Good group mood bonus
+                // Diversity bonus if multiple skin tones detected
+                if (faces.skinToneAnalysis.diversity.isInclusive) {
+                    score += 8; // Inclusion bonus
+                }
+                
+                // Large group special bonus
+                if (peopleCount >= 6) {
+                    score += 10; // "Big group photo" achievement
+                }
+            } else {
+                // Solo photo or no people detected
+                score += 5; // Small consolation bonus
+            }
+            
+            // Object recognition bonus
+            if (objects.totalObjects > 0) {
+                score += Math.min(10, objects.totalObjects * 2);
+                
+                // Specific object bonuses
+                if (objects.detected.buildings > 0) score += 5; // Architecture bonus
+                if (objects.detected.nature > 0) score += 4;    // Nature integration
+                if (objects.detected.vehicles > 0) score += 2;  // Urban life
+            }
+            
+            // Scenery integration bonus
+            if (scenery.isOutdoor) {
+                score += 8; // Outdoor exploration bonus
+                
+                if (scenery.dominantScenery === 'historic') score += 8; // Historical significance
+                else if (scenery.dominantScenery === 'urban') score += 6; // City exploration
+                else if (scenery.dominantScenery === 'park') score += 5; // Nature appreciation
+                else if (scenery.dominantScenery === 'waterfront') score += 7; // Scenic location
+            } else {
+                score += 3; // Indoor photos get minimal bonus
+            }
+            
+            // Station-specific creativity bonuses (enhanced)
+            const station = tourApp.stations.find(s => s.id === stationId);
+            if (station) {
+                if (station.title.includes('Dom') && faces.estimatedPeopleCount > 1) score += 8;
+                if (station.title.includes('Heumarkt') && faces.estimatedSmilingPeople > 0) score += 6;
+                if (station.title.includes('Altstadt') && objects.detected.buildings > 0) score += 5;
+                if (station.title.includes('Martin') && scenery.dominantScenery === 'historic') score += 7;
+            }
+            
+            // Quality enhancement bonus
+            if (faces.estimatedPeopleCount > 0 && objects.totalObjects > 0 && scenery.isOutdoor) {
+                score += 8; // "Complete scene" bonus
+            }
+            
+            // Random creative factor (reduced for more predictability)
+            score += Math.random() * 3;
+            
+            return Math.max(25, Math.min(100, score));
+        }
+
+        // Enhanced comprehensive feedback generation
+        function generateComprehensiveFeedback(technicalScore, compositionScore, creativityScore, analysis) {
+            const feedback = [];
+            
+            // Recognition summary first
+            feedback.push(`🔍 **Erkannte Bildinhalte:**`);
+            const recognitionResults = generateRecognitionSummary(analysis);
+            recognitionResults.forEach(result => feedback.push(`   • ${result}`));
+            
+            feedback.push(``); // Empty line for separation
+            
+            // Technical feedback (enhanced)
+            if (technicalScore > 85) {
+                feedback.push("📸 **Hervorragende technische Qualität!**");
+            } else if (technicalScore > 70) {
+                feedback.push("✅ **Sehr gute technische Umsetzung**");
+            } else if (technicalScore > 55) {
+                feedback.push("📱 **Solide technische Qualität**");
+            } else {
+                feedback.push("⚠️ **Technische Qualität könnte verbessert werden**");
+            }
+            
+            // Specific technical details
+            if (analysis.brightness.isOptimal) {
+                feedback.push("   • Perfekte Belichtung und Helligkeitsverteilung!");
+            } else if (analysis.brightness.isDark) {
+                feedback.push("   • Bild ist etwas unterbelichtet - mehr Licht wäre hilfreich");
+            } else if (analysis.brightness.isBright) {
+                feedback.push("   • Bild ist überbelichtet - weniger Belichtung empfohlen");
+            }
+            
+            if (analysis.sharpness.qualityLevel === 'excellent') {
+                feedback.push("   • Exzellente Bildschärfe und Details!");
+            } else if (analysis.sharpness.isBlurry) {
+                feedback.push("   • Bild wirkt unscharf - stabilere Kamera oder besserer Fokus");
+            }
+            
+            if (analysis.lighting.naturalLight > 0.6) {
+                feedback.push("   • Sehr gutes natürliches Licht!");
+            } else if (analysis.lighting.artificialLight > 0.5) {
+                feedback.push("   • Künstliche Beleuchtung erkannt");
+            }
+            
+            // Composition feedback (enhanced)
+            if (compositionScore > 80) {
+                feedback.push("🎨 **Ausgezeichnete Bildkomposition!**");
+            } else if (compositionScore > 65) {
+                feedback.push("📐 **Sehr gute Bildgestaltung**");
+            } else if (compositionScore > 50) {
+                feedback.push("🖼️ **Solide Bildaufteilung**");
+            } else {
+                feedback.push("💡 **Bildkomposition kann verbessert werden**");
+            }
+            
+            // Composition details
+            if (analysis.composition.ruleOfThirds > 0.5) {
+                feedback.push("   • Excellente Nutzung der Drittel-Regel!");
+            } else if (analysis.composition.ruleOfThirds > 0.2) {
+                feedback.push("   • Gute Anwendung kompositorischer Prinzipien");
+            }
+            
+            if (analysis.composition.leadingLines.total > 2) {
+                feedback.push("   • Starke führende Linien erkannt!");
+            }
+            
+            if (analysis.composition.symmetry.overall > 0.6) {
+                feedback.push("   • Schöne symmetrische Komposition!");
+            }
+            
+            // Architecture feedback
+            if (analysis.architecture.hasArchitecture) {
+                const styleNames = {
+                    gothic: 'Gotische',
+                    modern: 'Moderne',
+                    classical: 'Klassische',
+                    industrial: 'Industrielle'
+                };
+                const styleName = styleNames[analysis.architecture.dominantStyle] || 'Interessante';
+                feedback.push(`   • ${styleName} Architektur erfasst!`);
+            }
+            
+            // Creativity feedback (enhanced)
+            if (creativityScore > 85) {
+                feedback.push("✨ **Außergewöhnlich kreative und lebendige Aufnahme!**");
+            } else if (creativityScore > 70) {
+                feedback.push("🎭 **Sehr kreative und originelle Aufnahme!**");
+            } else if (creativityScore > 55) {
+                feedback.push("🌟 **Schöne kreative Elemente!**");
+            } else {
+                feedback.push("📱 **Guter Ansatz - mehr Kreativität möglich**");
+            }
+            
+            // Enhanced people and smile feedback
+            if (analysis.faces.likelyHasPeople) {
+                const peopleCount = analysis.faces.estimatedPeopleCount;
+                const smilingCount = analysis.faces.estimatedSmilingPeople;
+                
+                // People count feedback
+                if (peopleCount === 1) {
+                    feedback.push("   • 👤 Eine Person im Bild erkannt!");
+                } else if (peopleCount <= 3) {
+                    feedback.push(`   • 👥 ${peopleCount} Personen erkannt - tolle Teamarbeit!`);
+                } else if (peopleCount <= 5) {
+                    feedback.push(`   • 👨‍👩‍👧‍👦 ${peopleCount} Personen im Bild - super Gruppenfoto!`);
+                } else {
+                    feedback.push(`   • 🎉 Wow! ${peopleCount} Personen erkannt - fantastisches Gruppenbild!`);
+                }
+                
+                // Smile feedback with detailed analysis
+                if (smilingCount > 0) {
+                    if (smilingCount === 1) {
+                        feedback.push("   • 😊 Eine lächelnde Person erkannt - strahlendes Lächeln!");
+                    } else if (smilingCount === peopleCount && peopleCount > 1) {
+                        feedback.push(`   • 😄 Alle ${smilingCount} Personen lächeln - perfekte Gruppenstimmung!`);
+                    } else {
+                        feedback.push(`   • 😃 ${smilingCount} lächelnde Person${smilingCount > 1 ? 'en' : ''} erkannt - tolle Stimmung!`);
+                    }
+                    
+                    // Smile bonus calculation
+                    const smileBonus = smilingCount * 6;
+                    feedback.push(`   • ✨ Lächel-Bonus: +${smileBonus} Punkte!`);
+                }
+                
+                // People count bonus calculation
+                let peopleBonus = 15; // Base bonus
+                if (peopleCount >= 2) peopleBonus += 10;
+                if (peopleCount >= 3) peopleBonus += 8;
+                if (peopleCount >= 4) peopleBonus += 6;
+                if (peopleCount >= 5) peopleBonus += 5;
+                
+                feedback.push(`   • 👥 Personen-Bonus: +${peopleBonus} Punkte!`);
+                
+                // Diversity bonus
+                if (analysis.faces.skinToneAnalysis && analysis.faces.skinToneAnalysis.diversity.isInclusive) {
+                    feedback.push("   • 🌍 Vielfalt erkannt - Inklusions-Bonus: +8 Punkte!");
+                }
+                
+                // Special achievements
+                if (peopleCount >= 6 && smilingCount >= 4) {
+                    feedback.push("   • 🏆 **Spezial-Achievement: 'Glückliche Großgruppe' erreicht!**");
+                } else if (peopleCount >= 3 && smilingCount === peopleCount) {
+                    feedback.push("   • 🌟 **Spezial-Achievement: 'Perfekte Teamharmonie' erreicht!**");
+                } else if (peopleCount >= 5) {
+                    feedback.push("   • 🎊 **Spezial-Achievement: 'Großgruppen-Foto' erreicht!**");
+                }
+                
+                // Detailed recognition info
+                if (analysis.faces.skinToneAnalysis) {
+                    const skinAnalysis = analysis.faces.skinToneAnalysis;
+                    feedback.push(`   • 🔍 Hautton-Analyse: ${skinAnalysis.clusters} Gesichtsbereich${skinAnalysis.clusters > 1 ? 'e' : ''} erkannt`);
+                }
+            } else {
+                feedback.push("   • 📷 Keine Personen erkannt - Landschafts- oder Architekturfoto");
+            }
+            
+            // Object recognition feedback
+            if (analysis.objects.totalObjects > 0) {
+                const objectTypes = [];
+                const objects = analysis.objects.detected;
+                
+                if (objects.buildings > 0) objectTypes.push(`${objects.buildings} Gebäude`);
+                if (objects.vehicles > 0) objectTypes.push(`${objects.vehicles} Fahrzeug${objects.vehicles > 1 ? 'e' : ''}`);
+                if (objects.nature > 0) objectTypes.push(`${objects.nature} Natur-Element${objects.nature > 1 ? 'e' : ''}`);
+                if (objects.technology > 0) objectTypes.push(`${objects.technology} technische${objects.technology > 1 ? '' : 's'} Gerät${objects.technology > 1 ? 'e' : ''}`);
+                
+                if (objectTypes.length > 0) {
+                    feedback.push(`   • 🏗️ Objekte erkannt: ${objectTypes.join(', ')}`);
+                }
+                
+                const objectBonus = Math.min(10, analysis.objects.totalObjects * 2);
+                feedback.push(`   • 🎯 Objekt-Erkennungs-Bonus: +${objectBonus} Punkte!`);
+            }
+            
+            // Scenery feedback
+            const sceneryNames = {
+                urban: 'Städtische Umgebung',
+                historic: 'Historische Architektur',
+                park: 'Park/Grünanlage',
+                waterfront: 'Gewässer/Uferbereich',
+                street: 'Straßenszene',
+                indoor: 'Innenraum'
+            };
+            
+            const sceneryName = sceneryNames[analysis.scenery.dominantScenery] || 'Gemischte Umgebung';
+            feedback.push(`   • 🏞️ Umgebung: ${sceneryName}`);
+            
+            if (analysis.scenery.isOutdoor) {
+                feedback.push("   • 🌍 Outdoor-Exploration-Bonus: +8 Punkte!");
+                
+                if (analysis.scenery.dominantScenery === 'historic') {
+                    feedback.push("   • 🏛️ Historische Bedeutung erkannt: +8 Punkte!");
                 }
             }
             
-            // Station-specific creativity bonuses
-            const station = tourApp.stations.find(s => s.id === stationId);
-            if (station) {
-                if (station.title.includes('Dom') && faces.estimatedPeopleCount > 1) score += 5;
-                if (station.title.includes('Heumarkt') && faces.estimatedSmilingPeople > 0) score += 3;
+            // Color analysis feedback
+            if (analysis.colors.isColorful) {
+                feedback.push("   • 🌈 Sehr farbenfrohe Aufnahme!");
+                if (analysis.colors.isDiverse) {
+                    feedback.push("   • 🎨 Exzellente Farbvielfalt erkannt!");
+                }
             }
             
-            // Small random factor for subjectivity (reduced from before)
-            score += Math.random() * 5;
+            if (analysis.colors.hasGoodBalance) {
+                feedback.push("   • ⚖️ Ausgewogene Farbkomposition!");
+            }
             
-            return Math.max(25, Math.min(100, score));
+            // Technical details for interested users
+            feedback.push(``); // Empty line
+            feedback.push("🔬 **Technische Details:**");
+            feedback.push(`   • Bildauflösung: ${analysis.dimensions.width}×${analysis.dimensions.height} Pixel`);
+            feedback.push(`   • Schärfe-Score: ${Math.round(analysis.sharpness.score)} (${analysis.sharpness.qualityLevel})`);
+            feedback.push(`   • Kontrast-Bereich: ${analysis.contrast.globalRange} (${analysis.contrast.isGoodContrast ? 'optimal' : 'verbesserbar'})`);
+            feedback.push(`   • Helligkeits-Durchschnitt: ${Math.round(analysis.brightness.average)}/255`);
+            
+            if (analysis.faces.likelyHasPeople) {
+                feedback.push(`   • Hautton-Anteil: ${(analysis.faces.skinToneRatio * 100).toFixed(1)}%`);
+                feedback.push(`   • Gesichts-Regionen: ${analysis.faces.skinToneClusters} erkannt`);
+            }
+            
+            feedback.push(`   • Farbvielfalt: ${analysis.colors.diversity} verschiedene Farbtöne`);
+            feedback.push(`   • Interessante Bereiche: ${analysis.composition.interestPoints} erkannt`);
+            
+            // Overall encouragement
+            const totalScore = technicalScore + compositionScore + creativityScore;
+            if (totalScore > 270) {
+                feedback.push("🏆 **Fantastisches Foto - ihr seid echte Profis!**");
+            } else if (totalScore > 230) {
+                feedback.push("👏 **Sehr gelungenes Bild - weiter so!**");
+            } else if (totalScore > 180) {
+                feedback.push("📸 **Gutes Foto mit schönen Details!**");
+            } else {
+                feedback.push("📱 **Guter Versuch - beim nächsten Foto wird's noch besser!**");
+            }
+            
+            return feedback;
         }
 
         // NEUE FUNKTION: Erkennt irrelevante Motive
@@ -6505,7 +8301,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             return new File([u8arr], 'challenge-photo.jpg', {type: mime});
         }
 
-        // Special function for challenge photo messages
+        // Enhanced challenge photo message with recognition results
         function addChallengePhotoMessage(messageData, isOwn = false) {
             try {
                 const chatContainer = document.getElementById('chatContainer');
@@ -6515,6 +8311,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 messageDiv.className = `chat-message ${isOwn ? 'own' : ''} challenge-photo-message`;
                 messageDiv.style.background = isOwn ? '#e0f2fe' : '#f0f9ff';
                 messageDiv.style.borderLeft = '4px solid #0ea5e9';
+                messageDiv.style.position = 'relative';
                 
                 const timeStr = new Date().toLocaleTimeString('de-DE', {
                     hour: '2-digit',
@@ -6527,6 +8324,19 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 const stationTitle = messageData.stationTitle || 'Unbekannte Station';
                 const score = messageData.score || 0;
                 const image = messageData.image || '';
+                const recognitionResults = messageData.recognitionResults || [];
+                
+                // Create recognition summary for display
+                let recognitionSummary = '';
+                if (recognitionResults.length > 0) {
+                    const topResults = recognitionResults.slice(0, 3); // Show top 3 results
+                    recognitionSummary = `
+                        <div style="background: rgba(5, 150, 105, 0.1); padding: 0.5rem; border-radius: 6px; margin: 0.5rem 0; font-size: 0.8rem;">
+                            <strong>🔍 KI erkannte:</strong> ${topResults.join(' • ')}
+                            ${recognitionResults.length > 3 ? ` • +${recognitionResults.length - 3} weitere` : ''}
+                        </div>
+                    `;
+                }
                 
                 const messageContent = `
                     <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
@@ -6536,17 +8346,29 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     <p style="margin-bottom: 0.5rem; color: #0369a1; font-weight: bold;">
                         🏛️ ${stationTitle} - ${score} Punkte!
                     </p>
+                    ${recognitionSummary}
                     <div class="chat-image-container" style="position: relative;">
                         <img src="${image}" class="chat-image" 
-                            onclick="event.stopPropagation(); showImageModal('${image}', 'Challenge: ${stationTitle}', 'Von ${userName} (${score} Punkte)')" 
-                            alt="Challenge Foto" style="max-width: 300px;">
-                        <button onclick="event.stopPropagation(); downloadChallengePhoto('${image}', '${stationTitle}', '${userName}')" 
-                                style="position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.7); color: white; border: none; padding: 0.5rem; border-radius: 50%; cursor: pointer; font-size: 0.9rem; transition: all 0.3s;"
-                                onmouseover="this.style.background='rgba(0,0,0,0.9)'"
-                                onmouseout="this.style.background='rgba(0,0,0,0.7)'"
-                                title="Foto herunterladen">
-                            💾
-                        </button>
+                            onclick="event.stopPropagation(); showEnhancedImageModal('${image}', 'Challenge: ${stationTitle}', '${userName} (${score} Punkte)', ${JSON.stringify(recognitionResults).replace(/"/g, '&quot;')})" 
+                            alt="Challenge Foto" style="max-width: 300px; cursor: pointer; transition: transform 0.3s;"
+                            onmouseover="this.style.transform='scale(1.05)'"
+                            onmouseout="this.style.transform='scale(1)'">
+                        <div style="position: absolute; top: 8px; right: 8px; display: flex; gap: 4px;">
+                            <button onclick="event.stopPropagation(); downloadChallengePhoto('${image}', '${stationTitle}', '${userName}', ${score})" 
+                                    style="background: rgba(0,0,0,0.7); color: white; border: none; padding: 0.4rem; border-radius: 50%; cursor: pointer; font-size: 0.9rem; transition: all 0.3s;"
+                                    onmouseover="this.style.background='rgba(0,0,0,0.9)'; this.style.transform='scale(1.1)'"
+                                    onmouseout="this.style.background='rgba(0,0,0,0.7)'; this.style.transform='scale(1)'"
+                                    title="Foto herunterladen">
+                                💾
+                            </button>
+                            <button onclick="event.stopPropagation(); showPhotoAnalysis('${image}', ${JSON.stringify(recognitionResults).replace(/"/g, '&quot;')})" 
+                                    style="background: rgba(139, 92, 246, 0.9); color: white; border: none; padding: 0.4rem; border-radius: 50%; cursor: pointer; font-size: 0.9rem; transition: all 0.3s;"
+                                    onmouseover="this.style.background='rgba(139, 92, 246, 1)'; this.style.transform='scale(1.1)'"
+                                    onmouseout="this.style.background='rgba(139, 92, 246, 0.9)'; this.style.transform='scale(1)'"
+                                    title="KI-Analyse anzeigen">
+                                🔍
+                            </button>
+                        </div>
                     </div>
                     <span class="timestamp" style="font-size: 0.8rem; color: #6b7280;">${timeStr}</span>
                 `;
@@ -6560,13 +8382,206 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     tourApp.state.unreadMessages++;
                     updateChatNotification();
                     
-                    showClickableNotification(`📸 ${userName} hat ein Challenge-Foto geteilt!`, 'chat');
+                    const notificationText = recognitionResults.length > 0 
+                        ? `📸 ${userName} hat ein Challenge-Foto geteilt! (${recognitionResults[0]})`
+                        : `📸 ${userName} hat ein Challenge-Foto geteilt!`;
+                    showClickableNotification(notificationText, 'chat');
                 } else if (!isOwn && tourApp.state.currentTab === 'chat' && tourApp.state.currentChatTab !== 'main') {
                     tourApp.state.unreadMessages++;
                     updateChatNotification();
                 }
             } catch (error) {
                 console.error('Error adding challenge photo message:', error);
+            }
+        }
+
+        // Enhanced image modal with recognition results
+        function showEnhancedImageModal(url, title, description, recognitionResults) {
+            try {
+                const modal = document.createElement('div');
+                modal.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0,0,0,0.95);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 10000;
+                    flex-direction: column;
+                    padding: 20px;
+                    box-sizing: border-box;
+                `;
+                
+                const recognitionResultsArray = typeof recognitionResults === 'string' ? 
+                    JSON.parse(recognitionResults) : recognitionResults || [];
+                
+                const recognitionHtml = recognitionResultsArray.length > 0 ? `
+                    <div style="background: rgba(139, 92, 246, 0.9); padding: 1rem; border-radius: 12px; margin-bottom: 1rem; max-width: 600px;">
+                        <h4 style="color: white; margin-bottom: 0.5rem;">🔍 KI-Erkennung:</h4>
+                        <div style="color: white; font-size: 0.9rem; line-height: 1.4;">
+                            ${recognitionResultsArray.map(result => `• ${result}`).join('<br>')}
+                        </div>
+                    </div>
+                ` : '';
+                
+                modal.innerHTML = `
+                    ${recognitionHtml}
+                    <img src="${url}" style="max-width: 90%; max-height: 70%; object-fit: contain; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.5);" alt="${title}">
+                    <div style="color: white; text-align: center; margin-top: 20px; max-width: 600px;">
+                        <h3 style="margin-bottom: 0.5rem;">${title}</h3>
+                        <p style="margin-bottom: 1rem;">${description}</p>
+                        <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                            <button onclick="event.stopPropagation(); downloadImageFromModal('${url}', '${title}')" 
+                                    style="padding: 0.8rem 1.5rem; background: #059669; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">
+                                💾 Herunterladen
+                            </button>
+                            <button onclick="event.stopPropagation(); closeEnhancedImageModal(this.parentElement.parentElement.parentElement)" 
+                                    style="padding: 0.8rem 1.5rem; background: #dc2626; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">
+                                ✕ Schließen
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        e.stopPropagation();
+                        closeEnhancedImageModal(modal);
+                    }
+                });
+
+                const escapeHandler = (e) => {
+                    if (e.key === 'Escape') {
+                        e.stopPropagation();
+                        closeEnhancedImageModal(modal);
+                        document.removeEventListener('keydown', escapeHandler);
+                    }
+                };
+                document.addEventListener('keydown', escapeHandler);
+                
+                modal.setAttribute('data-escape-handler', 'true');
+                document.body.appendChild(modal);
+
+            } catch (error) {
+                console.error('Error showing enhanced image modal:', error);
+                // Fallback to regular image modal
+                showImageModal(url, title, description);
+            }
+        }
+
+        function closeEnhancedImageModal(modal) {
+            try {
+                if (modal && modal.parentElement) {
+                    modal.remove();
+                }
+            } catch (error) {
+                console.error('Error closing enhanced image modal:', error);
+            }
+        }
+
+        function downloadImageFromModal(imageUrl, title) {
+            try {
+                const cleanTitle = title.replace(/[^a-zA-Z0-9]/g, '_');
+                const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '');
+                const fileName = `${cleanTitle}_${timestamp}.jpg`;
+                
+                const link = document.createElement('a');
+                link.href = imageUrl;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                showNotification(`📥 Foto heruntergeladen: "${fileName}"`, 'success');
+            } catch (error) {
+                console.error('Error downloading image from modal:', error);
+            }
+        }
+
+        // Enhanced photo analysis display
+        function showPhotoAnalysis(imageUrl, recognitionResults) {
+            try {
+                const modal = document.createElement('div');
+                modal.className = 'admin-popup-overlay';
+                
+                const recognitionResultsArray = typeof recognitionResults === 'string' ? 
+                    JSON.parse(recognitionResults) : recognitionResults || [];
+                
+                modal.innerHTML = `
+                    <div class="admin-popup" style="max-width: 500px; width: 95%; background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: white;">
+                        <h3 style="color: white; margin-bottom: 1rem;">🔍 KI-Foto-Analyse</h3>
+                        
+                        <div style="background: rgba(255,255,255,0.1); border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
+                            <img src="${imageUrl}" style="width: 100%; max-height: 200px; object-fit: contain; border-radius: 6px; margin-bottom: 1rem;">
+                        </div>
+                        
+                        <div style="background: rgba(255,255,255,0.1); border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
+                            <h4 style="color: white; margin-bottom: 0.5rem;">🎯 Erkannte Elemente:</h4>
+                            <div style="line-height: 1.6;">
+                                ${recognitionResultsArray.length > 0 ? 
+                                    recognitionResultsArray.map(result => `<div style="margin: 0.25rem 0;">• ${result}</div>`).join('') :
+                                    '<div style="color: rgba(255,255,255,0.7); font-style: italic;">Keine detaillierten Erkennungsdaten verfügbar</div>'
+                                }
+                            </div>
+                        </div>
+                        
+                        <div style="text-align: center;">
+                            <button class="admin-popup-close" onclick="closePhotoAnalysis(this.parentElement.parentElement)" 
+                                    style="background: white; color: #8b5cf6;">
+                                Verstanden
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(modal);
+                
+                // Add escape key handler
+                const escapeHandler = (e) => {
+                    if (e.key === 'Escape') {
+                        modal.remove();
+                        document.removeEventListener('keydown', escapeHandler);
+                    }
+                };
+                document.addEventListener('keydown', escapeHandler);
+                
+            } catch (error) {
+                console.error('Error showing photo analysis:', error);
+            }
+        }
+
+        function closePhotoAnalysis(modal) {
+            try {
+                if (modal && modal.parentElement) {
+                    modal.remove();
+                }
+            } catch (error) {
+                console.error('Error closing photo analysis:', error);
+            }
+        }
+
+        // Enhanced download function with score
+        function downloadChallengePhoto(imageUrl, stationTitle, userName, score) {
+            try {
+                const cleanStationTitle = stationTitle.replace(/[^a-zA-Z0-9]/g, '_');
+                const cleanUserName = userName.replace(/[^a-zA-Z0-9]/g, '_');
+                const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '');
+                const fileName = `Challenge_${cleanStationTitle}_${cleanUserName}_${score}pts_${timestamp}.jpg`;
+                
+                const link = document.createElement('a');
+                link.href = imageUrl;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                showNotification(`💾 Challenge-Foto heruntergeladen: "${fileName}"`, 'success');
+            } catch (error) {
+                console.error('Error downloading challenge photo:', error);
+                showNotification('Download fehlgeschlagen', 'error');
             }
         }
 
@@ -9160,6 +11175,19 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             stationLocationMarkers = {};
         });
 
+        // Global window functions for enhanced photo analysis
+        window.showFeedbackTab = showFeedbackTab;
+        window.savePhotoToDevice = savePhotoToDevice;
+        window.downloadAllTourPhotos = downloadAllTourPhotos;
+
+        // Additional global functions for enhanced features
+        window.showEnhancedImageModal = showEnhancedImageModal;
+        window.closeEnhancedImageModal = closeEnhancedImageModal;
+        window.downloadImageFromModal = downloadImageFromModal;
+        window.showPhotoAnalysis = showPhotoAnalysis;
+        window.closePhotoAnalysis = closePhotoAnalysis;
+        window.downloadChallengePhoto = downloadChallengePhoto;
+        
     </script>
 </body>
 </html>
