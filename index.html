@@ -2381,7 +2381,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     
                     const teamOption = document.createElement('div');
                     teamOption.className = `team-option ${isSelected ? 'selected' : ''}`;
-                    teamOption.onclick = () => selectTeam(teamId, teamNames[teamId], teamOption);
+                    teamOption.onclick = async () => await selectTeam(teamId, teamNames[teamId], teamOption);
                     
                     const teamColors = {
                         'red': '#dc2626',
@@ -11002,7 +11002,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
         }
                 
         // Define showTab function BEFORE it's used in HTML
-        window.showTab = function(tabName, tabElement) {
+        function showTab(tabName, tabElement) {
             try {
                 tourApp.state.currentTab = tabName;
                 
@@ -11053,6 +11053,9 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             }
         }
 
+        // Make it available globally
+        window.showTab = showTab;
+
 
         // Global window functions for HTML onclick handlers
         window.showAdminTab = showAdminTab;
@@ -11080,7 +11083,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 tourApp.state.teamName = teamName;
                 
                 // Update team membership
-                await updateTeamMembership(teamId);
+                updateTeamMembership(teamId).catch(error => console.error('Error updating team membership:', error));
                 
                 // Update UI
                 document.querySelectorAll('.team-option').forEach(option => {
