@@ -1525,7 +1525,70 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
 
     <script>
-        // Firebase Configuration
+        
+        // Global showTab function - MUSS ganz oben stehen für HTML onclick
+        function showTab(tabName, tabElement) {
+            try {
+                if (!tourApp || !tourApp.state) {
+                    // Fallback für frühe Aufrufe
+                    setTimeout(() => showTab(tabName, tabElement), 100);
+                    return;
+                }
+                
+                tourApp.state.currentTab = tabName;
+                
+                document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+                if (tabElement) {
+                    tabElement.classList.add('active');
+                }
+
+                document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+                const targetTab = document.getElementById(tabName === 'map' ? 'map-content' : tabName);
+                
+                if (targetTab) {
+                    targetTab.classList.add('active');
+                    targetTab.style.display = 'block';
+                }
+
+                if (tabName === 'chat') {
+                    if (typeof clearChatNotification === 'function') clearChatNotification();
+                    if (tourApp.state.currentChatTab === 'team' && typeof clearTeamChatNotification === 'function') {
+                        clearTeamChatNotification();
+                    }
+                }
+
+                if (tabName === 'admin' && tourApp.state.isAdmin) {
+                    setTimeout(() => {
+                        if (typeof generateContentEditor === 'function') generateContentEditor();
+                        if (typeof updateRanking === 'function') updateRanking();
+                    }, 100);
+                }
+
+                if (tabName === 'map' || tabName === 'map-tab') {
+                    setTimeout(() => {
+                        if (!tourApp.state.map && typeof initMap === 'function') {
+                            initMap();
+                        } else if (tourApp.state.map) {
+                            tourApp.state.map.invalidateSize();
+                        }
+                    }, 100);
+                }
+
+                if (tabName === 'ranking') {
+                    setTimeout(() => {
+                        if (typeof updateRanking === 'function') updateRanking();
+                    }, 100);
+                }
+            } catch (error) {
+                console.error('Error showing tab:', error);
+            }
+        }
+
+        // Sofort global verfügbar machen
+        window.showTab = showTab;
+    
+
+    // Firebase Configuration
         const firebaseConfig = {
             apiKey: "AIzaSyC1dTE4AiAKbInq-5f2dy92zWBIOmZ8o9Y",
             authDomain: "koeln-tour.firebaseapp.com",
@@ -5986,7 +6049,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     const img = new Image();
                     img.crossOrigin = 'anonymous';
                     
-                    img.onload = function() {
+                    img.onload = async function() {
                         try {
                             // Create canvas for analysis
                             const canvas = document.createElement('canvas');
@@ -11005,61 +11068,6 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 console.error('Error closing media modal:', error);
             }
         }
-                
-        // Define showTab function BEFORE it's used in HTML
-        function showTab(tabName, tabElement) {
-            try {
-                tourApp.state.currentTab = tabName;
-                
-                document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-                if (tabElement) {
-                    tabElement.classList.add('active');
-                }
-
-                document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-                const targetTab = document.getElementById(tabName === 'map' ? 'map-content' : tabName);
-                
-                if (targetTab) {
-                    targetTab.classList.add('active');
-                    targetTab.style.display = 'block';
-                }
-
-                if (tabName === 'chat') {
-                    clearChatNotification();
-                    if (tourApp.state.currentChatTab === 'team') {
-                        clearTeamChatNotification();
-                    }
-                }
-
-                if (tabName === 'admin' && tourApp.state.isAdmin) {
-                    setTimeout(() => {
-                        generateContentEditor();
-                        updateRanking();
-                    }, 100);
-                }
-
-                if (tabName === 'map' || tabName === 'map-tab') {
-                    setTimeout(() => {
-                        if (!tourApp.state.map) {
-                            initMap();
-                        } else if (tourApp.state.map) {
-                            tourApp.state.map.invalidateSize();
-                        }
-                    }, 100);
-                }
-
-                if (tabName === 'ranking') {
-                    setTimeout(() => {
-                        updateRanking();
-                    }, 100);
-                }
-            } catch (error) {
-                console.error('Error showing tab:', error);
-            }
-        }
-
-        // Make it available globally
-        window.showTab = showTab;
 
 
         // Global window functions for HTML onclick handlers
