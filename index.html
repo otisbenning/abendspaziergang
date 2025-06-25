@@ -1365,6 +1365,9 @@
                     <div style="background: white; border-radius: 12px; padding: 1.5rem; margin: 1.5rem 0; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
                         <h4 style="color: #1f2937; margin-bottom: 1rem;">🚀 Schnellaktionen</h4>
                         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                            <button class="btn btn-admin btn-small" onclick="toggleTourChatLock()" id="tourChatLockBtn">
+                                <span id="tourChatLockText">🔓 Tour-Chat freigeben</span>
+                            </button>
                             <button class="btn btn-admin btn-small" onclick="toggleChatModeration()">
                                 <span id="chatModerationText">🛡️ Chat sperren</span>
                             </button>
@@ -1543,6 +1546,7 @@
                 maxRetries: 3,
                 chatModeration: false,
                 chatBlocked: false, // NEW: Chat gesperrt durch Moderation
+                tourChatLocked: true, // NEW: Tour-Chat standardmäßig gesperrt
                 unreadMessages: 0,
                 unreadTeamMessages: 0, // NEW: Team-Chat ungelesen
                 currentTab: 'overview',
@@ -1876,6 +1880,51 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     console.error('Moderation sync error:', error);
                 });
 
+                // Listen to tour chat lock status
+                const tourLockRef = db.collection('tours').doc(tourApp.state.tourId).collection('settings').doc('tourLock');
+                const tourLockUnsubscribe = tourLockRef.onSnapshot((doc) => {
+                    if (doc.exists) {
+                        const tourLockData = doc.data();
+                        const newLockStatus = tourLockData.tourChatLocked || false;
+                        
+                        // Only update if status actually changed
+                        if (tourApp.state.tourChatLocked !== newLockStatus) {
+                            tourApp.state.tourChatLocked = newLockStatus;
+                            
+                            // Update UI immediately for all users
+                            updateChatModeration();
+                            
+                            // Show notification to non-admin users
+                            if (!tourApp.state.isAdmin) {
+                                if (newLockStatus) {
+                                    showNotification('Tour-Chat wurde vom Admin gesperrt! 🔒', 'warning');
+                                    addSystemMessage('Tour-Chat wurde vom Admin gesperrt 🔒');
+                                } else {
+                                    showNotification('Tour-Chat wurde freigegeben - die Tour kann beginnen! 🔓');
+                                    addSystemMessage('Tour-Chat wurde vom Admin freigegeben - die Tour kann beginnen! 🔓');
+                                }
+                            }
+                            
+                            // Update admin button text if user is admin
+                            if (tourApp.state.isAdmin) {
+                                const textEl = document.getElementById('tourChatLockText');
+                                const btnEl = document.getElementById('tourChatLockBtn');
+                                if (textEl && btnEl) {
+                                    if (newLockStatus) {
+                                        textEl.textContent = '🔓 Tour-Chat freigeben';
+                                        btnEl.style.background = '#dc2626';
+                                    } else {
+                                        textEl.textContent = '🔒 Tour-Chat sperren';
+                                        btnEl.style.background = '#059669';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }, (error) => {
+                    console.error('Tour lock sync error:', error);
+                });
+
                 // Listen to scores
                 const scoresRef = db.collection('tours').doc(tourApp.state.tourId).collection('scores');
                 const scoresUnsubscribe = scoresRef.onSnapshot(() => {
@@ -1992,7 +2041,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     console.error('Events sync error:', error);
                 });
 
-                let allSyncListeners = [chatUnsubscribe, scoresUnsubscribe, stationsUnsubscribe, announcementsUnsubscribe, moderationUnsubscribe, eventsUnsubscribe];
+                let allSyncListeners = [chatUnsubscribe, scoresUnsubscribe, stationsUnsubscribe, announcementsUnsubscribe, moderationUnsubscribe, tourLockUnsubscribe, eventsUnsubscribe];
                 if (teamChatUnsubscribe) {
                     allSyncListeners.push(teamChatUnsubscribe);
                 }
@@ -3127,7 +3176,25 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     initGeolocation();
                     loadChatHistory();
                     initializeAdminChat();
-                    startChatCleanup(); // HIER EINFÜGEN
+                    startChatCleanup();
+                    
+                    // Initialize tour chat lock UI for admins
+                    if (tourApp.state.isAdmin) {
+                        const textEl = document.getElementById('tourChatLockText');
+                        const btnEl = document.getElementById('tourChatLockBtn');
+                        if (textEl && btnEl) {
+                            if (tourApp.state.tourChatLocked) {
+                                textEl.textContent = '🔓 Tour-Chat freigeben';
+                                btnEl.style.background = '#dc2626';
+                            } else {
+                                textEl.textContent = '🔒 Tour-Chat sperren';
+                                btnEl.style.background = '#059669';
+                            }
+                        }
+                    }
+                    
+                    // Apply initial chat moderation state
+                    updateChatModeration();
                 }, 1000);
                 
             } catch (error) {
@@ -3254,9 +3321,10 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
         // Chat Functions - ENHANCED with Team Chat and Moderation
         window.sendMessage = async function() {
             try {
-                // Check if chat is blocked by moderation
-                if (tourApp.state.chatBlocked && !tourApp.state.isAdmin) {
-                    showNotification('Chat ist vom Admin gesperrt! 🛡️', 'warning');
+                // Check if chat is blocked by moderation or tour lock
+                if ((tourApp.state.chatBlocked || tourApp.state.tourChatLocked) && !tourApp.state.isAdmin) {
+                    const reason = tourApp.state.tourChatLocked ? 'Tour-Chat ist noch nicht freigegeben!' : 'Chat ist vom Admin gesperrt!';
+                    showNotification(reason + ' 🛡️', 'warning');
                     return;
                 }
 
@@ -3300,6 +3368,13 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             try {
                 if (!tourApp.state.selectedTeam) {
                     showNotification('Du musst erst einem Team beitreten!', 'error');
+                    return;
+                }
+
+                // Check if chat is blocked by moderation or tour lock
+                if ((tourApp.state.chatBlocked || tourApp.state.tourChatLocked) && !tourApp.state.isAdmin) {
+                    const reason = tourApp.state.tourChatLocked ? 'Team-Chat ist noch nicht freigegeben!' : 'Team-Chat ist vom Admin gesperrt!';
+                    showNotification(reason + ' 🛡️', 'warning');
                     return;
                 }
 
@@ -3735,10 +3810,21 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 const mainChatInput = document.getElementById('mainChatInput');
                 const teamChatInput = document.getElementById('teamChatInput');
                 
-                if (tourApp.state.chatBlocked && !tourApp.state.isAdmin) {
+                const isChatDisabled = (tourApp.state.chatBlocked || tourApp.state.tourChatLocked) && !tourApp.state.isAdmin;
+                
+                if (isChatDisabled) {
                     // Show moderation notice and disable inputs
                     if (moderationNotice) {
                         moderationNotice.classList.remove('hidden');
+                        // Update notice text based on lock type
+                        const noticeText = moderationNotice.querySelector('p');
+                        if (noticeText) {
+                            if (tourApp.state.tourChatLocked) {
+                                noticeText.textContent = 'Der Chat wurde vom Admin noch nicht für diese Tour freigegeben.';
+                            } else {
+                                noticeText.textContent = 'Der Chat wurde vom Admin gesperrt. Nachrichten können aktuell nicht gesendet werden.';
+                            }
+                        }
                     }
                     if (mainChatInput) {
                         mainChatInput.style.opacity = '0.5';
@@ -4210,6 +4296,53 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     'Chat wurde vom Admin freigegeben 🔓');
             } catch (error) {
                 console.error('Error toggling chat moderation:', error);
+            }
+        }
+
+        async function toggleTourChatLock() {
+            try {
+                tourApp.state.tourChatLocked = !tourApp.state.tourChatLocked;
+                
+                const textEl = document.getElementById('tourChatLockText');
+                const btnEl = document.getElementById('tourChatLockBtn');
+                
+                if (textEl && btnEl) {
+                    if (tourApp.state.tourChatLocked) {
+                        textEl.textContent = '🔓 Tour-Chat freigeben';
+                        btnEl.style.background = '#dc2626'; // Red when locked
+                    } else {
+                        textEl.textContent = '🔒 Tour-Chat sperren';
+                        btnEl.style.background = '#059669'; // Green when unlocked
+                    }
+                }
+
+                // Save tour chat lock status to Firebase to sync with all users
+                if (tourApp.state.isFirebaseConnected && tourApp.state.tourId) {
+                    await db.collection('tours').doc(tourApp.state.tourId)
+                        .collection('settings').doc('tourLock')
+                        .set({
+                            tourChatLocked: tourApp.state.tourChatLocked,
+                            lockedBy: tourApp.state.userName,
+                            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                }
+
+                // Update local chat UI
+                updateChatModeration();
+                
+                const actionText = tourApp.state.tourChatLocked ? 'gesperrt' : 'freigegeben';
+                const actionIcon = tourApp.state.tourChatLocked ? '🔒' : '🔓';
+                
+                showNotification(`Tour-Chat für alle ${actionText}! ${actionIcon}`);
+                
+                const systemMessage = tourApp.state.tourChatLocked ? 
+                    'Tour-Chat wurde vom Admin gesperrt 🔒' : 
+                    'Tour-Chat wurde vom Admin freigegeben - die Tour kann beginnen! 🔓';
+                addSystemMessage(systemMessage);
+                
+            } catch (error) {
+                console.error('Error toggling tour chat lock:', error);
+                showNotification('Fehler beim Ändern des Tour-Chat Status', 'error');
             }
         }
 
@@ -5845,14 +5978,6 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 modal.setAttribute('data-escape-handler', 'true');
                 document.body.appendChild(modal);
 
-                // Add escape key handler
-                const escapeHandler = (e) => {
-                    if (e.key === 'Escape') {
-                        modal.remove();
-                        document.removeEventListener('keydown', escapeHandler);
-                    }
-                };
-                document.addEventListener('keydown', escapeHandler);
                 
             } catch (error) {
                 console.error('Error playing audio:', error);
@@ -5967,15 +6092,6 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 modal.setAttribute('data-escape-handler', 'true');
                 document.body.appendChild(modal);
 
-                // Add escape key handler
-                const escapeHandler = (e) => {
-                    if (e.key === 'Escape') {
-                        modal.remove();
-                        document.removeEventListener('keydown', escapeHandler);
-                    }
-                };
-                document.addEventListener('keydown', escapeHandler);
-
             } catch (error) {
                 console.error('Error showing image modal:', error);
             }
@@ -6031,6 +6147,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     maxRetries: tourApp.state.maxRetries,
                     chatModeration: tourApp.state.chatModeration,
                     chatBlocked: tourApp.state.chatBlocked,
+                    tourChatLocked: tourApp.state.tourChatLocked,
                     unreadMessages: tourApp.state.unreadMessages,
                     unreadTeamMessages: tourApp.state.unreadTeamMessages,
                     currentTab: tourApp.state.currentTab,
@@ -7929,6 +8046,8 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
         window.saveTeamName = saveTeamName;
         window.closeTeamNameEditor = closeTeamNameEditor;
         window.autoAssignTeams = autoAssignTeams;
+        window.showTab = showTab;
+        window.toggleTourChatLock = toggleTourChatLock;
 
         // Initialize app when DOM is ready
         if (document.readyState === 'loading') {
