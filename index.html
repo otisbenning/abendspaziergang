@@ -2381,7 +2381,11 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     
                     const teamOption = document.createElement('div');
                     teamOption.className = `team-option ${isSelected ? 'selected' : ''}`;
-                    teamOption.onclick = async () => await selectTeam(teamId, teamNames[teamId], teamOption);
+                    teamOption.onclick = () => {
+                        selectTeam(teamId, teamNames[teamId], teamOption).catch(error => 
+                            console.error('Error selecting team:', error)
+                        );
+                    };
                     
                     const teamColors = {
                         'red': '#dc2626',
@@ -3237,7 +3241,9 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     showNotification('🔄 Stationen von Server geladen!');
                 } else {
                     for (const station of tourApp.stations) {
-                        await saveToFirebase('stations', station.id.toString(), station);
+                        saveToFirebase('stations', station.id.toString(), station).catch(error => 
+                            console.error('Error saving station to Firebase:', error)
+                        );
                     }
                     console.log('📤 Initialized Firebase with default stations');
                 }
@@ -11083,7 +11089,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 tourApp.state.teamName = teamName;
                 
                 // Update team membership
-                await updateTeamMembership(teamId);
+                updateTeamMembership(teamId).catch(error => console.error('Error updating team membership:', error));
                 
                 // Update UI
                 document.querySelectorAll('.team-option').forEach(option => {
