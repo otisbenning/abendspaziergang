@@ -5650,15 +5650,25 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             const faceRegions = detectFaceRegions(pixels, width, height);
             const smileAnalysis = detectSmiles(pixels, width, height, faceRegions);
             
-            // Estimate number of people based on skin tone clusters and face regions
-            let estimatedPeopleCount = Math.max(
-                skinToneAnalysis.clusters,
-                faceRegions.length,
-                Math.floor(skinToneAnalysis.skinToneRatio * 15)
-            );
-            
-            // Cap at reasonable maximum for group photos
-            estimatedPeopleCount = Math.min(estimatedPeopleCount, 8);
+            // Konservativere Personen-Schätzung
+            let estimatedPeopleCount = 0;
+
+            // Nur wenn wirklich starke Indikatoren vorliegen
+            if (skinToneAnalysis.skinToneRatio > 0.03) { // Höherer Threshold
+                estimatedPeopleCount = Math.max(
+                    Math.floor(skinToneAnalysis.clusters * 0.7), // Reduziere Cluster-Gewichtung
+                    faceRegions.length,
+                    Math.floor(skinToneAnalysis.skinToneRatio * 8) // Reduzierte Ratio-Gewichtung
+                );
+            }
+
+            // Viel konservativere Obergrenze
+            estimatedPeopleCount = Math.min(estimatedPeopleCount, 4);
+
+            // Zusätzliche Validation: Bei wenig skin tone ratio maximal 1 Person
+            if (skinToneAnalysis.skinToneRatio < 0.08) {
+                estimatedPeopleCount = Math.min(estimatedPeopleCount, 1);
+}
             
             // Estimate smiling people
             const estimatedSmilingPeople = Math.min(smileAnalysis.smilingRegions, estimatedPeopleCount);
@@ -5728,11 +5738,11 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             
             // Second pass: find connected regions (clusters)
             const visited = Array(gridHeight).fill().map(() => Array(gridWidth).fill(false));
-            const minRegionSize = 5; // Minimum grid cells for a person
+            const minRegionSize = 15; // Viel größere Mindestgröße für echte Personen
             
             for (let y = 0; y < gridHeight; y++) {
                 for (let x = 0; x < gridWidth; x++) {
-                    if (skinGrid[y][x] > 10 && !visited[y][x]) { // Threshold for skin presence
+                    if (skinGrid[y][x] > 25 && !visited[y][x]) { // Höherer Threshold für skin presence
                         const regionSize = floodFillRegion(skinGrid, visited, x, y, gridWidth, gridHeight);
                         if (regionSize >= minRegionSize) {
                             skinToneRegions.push(regionSize * gridSize * gridSize); // Convert back to pixels
@@ -5806,79 +5816,46 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
         }
 
         function detectSkinTone(r, g, b) {
-            // INCLUSIVE skin tone detection for all ethnicities and skin colors
+            // STRIKTE skin tone detection für bessere Genauigkeit
             
-            // Method 1: Very Light to Light Skin Tones (European, East Asian light)
-            const lightSkin = r > 95 && g > 40 && b > 20 && 
-                            Math.max(r, g, b) - Math.min(r, g, b) > 15 &&
-                            Math.abs(r - g) > 15 && r > g && r > b;
+            // Basis-Filter: Mindest-Helligkeit und Farbbalance
+            if (r < 50 || g < 30 || b < 20) return false;
+            if (r > 250 || g > 230 || b > 200) return false; // Zu hell
             
-            // Method 2: Medium Light to Medium Skin Tones (Asian, Latino, Mediterranean)
-            const mediumSkin = r > 70 && g > 30 && b > 15 && r < 220 && g < 180 && b < 120 &&
-                            r > g && r > b && (r - g) > 5;
+            // Method 1: Klassische Skin-Tone-Ranges (restriktiver)
+            const lightSkin = r > 120 && g > 80 && b > 60 && 
+                            r > g && r > b && 
+                            (r - g) > 20 && (r - b) > 30 &&
+                            Math.abs(r - g) < 50;
             
-            // Method 3: Medium Dark to Dark Skin Tones (South Asian, Middle Eastern, African)
-            const darkSkin = r > 40 && g > 20 && b > 10 && r < 150 && g < 120 && b < 80 &&
-                            (r - b) > 10 && (g - b) > 5 && r >= g;
+            // Method 2: Medium Skin Tones (spezifischer)
+            const mediumSkin = r > 80 && g > 50 && b > 30 && r < 180 && g < 140 && b < 100 &&
+                            r > g && r > b && 
+                            (r - g) > 10 && (r - b) > 15 &&
+                            (r - g) < 40;
             
-            // Method 4: Very Dark Skin Tones (Sub-Saharan African, Australian Aboriginal)
-            const veryDarkSkin = r > 25 && g > 15 && b > 8 && r < 100 && g < 80 && b < 60 &&
-                                (r - b) > 8 && r > g && r > b;
+            // Method 3: Dark Skin Tones (präziser)
+            const darkSkin = r > 60 && g > 40 && b > 25 && r < 130 && g < 100 && b < 70 &&
+                            (r - b) > 15 && (g - b) > 10 && r >= g;
             
-            // Method 5: YCbCr color space - Extended ranges for all skin tones
+            // Method 4: YCbCr color space (engere Ranges)
             const y = 0.299 * r + 0.587 * g + 0.114 * b;
             const cb = -0.169 * r - 0.331 * g + 0.5 * b + 128;
             const cr = 0.5 * r - 0.419 * g - 0.081 * b + 128;
             
-            // Extended YCbCr ranges for diverse skin tones
-            const ycbcrSkin = y > 40 && y < 230 && 
-                            cb >= 70 && cb <= 135 && 
-                            cr >= 125 && cr <= 180;
+            const ycbcrSkin = y > 60 && y < 200 && 
+                            cb >= 85 && cb <= 125 && 
+                            cr >= 135 && cr <= 165;
             
-            // Method 6: HSV-based detection with extended ranges
-            const max = Math.max(r, g, b);
-            const min = Math.min(r, g, b);
-            const delta = max - min;
-            let h = 0;
+            // Method 5: RGB-Ratio basiert (restriktiver)
+            const ratioSkin = (r > b * 1.25) && (g > b * 1.15) && 
+                            (Math.abs(r - g) < r * 0.3) &&
+                            r > 60 && g > 45 && b > 25;
             
-            if (delta !== 0) {
-                if (max === r) h = ((g - b) / delta) % 6;
-                else if (max === g) h = (b - r) / delta + 2;
-                else h = (r - g) / delta + 4;
-            }
-            h = h * 60;
-            if (h < 0) h += 360;
+            // Mindestens 2 Methoden müssen zustimmen
+            const methodCount = [lightSkin, mediumSkin, darkSkin, ycbcrSkin, ratioSkin].filter(Boolean).length;
             
-            const s = max === 0 ? 0 : delta / max;
-            const v = max / 255;
-            
-            // Extended HSV ranges for all skin tones
-            const hsvSkin = ((h >= 0 && h <= 60) || (h >= 300 && h <= 360)) && 
-                        s >= 0.15 && s <= 0.85 && 
-                        v >= 0.2 && v <= 0.95;
-            
-            // Method 7: Ratio-based detection for diverse skin tones
-            const ratioSkin = (r > b * 1.15) && (g > b * 1.1) && 
-                            (Math.abs(r - g) < r * 0.4) &&
-                            r > 30 && g > 20 && b > 10;
-            
-            // Method 8: Adaptive detection based on brightness
-            const brightness = (r + g + b) / 3;
-            let adaptiveSkin = false;
-            
-            if (brightness > 150) { // Bright skin tones
-                adaptiveSkin = r > g && r > b && (r - b) > 20;
-            } else if (brightness > 100) { // Medium skin tones
-                adaptiveSkin = r > g && r > b && (r - b) > 10;
-            } else if (brightness > 50) { // Dark skin tones
-                adaptiveSkin = r >= g && r > b && (r - b) > 5;
-            } else { // Very dark skin tones
-                adaptiveSkin = r >= g && r >= b && r > 25;
-            }
-            
-            // Combine all methods for maximum inclusivity
-            return lightSkin || mediumSkin || darkSkin || veryDarkSkin || 
-                ycbcrSkin || hsvSkin || ratioSkin || adaptiveSkin;
+            return methodCount >= 2;
         }
 
         function detectFaceRegions(pixels, width, height) {
@@ -5951,9 +5928,11 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             
             const skinRatio = skinPixels / totalPixels;
             
-            // Face criteria: 15-60% skin tone, good vertical distribution
-            const isFace = skinRatio > 0.15 && skinRatio < 0.6 && verticalVariation > skinPixels * 0.3;
-            const confidence = isFace ? skinRatio * (verticalVariation / skinPixels) : 0;
+            // Face criteria: Viel strenger - 20-45% skin tone, bessere Verteilung
+            const isFace = skinRatio > 0.20 && skinRatio < 0.45 && 
+                        verticalVariation > skinPixels * 0.4 &&
+                        skinPixels > (size * size * 0.15); // Mindest-Pixelanzahl
+            const confidence = isFace ? skinRatio * (verticalVariation / skinPixels) * 0.7 : 0; // Reduzierte Confidence
             
             return {
                 isFace: isFace,
@@ -6317,11 +6296,11 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 creativityScore += 3; // Bonus for night photography
             }
             
-            // Enhanced team and smile simulation for fallback
+            // Konservativere team simulation für fallback
             if (tourApp.state.selectedTeam) {
-                // Simulate people detection based on team context
-                const simulatedPeople = 1 + Math.floor(Math.random() * 4); // 1-4 people
-                const simulatedSmiles = Math.floor(simulatedPeople * (0.6 + Math.random() * 0.4)); // 60-100% smiling
+                // Viel konservativere Simulation - meist 1 Person, selten mehr
+                const simulatedPeople = Math.random() > 0.7 ? 2 : 1; // 70% Chance für 1 Person, 30% für 2
+                const simulatedSmiles = Math.floor(simulatedPeople * (0.5 + Math.random() * 0.5)); // 50-100% smiling
                 
                 creativityScore += 8; // Base team bonus
                 
