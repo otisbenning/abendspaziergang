@@ -11001,23 +11001,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             }
         }
                 
-
-        // Global window functions for HTML onclick handlers
-        window.showAdminTab = showAdminTab;
-        window.saveTourSettings = saveTourSettings;
-        window.showQuickStationUpdate = showQuickStationUpdate;
-        window.openQuickStationEdit = openQuickStationEdit;
-        window.closeQuickStationModal = closeQuickStationModal;
-        window.showPerplexityHelper = showPerplexityHelper;
-        window.openPerplexity = openPerplexity;  
-        window.insertAIText = insertAIText;
-        window.closeAIModal = closeAIModal;
-        window.showMediaSearchHelper = showMediaSearchHelper;
-        window.openMediaSearch = openMediaSearch;
-        window.insertFoundMedia = insertFoundMedia;
-        window.closeMediaModal = closeMediaModal;
-        window.setWelcomeName = setWelcomeName;
-        window.closeWelcomeModal = closeWelcomeModal;
+        // Define showTab function BEFORE it's used in HTML
         window.showTab = function(tabName, tabElement) {
             try {
                 tourApp.state.currentTab = tabName;
@@ -11028,70 +11012,17 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 }
 
                 document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-                const targetTab = document.getElementById(tabName === 'map' ? 'map-tab' : tabName);
+                const targetTab = document.getElementById(tabName === 'map' ? 'map-content' : tabName);
+                
                 if (targetTab) {
                     targetTab.classList.add('active');
-                }
-
-                // Auto-scroll in stations tab
-                if (tabName === 'stations') {
-                    setTimeout(() => {
-                        // Find first uncompleted station
-                        const uncompletedStations = tourApp.stations.filter(station => 
-                            !tourApp.state.completedStations.includes(station.id)
-                        );
-                        
-                        if (uncompletedStations.length > 0) {
-                            // Scroll to first uncompleted station
-                            const firstUncompletedId = uncompletedStations[0].id;
-                            const stationCard = document.querySelector(`.station-card:has(#station-${firstUncompletedId})`);
-                            if (stationCard) {
-                                stationCard.scrollIntoView({ 
-                                    behavior: 'smooth', 
-                                    block: 'start',
-                                    inline: 'nearest'
-                                });
-                            }
-                        } else {
-                            // All stations completed, scroll to top
-                            const stationsContainer = document.getElementById('stationsList');
-                            if (stationsContainer) {
-                                stationsContainer.scrollIntoView({ 
-                                    behavior: 'smooth', 
-                                    block: 'start' 
-                                });
-                            }
-                        }
-                    }, 200);
+                    targetTab.style.display = 'block';
                 }
 
                 if (tabName === 'chat') {
-                    if (tourApp.state.currentChatTab === 'main') {
-                        clearChatNotification();
-                    } else if (tourApp.state.currentChatTab === 'team') {
+                    clearChatNotification();
+                    if (tourApp.state.currentChatTab === 'team') {
                         clearTeamChatNotification();
-                    } else if (tourApp.state.currentChatTab === 'admin') {
-                        clearAdminChatNotification();
-                    }
-                    
-                    const teamChatInput = document.getElementById('teamChatInputField');
-                    if (teamChatInput && !teamChatInput.hasAttribute('data-listener-added')) {
-                        teamChatInput.addEventListener('keypress', (e) => {
-                            if (e.key === 'Enter') {
-                                sendTeamMessage();
-                            }
-                        });
-                        teamChatInput.setAttribute('data-listener-added', 'true');
-                    }
-                    
-                    const adminChatInput = document.getElementById('adminChatInputField');
-                    if (adminChatInput && !adminChatInput.hasAttribute('data-listener-added')) {
-                        adminChatInput.addEventListener('keypress', (e) => {
-                            if (e.key === 'Enter') {
-                                sendAdminMessage();
-                            }
-                        });
-                        adminChatInput.setAttribute('data-listener-added', 'true');
                     }
                 }
 
@@ -11122,7 +11053,23 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             }
         }
 
-        const showTab = window.showTab;
+
+        // Global window functions for HTML onclick handlers
+        window.showAdminTab = showAdminTab;
+        window.saveTourSettings = saveTourSettings;
+        window.showQuickStationUpdate = showQuickStationUpdate;
+        window.openQuickStationEdit = openQuickStationEdit;
+        window.closeQuickStationModal = closeQuickStationModal;
+        window.showPerplexityHelper = showPerplexityHelper;
+        window.openPerplexity = openPerplexity;  
+        window.insertAIText = insertAIText;
+        window.closeAIModal = closeAIModal;
+        window.showMediaSearchHelper = showMediaSearchHelper;
+        window.openMediaSearch = openMediaSearch;
+        window.insertFoundMedia = insertFoundMedia;
+        window.closeMediaModal = closeMediaModal;
+        window.setWelcomeName = setWelcomeName;
+        window.closeWelcomeModal = closeWelcomeModal;
 
         window.selectTeam = async function(teamId, teamName, element) {
             try {
