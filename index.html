@@ -251,6 +251,21 @@
             align-self: center;
         }
 
+        .admin-station-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem;
+            background: #f8fafc;
+            border-radius: 8px 8px 0 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .admin-station-header button:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
         .team-selector {
             background: white;
             border: 2px solid #e5e7eb;
@@ -4170,12 +4185,27 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     stationEditor.id = `admin-station-${station.id}`;
                     
                     stationEditor.innerHTML = `
-                        <div class="admin-station-header" onclick="toggleStationEditor(${station.id})">
-                            <div>
+                        <div class="admin-station-header">
+                            <div onclick="toggleStationEditor(${station.id})" style="flex: 1; cursor: pointer;">
                                 <h5 style="color: #1f2937; margin: 0;">Station ${station.id}: ${station.title}</h5>
                                 <small style="color: #6b7280;">Klicken zum Bearbeiten</small>
                             </div>
-                            <div class="admin-expand-icon" id="expand-icon-${station.id}">▶</div>
+                            
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                                    <button class="btn btn-secondary btn-small" onclick="event.stopPropagation(); moveStationUp(${station.id})" 
+                                            style="padding: 0.25rem 0.5rem; font-size: 0.7rem; background: #059669;" 
+                                            ${tourApp.stations.findIndex(s => s.id === station.id) === 0 ? 'disabled' : ''}>
+                                        ↑
+                                    </button>
+                                    <button class="btn btn-secondary btn-small" onclick="event.stopPropagation(); moveStationDown(${station.id})" 
+                                            style="padding: 0.25rem 0.5rem; font-size: 0.7rem; background: #059669;" 
+                                            ${tourApp.stations.findIndex(s => s.id === station.id) === tourApp.stations.length - 1 ? 'disabled' : ''}>
+                                        ↓
+                                    </button>
+                                </div>
+                                <div class="admin-expand-icon" id="expand-icon-${station.id}" onclick="toggleStationEditor(${station.id})" style="cursor: pointer;">▶</div>
+                            </div>
                         </div>
                         
                         <div class="admin-station-content" id="station-content-${station.id}">
@@ -5042,6 +5072,112 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 }
             } catch (error) {
                 console.error('Error deleting station:', error);
+            }
+        }
+
+        function moveStationUp(stationId) {
+            try {
+                const currentIndex = tourApp.stations.findIndex(s => s.id === stationId);
+                if (currentIndex <= 0) return; // Already at top or not found
+                
+                // Swap positions in array
+                [tourApp.stations[currentIndex], tourApp.stations[currentIndex - 1]] = 
+                [tourApp.stations[currentIndex - 1], tourApp.stations[currentIndex]];
+                
+                // Reassign IDs to reflect new order
+                reassignStationIds();
+                
+                // Update Firebase and UI
+                updateAfterReorder();
+                
+                showNotification('Station nach oben verschoben! ↑');
+                addSystemMessage(`Admin hat Station-Reihenfolge geändert! 🔄`);
+            } catch (error) {
+                console.error('Error moving station up:', error);
+                showNotification('Fehler beim Verschieben der Station', 'error');
+            }
+        }
+
+        function moveStationDown(stationId) {
+            try {
+                const currentIndex = tourApp.stations.findIndex(s => s.id === stationId);
+                if (currentIndex < 0 || currentIndex >= tourApp.stations.length - 1) return; // Already at bottom or not found
+                
+                // Swap positions in array
+                [tourApp.stations[currentIndex], tourApp.stations[currentIndex + 1]] = 
+                [tourApp.stations[currentIndex + 1], tourApp.stations[currentIndex]];
+                
+                // Reassign IDs to reflect new order
+                reassignStationIds();
+                
+                // Update Firebase and UI
+                updateAfterReorder();
+                
+                showNotification('Station nach unten verschoben! ↓');
+                addSystemMessage(`Admin hat Station-Reihenfolge geändert! 🔄`);
+            } catch (error) {
+                console.error('Error moving station down:', error);
+                showNotification('Fehler beim Verschieben der Station', 'error');
+            }
+        }
+
+        function reassignStationIds() {
+            try {
+                // Reassign IDs starting from 1
+                tourApp.stations.forEach((station, index) => {
+                    station.id = index + 1;
+                });
+                
+                // Update completed stations array to use new IDs
+                if (tourApp.state.completedStations.length > 0) {
+                    // Map old completion status to new IDs based on array position
+                    const wasCompleted = tourApp.state.completedStations.slice();
+                    tourApp.state.completedStations = [];
+                    
+                    tourApp.stations.forEach((station, index) => {
+                        if (wasCompleted.includes(index + 1)) {
+                            tourApp.state.completedStations.push(station.id);
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Error reassigning station IDs:', error);
+            }
+        }
+
+        async function updateAfterReorder() {
+            try {
+                // Save all stations to Firebase with new IDs
+                if (tourApp.state.isFirebaseConnected && tourApp.state.tourId) {
+                    // Clear all existing stations in Firebase first
+                    const stationsRef = db.collection('tours').doc(tourApp.state.tourId).collection('stations');
+                    const snapshot = await stationsRef.get();
+                    const batch = db.batch();
+                    
+                    snapshot.docs.forEach((doc) => {
+                        batch.delete(doc.ref);
+                    });
+                    await batch.commit();
+                    
+                    // Save all stations with new IDs
+                    for (const station of tourApp.stations) {
+                        await saveToFirebase('stations', station.id.toString(), station);
+                    }
+                }
+                
+                // Update UI
+                generateContentEditor();
+                generateStationsList();
+                updateProgress();
+                
+                if (tourApp.state.map) {
+                    updateMapMarkers();
+                }
+                
+                saveState();
+            } catch (error) {
+                console.error('Error updating after reorder:', error);
+                showNotification('Reihenfolge lokal gespeichert, Firebase-Sync fehlgeschlagen', 'warning');
             }
         }
 
