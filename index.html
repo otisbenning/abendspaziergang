@@ -1226,12 +1226,19 @@
                 <div id="photoGalleryPreview" style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-radius: 12px; padding: 1rem; margin-bottom: 1.5rem; border-left: 4px solid #3b82f6;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
                         <h3 style="color: #1e40af; margin: 0;">📸 Challenge-Fotos aller Teams</h3>
-                        <button class="btn btn-secondary btn-small" onclick="openFullPhotoGallery()" style="background: #3b82f6;">
-                            🖼️ Alle anzeigen
-                        </button>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button class="btn btn-secondary btn-small" onclick="openFullPhotoGallery()" style="background: #3b82f6;">
+                                🖼️ Alle anzeigen
+                            </button>
+                            <button class="btn btn-secondary btn-small" onclick="loadPhotoGalleryPreview()" style="background: #10b981;">
+                                🔄 Aktualisieren
+                            </button>
+                        </div>
                     </div>
                     <div id="photoPreviewContainer" style="display: flex; gap: 0.5rem; overflow-x: auto; padding-bottom: 0.5rem;">
-                        <!-- Photo previews will be loaded here -->
+                        <div style="padding: 1rem; background: #f3f4f6; border-radius: 8px; color: #6b7280; text-align: center;">
+                            📸 Lade Challenge-Fotos...
+                        </div>
                     </div>
                     <p style="color: #1e40af; font-size: 0.8rem; margin: 0.5rem 0 0 0;">
                         🔄 Live-synchronisiert • 📱 Klicke auf Fotos für Details
@@ -7502,7 +7509,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             }
             
             // Object diversity (20%)
-            if (objects.totalObjects > 2) {
+            if (objects && objects.totalObjects && objects.totalObjects > 2) {
                 score += Math.min(20, objects.totalObjects * 3);
             } else {
                 score += 10;
