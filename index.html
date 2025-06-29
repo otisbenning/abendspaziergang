@@ -4204,7 +4204,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 
                 container.innerHTML = '';
                 
-                tourApp.stations.forEach(station => {
+                tourApp.stations.forEach((station, index) => {
                     const stationEditor = document.createElement('div');
                     stationEditor.className = 'admin-station-editor';
                     stationEditor.id = `admin-station-${station.id}`;
@@ -4212,7 +4212,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     stationEditor.innerHTML = `
                         <div class="admin-station-header">
                             <div onclick="toggleStationEditor(${station.id})" style="flex: 1; cursor: pointer;">
-                                <h5 style="color: #1f2937; margin: 0;">Station ${station.id}: ${station.title}</h5>
+                                <h5 style="color: #1f2937; margin: 0;">Station ${index + 1}: ${station.title}</h5>
                                 <small style="color: #6b7280;">Klicken zum Bearbeiten</small>
                             </div>
                             
@@ -5261,7 +5261,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                             <div style="text-align: center; max-width: 200px;">
                                 <h4>${station.title}</h4>
                                 <p>${station.subtitle}</p>
-                                <p><strong>Station ${station.id}/${tourApp.stations.length}</strong></p>
+                                <p><strong>Station ${index + 1}/${tourApp.stations.length}</strong></p>
                                 ${isCompleted ? '<p style="color: green;">✅ Abgeschlossen</p>' : '<p style="color: orange;">⏳ Ausstehend</p>'}
                             </div>
                         `)
@@ -5334,7 +5334,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 
                 container.innerHTML = '';
                 
-                tourApp.stations.forEach(station => {
+                tourApp.stations.forEach((station, index) => {
                     const isCompleted = tourApp.state.completedStations.includes(station.id);
                     
                     const stationCard = document.createElement('div');
@@ -5381,7 +5381,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     
                     stationCard.innerHTML = `
                         <div class="station-header">
-                            <div class="station-number ${isCompleted ? 'completed' : ''}">${station.id}</div>
+                            <div class="station-number ${isCompleted ? 'completed' : ''}">${index + 1}</div>
                             <div style="flex: 1;">
                                 <div class="station-title">${station.title}</div>
                                 <div class="station-subtitle">${station.subtitle}</div>
@@ -10819,14 +10819,14 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     attribution: '© OpenStreetMap contributors'
                 }).addTo(tourApp.state.map);
                 
-                tourApp.stations.forEach(station => {
+                tourApp.stations.forEach((station, index) => {
                     const isCompleted = tourApp.state.completedStations.includes(station.id);
                     const marker = L.marker([station.lat, station.lng])
                         .bindPopup(`
                             <div style="text-align: center; max-width: 200px;">
                                 <h4>${station.title}</h4>
                                 <p>${station.subtitle}</p>
-                                <p><strong>Station ${station.id}/${tourApp.stations.length}</strong></p>
+                                <p><strong>Station ${index + 1}/${tourApp.stations.length}</strong></p>
                                 ${isCompleted ? '<p style="color: green;">✅ Abgeschlossen</p>' : '<p style="color: orange;">⏳ Ausstehend</p>'}
                             </div>
                         `)
