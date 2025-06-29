@@ -5593,6 +5593,248 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             }
         }
 
+        // Auto-sync Challenge Photos to Firebase (without chat posting)
+        async function syncChallengePhotoToFirebase(photoData) {
+            try {
+                if (!tourApp.state.isFirebaseConnected || !tourApp.state.tourId) {
+                    console.log('Firebase not connected - photo only stored locally');
+                    return;
+                }
+
+                const challengePhotoData = {
+                    stationId: photoData.stationId,
+                    imageUrl: photoData.imageUrl,
+                    score: photoData.score || 0,
+                    timestamp: photoData.timestamp || Date.now(),
+                    userName: tourApp.state.userName,
+                    teamName: tourApp.state.teamName || 'Unbekanntes Team',
+                    userKey: `${tourApp.state.userName}_${photoData.stationId}`,
+                    syncedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    analysis: photoData.analysis || null,
+                    breakdown: photoData.breakdown || null,
+                    fallbackUsed: photoData.fallbackUsed || false
+                };
+
+                // Save to Firebase in dedicated challengePhotos collection
+                await db.collection('tours').doc(tourApp.state.tourId)
+                    .collection('challengePhotos')
+                    .doc(`${tourApp.state.userName}_${photoData.stationId}`)
+                    .set(challengePhotoData);
+
+                console.log('✅ Challenge photo synced to Firebase');
+                
+            } catch (error) {
+                console.error('Error syncing challenge photo to Firebase:', error);
+            }
+        }
+
+        // Load Challenge Photos from Firebase for gallery
+        async function loadChallengePhotosFromFirebase() {
+            try {
+                if (!tourApp.state.isFirebaseConnected || !tourApp.state.tourId) {
+                    console.log('Firebase not connected for photo loading');
+                    return [];
+                }
+
+                console.log('🔍 Loading challenge photos from Firebase...');
+                
+                const challengePhotosRef = db.collection('tours').doc(tourApp.state.tourId).collection('challengePhotos');
+                const snapshot = await challengePhotosRef.get();
+                
+                const firebasePhotos = [];
+                
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    console.log('Firebase photo data:', data);
+                    
+                    // Load photos from ALL users (including own for verification)
+                    const station = tourApp.stations.find(s => s.id === data.stationId);
+                    if (station && data.imageUrl && data.userName) {
+                        firebasePhotos.push({
+                            imageUrl: data.imageUrl,
+                            userName: data.userName,
+                            score: data.score || 0,
+                            timestamp: data.timestamp || Date.now(),
+                            teamName: data.teamName || 'Unbekanntes Team',
+                            stationTitle: station.title,
+                            stationId: data.stationId,
+                            isLocal: data.userName === tourApp.state.userName,
+                            firebaseId: doc.id,
+                            source: 'firebase'
+                        });
+                    }
+                });
+                
+                console.log(`✅ Loaded ${firebasePhotos.length} photos from Firebase`);
+                return firebasePhotos;
+                
+            } catch (error) {
+                console.error('Error loading challenge photos from Firebase:', error);
+                return [];
+            }
+        }
+
+        // Photo Gallery System for Ranking Page - Firebase-first approach
+        async function loadPhotoGalleryPreview() {
+            try {
+                const previewContainer = document.getElementById('photoPreviewContainer');
+                if (!previewContainer) return;
+                
+                console.log('🔄 Loading photo gallery preview...');
+                
+                // Collect all photos - prioritize Firebase
+                const allPhotos = [];
+                
+                // 1. Load from Firebase first (most up-to-date)
+                const firebasePhotos = await loadChallengePhotosFromFirebase();
+                allPhotos.push(...firebasePhotos);
+                
+                // 2. Add local photos that might not be in Firebase yet
+                tourApp.state.uploadedPhotos.forEach(photo => {
+                    const station = tourApp.stations.find(s => s.id === photo.stationId);
+                    if (station) {
+                        // Check if this photo is already in Firebase data
+                        const isDuplicate = allPhotos.some(p => 
+                            p.userName === tourApp.state.userName && 
+                            p.stationId === photo.stationId
+                        );
+                        
+                        if (!isDuplicate) {
+                            allPhotos.push({
+                                imageUrl: photo.imageUrl,
+                                userName: tourApp.state.userName,
+                                score: photo.score || 0,
+                                timestamp: photo.timestamp || Date.now(),
+                                teamName: tourApp.state.teamName || 'Dein Team',
+                                stationTitle: station.title,
+                                stationId: photo.stationId,
+                                isLocal: true,
+                                source: 'local'
+                            });
+                        }
+                    }
+                });
+                
+                console.log(`📊 Total photos collected: ${allPhotos.length} (${firebasePhotos.length} from Firebase, ${allPhotos.length - firebasePhotos.length} local only)`);
+                
+                if (allPhotos.length === 0) {
+                    previewContainer.innerHTML = `
+                        <div style="text-align: center; padding: 2rem; color: #6b7280; background: white; border-radius: 8px; width: 100%;">
+                            📸 Noch keine Challenge-Fotos vorhanden!<br>
+                            <small>Mache dein erstes Foto an einer Station</small>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Sort by score (highest first) and limit to latest 20
+                allPhotos.sort((a, b) => (b.score || 0) - (a.score || 0));
+                const previewPhotos = allPhotos.slice(0, 20);
+                
+                const previewHtml = previewPhotos.map((photo, index) => `
+                    <div class="photo-preview-item" onclick="showPhotoDetail(${index})" style="flex-shrink: 0; position: relative; cursor: pointer; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: transform 0.3s; ${photo.isLocal ? 'border: 2px solid #10b981;' : 'border: 1px solid #e5e7eb;'}">
+                        <img src="${photo.imageUrl}" style="width: 80px; height: 80px; object-fit: cover;" alt="Challenge Foto" onerror="this.style.display='none';">
+                        <div style="position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(0,0,0,0.8)); color: white; padding: 0.3rem; font-size: 0.7rem; text-align: center;">
+                            <strong>${photo.score}pts</strong><br>
+                            <small>${photo.userName}</small>
+                        </div>
+                        ${photo.isLocal ? '<div style="position: absolute; top: 2px; right: 2px; background: #10b981; color: white; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; font-size: 0.6rem;">✓</div>' : ''}
+                        ${index === 0 ? '<div style="position: absolute; top: 2px; left: 2px; background: #f59e0b; color: white; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; font-size: 0.6rem;">👑</div>' : ''}
+                        <div style="position: absolute; bottom: 0; right: 2px; font-size: 0.6rem; color: white; background: rgba(0,0,0,0.5); padding: 1px 3px; border-radius: 2px;">${photo.source === 'firebase' ? 'sync' : 'local'}</div>
+                    </div>
+                `).join('');
+                
+                previewContainer.innerHTML = previewHtml;
+                
+                // Store photos for detail view
+                window.galleryPhotos = allPhotos;
+                
+                // Add hover effects
+                document.querySelectorAll('.photo-preview-item').forEach(item => {
+                    item.addEventListener('mouseenter', () => {
+                        item.style.transform = 'scale(1.05)';
+                    });
+                    item.addEventListener('mouseleave', () => {
+                        item.style.transform = 'scale(1)';
+                    });
+                });
+                
+                console.log('✅ Photo gallery preview updated');
+                
+            } catch (error) {
+                console.error('Error loading photo gallery preview:', error);
+                
+                const previewContainer = document.getElementById('photoPreviewContainer');
+                if (previewContainer) {
+                    previewContainer.innerHTML = `
+                        <div style="text-align: center; padding: 1rem; color: #ef4444; background: #fef2f2; border-radius: 8px; width: 100%;">
+                            ⚠️ Fehler beim Laden der Galerie<br>
+                            <button onclick="loadPhotoGalleryPreview()" style="margin-top: 0.5rem; padding: 0.25rem 0.5rem; background: #ef4444; color: white; border: none; border-radius: 4px; cursor: pointer;">🔄 Erneut versuchen</button>
+                        </div>
+                    `;
+                }
+            }
+        }
+
+        // Upload existing local photos to Firebase
+        async function uploadExistingPhotosToFirebase() {
+            try {
+                if (!tourApp.state.isFirebaseConnected || !tourApp.state.tourId) {
+                    alert('Firebase nicht verbunden!');
+                    return;
+                }
+
+                if (tourApp.state.uploadedPhotos.length === 0) {
+                    alert('Keine lokalen Fotos gefunden!');
+                    return;
+                }
+
+                console.log(`📤 Uploading ${tourApp.state.uploadedPhotos.length} existing photos...`);
+                
+                for (const photo of tourApp.state.uploadedPhotos) {
+                    // Add missing fields
+                    photo.userName = photo.userName || tourApp.state.userName;
+                    photo.teamName = photo.teamName || tourApp.state.teamName || 'Unbekanntes Team';
+                    
+                    await syncChallengePhotoToFirebase(photo);
+                    console.log(`✅ Uploaded photo for station ${photo.stationId}`);
+                }
+                
+                alert(`✅ ${tourApp.state.uploadedPhotos.length} Fotos erfolgreich synchronisiert!`);
+                
+                // Refresh gallery
+                if (tourApp.state.currentTab === 'ranking') {
+                    loadPhotoGalleryPreview();
+                }
+                
+            } catch (error) {
+                console.error('Error uploading existing photos:', error);
+                alert('Fehler beim Hochladen!');
+            }
+        }
+
+        // Debug function
+        async function debugGallerySync() {
+            console.log('=== GALLERY DEBUG ===');
+            console.log('Current user:', tourApp.state.userName);
+            console.log('Tour ID:', tourApp.state.tourId);
+            console.log('Firebase connected:', tourApp.state.isFirebaseConnected);
+            console.log('Local photos:', tourApp.state.uploadedPhotos);
+            
+            try {
+                const firebasePhotos = await loadChallengePhotosFromFirebase();
+                console.log('Firebase photos:', firebasePhotos);
+                
+                // Force refresh gallery
+                await loadPhotoGalleryPreview();
+                
+                alert(`Debug: ${tourApp.state.uploadedPhotos.length} local, ${firebasePhotos.length} Firebase photos`);
+            } catch (error) {
+                console.error('Debug error:', error);
+                alert('Debug error: ' + error.message);
+            }
+        }
+
         // Enhanced photo sharing with better quality
         async function shareChallengePhoto(stationId) {
             try {
