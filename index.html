@@ -4189,6 +4189,15 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                                 </div>
                                 <textarea class="admin-textarea" id="edit-challenge-${station.id}" style="min-height: 80px;">${station.photoChallenge}</textarea>
                             </div>
+
+                            <div style="margin-bottom: 1rem;">
+                                <label style="display: block; font-weight: bold; margin-bottom: 0.5rem; color: #dc2626;">👩‍🏫 Talking-Points (nur für Admins):</label>
+                                <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                    <button class="btn btn-secondary btn-small" onclick="showPerplexityHelper(${station.id}, 'talkingPoints')" style="background: #8b5cf6;">🤖 KI-Talking-Points generieren</button>
+                                </div>
+                                <textarea class="admin-textarea" id="edit-talkingpoints-${station.id}" style="min-height: 120px; border: 2px solid #fca5a5; background: #fef2f2;">${station.talkingPoints || ''}</textarea>
+                                <small style="color: #6b7280; font-size: 0.8rem;">💡 Diese Informationen sind nur für angemeldete Admins sichtbar und dienen als ausführliche Sprechnotizen.</small>
+                            </div>
                                                        
                             <div style="margin-bottom: 1rem;">
                                 <label style="display: block; font-weight: bold; margin-bottom: 0.5rem;">📍 Standort festlegen:</label>
@@ -4257,7 +4266,14 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     <button class="btn btn-admin" onclick="addNewStation()">➕ Neue Station hinzufügen</button>
                 `;
                 container.appendChild(addButton);
-                
+               
+                // Ensure existing stations have talkingPoints field
+                tourApp.stations.forEach(station => {
+                    if (!station.hasOwnProperty('talkingPoints')) {
+                        station.talkingPoints = '';
+                    }
+                });                
+
             } catch (error) {
                 console.error('Error generating content editor:', error);
             }
@@ -4572,6 +4588,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 station.subtitle = document.getElementById(`edit-subtitle-${stationId}`).value;
                 station.mainText = document.getElementById(`edit-maintext-${stationId}`).value;
                 station.photoChallenge = document.getElementById(`edit-challenge-${stationId}`).value;
+                station.talkingPoints = document.getElementById(`edit-talkingpoints-${stationId}`).value;
                 station.lat = parseFloat(document.getElementById(`edit-lat-${stationId}`).value);
                 station.lng = parseFloat(document.getElementById(`edit-lng-${stationId}`).value);
                 
@@ -4604,6 +4621,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 document.getElementById(`edit-subtitle-${stationId}`).value = station.subtitle;
                 document.getElementById(`edit-maintext-${stationId}`).value = station.mainText;
                 document.getElementById(`edit-challenge-${stationId}`).value = station.photoChallenge;
+                document.getElementById(`edit-talkingpoints-${stationId}`).value = station.talkingPoints || '';
                 document.getElementById(`edit-lat-${stationId}`).value = station.lat;
                 document.getElementById(`edit-lng-${stationId}`).value = station.lng;
                 
@@ -4968,7 +4986,8 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     lat: 50.9375, lng: 6.9597,
                     description: `Station ${newId} der Tour`,
                     photoChallenge: "Macht ein kreatives Foto an dieser Station!",
-                    mainText: "Hier kommt der Haupttext der neuen Station. Erzähle die Geschichte dieses Ortes...",
+                    mainText: "Hier kommt der Haupttext der neuen Station.",
+                    talkingPoints: "Hier stehen die ausführlichen Talking-Points für Admins. Diese sind nur für die Tourleitung sichtbar und enthalten zusätzliche Details, Hintergrundinformationen und Gesprächsanregungen.",
                     images: [
                         { title: "Bild 1", description: "Beschreibung des ersten Bildes", url: "" }
                     ],
@@ -5150,6 +5169,14 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                                 <h4>📖 Geschichte</h4>
                                 <p>${station.mainText}</p>
                             </div>
+                            
+                            ${tourApp.state.isAdmin && station.talkingPoints ? `
+                            <div class="detail-section" style="background: #fef2f2; border: 2px solid #fca5a5; border-radius: 8px; padding: 1rem; margin: 1rem 0;">
+                                <h4 style="color: #dc2626;">👩‍🏫 Talking-Points (Admin)</h4>
+                                <p style="color: #374151; line-height: 1.6;">${station.talkingPoints}</p>
+                                <small style="color: #6b7280; font-size: 0.8rem;">💡 Diese Informationen sind nur für Admins sichtbar</small>
+                            </div>
+                            ` : ''}
                             
                             <div class="detail-section">
                                 <h4>🖼️ Bildergalerie</h4>
@@ -11866,6 +11893,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                         description: station.description,
                         photoChallenge: station.photoChallenge,
                         mainText: station.mainText,
+                        talkingPoints: station.talkingPoints || '',
                         images: station.images || [],
                         audio: station.audio || []
                     })),
@@ -11922,6 +11950,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                             // Ensure required fields exist with proper data types
                             lat: parseFloat(station.lat) || 50.9375,
                             lng: parseFloat(station.lng) || 6.9597,
+                            talkingPoints: station.talkingPoints || '',
                             images: station.images || [],
                             audio: station.audio || []
                         }));
