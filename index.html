@@ -2102,7 +2102,13 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                                 hasChanges = true;
                             } else {
                                 tourApp.stations.push(stationData);
-                                tourApp.stations.sort((a, b) => a.id - b.id);
+                                // Sort by displayOrder if available, otherwise by ID
+                                tourApp.stations.sort((a, b) => {
+                                    if (a.displayOrder !== undefined && b.displayOrder !== undefined) {
+                                        return a.displayOrder - b.displayOrder;
+                                    }
+                                    return a.id - b.id;
+                                });
                                 hasChanges = true;
                             }
                         } else if (change.type === 'removed') {
@@ -3383,16 +3389,35 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
 
         async function loadStationsFromFirebase() {
             if (!tourApp.state.isFirebaseConnected || !tourApp.state.tourId) return;
-            
+        
             try {
                 const firebaseStations = await getFromFirebase('stations');
                 if (firebaseStations && firebaseStations.length > 0) {
-                    tourApp.stations = firebaseStations.sort((a, b) => a.id - b.id);
+                    // Sort by displayOrder if available, otherwise by ID
+                    tourApp.stations = firebaseStations.sort((a, b) => {
+                        if (a.displayOrder !== undefined && b.displayOrder !== undefined) {
+                            return a.displayOrder - b.displayOrder;
+                        }
+                        return a.id - b.id;
+                    });
                     console.log('✅ Loaded stations from Firebase:', firebaseStations.length);
                     showNotification('🔄 Stationen von Server geladen!');
+                    
+                    // HIER EINFÜGEN:
+                    // Ensure all stations have displayOrder
+                    tourApp.stations.forEach((station, index) => {
+                        if (station.displayOrder === undefined) {
+                            station.displayOrder = index;
+                            // Save the displayOrder to Firebase for future consistency
+                            if (tourApp.state.isFirebaseConnected) {
+                                saveToFirebase('stations', station.id.toString(), station);
+                            }
+                        }
+                    });
+                    
                 } else {
                     for (const station of tourApp.stations) {
-                        saveToFirebase('stations', station.id.toString(), station).catch(error => 
+                        saveToFirebase('stations', station.id.toString(), station).catch(error =>
                             console.error('Error saving station to Firebase:', error)
                         );
                     }
@@ -5183,6 +5208,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     photoChallenge: "Macht ein kreatives Foto an dieser Station!",
                     mainText: "Hier kommt der Haupttext der neuen Station.",
                     talkingPoints: "Hier stehen die ausführlichen Talking-Points für Admins. Diese sind nur für die Tourleitung sichtbar und enthalten zusätzliche Details, Hintergrundinformationen und Gesprächsanregungen.",
+                    displayOrder: tourApp.stations.length, // Add display order
                     images: [
                         { title: "Bild 1", description: "Beschreibung des ersten Bildes", url: "" }
                     ],
