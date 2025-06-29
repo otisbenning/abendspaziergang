@@ -1511,7 +1511,7 @@
             <button class="tab" onclick="window.showTab('stations', this)">📍<br><span style="font-size: 0.6rem;">Stationen</span></button>
             <button class="tab" onclick="window.showTab('ranking', this)">🏆<br><span style="font-size: 0.6rem;">Ranking</span></button>
             <button class="tab" onclick="window.showTab('chat', this)">💬<br><span style="font-size: 0.6rem;">Chat</span></button>
-            <button class="tab" onclick="window.showTab('map', this)" id="mapTabButton">
+            <button class="tab" onclick="window.showTab('map', this)" id="mapTabButton">🗺️<br><span style="font-size: 0.6rem;">Karte</span></button>
             <button class="tab admin hidden" onclick="window.showTab('admin', this)" id="adminTab">⚙️<br><span style="font-size: 0.6rem;">Admin</span></button>
         </div>
     </div>
@@ -5799,6 +5799,255 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             }
         }
 
+        // Station Gallery System - Live-synchronisiert
+        function showStationGallery(stationId) {
+            try {
+                const station = tourApp.stations.find(s => s.id === stationId);
+                if (!station) return;
+                
+                // Get all photos for this station from multiple sources
+                const stationPhotos = [];
+                
+                // From local uploaded photos
+                tourApp.state.uploadedPhotos.forEach(photo => {
+                    if (photo.stationId === stationId) {
+                        stationPhotos.push({
+                            imageUrl: photo.imageUrl,
+                            userName: tourApp.state.userName,
+                            score: photo.score || 0,
+                            timestamp: photo.timestamp || Date.now(),
+                            teamName: tourApp.state.teamName || 'Dein Team',
+                            isLocal: true
+                        });
+                    }
+                });
+                
+                // From chat messages (shared challenge photos)
+                document.querySelectorAll('.chat-message').forEach(msg => {
+                    const challengePhotoDiv = msg.querySelector('[data-station-id]');
+                    if (challengePhotoDiv && challengePhotoDiv.getAttribute('data-station-id') == stationId) {
+                        const img = msg.querySelector('.chat-image');
+                        const userSpan = msg.querySelector('strong');
+                        const scoreMatch = msg.textContent.match(/(\d+)\s*Punkte/);
+                        const teamMatch = msg.textContent.match(/\((.*?)\)/);
+                        
+                        if (img && userSpan) {
+                            const userName = userSpan.textContent.replace(':', '').trim();
+                            // Avoid duplicates from same user
+                            const isDuplicate = stationPhotos.some(p => 
+                                p.userName === userName && p.imageUrl === img.src
+                            );
+                            
+                            if (!isDuplicate) {
+                                stationPhotos.push({
+                                    imageUrl: img.src,
+                                    userName: userName,
+                                    score: scoreMatch ? parseInt(scoreMatch[1]) : 0,
+                                    timestamp: Date.now(),
+                                    teamName: teamMatch ? teamMatch[1] : 'Anderes Team',
+                                    isLocal: false
+                                });
+                            }
+                        }
+                    }
+                });
+                
+                if (stationPhotos.length === 0) {
+                    showNotification('Noch keine Fotos für diese Station vorhanden! 📸\n\n💡 Mache ein Challenge-Foto und teile es im Chat!', 'info');
+                    return;
+                }
+                
+                // Sort by score (highest first)
+                stationPhotos.sort((a, b) => (b.score || 0) - (a.score || 0));
+                
+                // Create gallery modal
+                const modal = document.createElement('div');
+                modal.className = 'admin-popup-overlay';
+                modal.style.zIndex = '20000';
+                
+                const photosHtml = stationPhotos.map((photo, index) => `
+                    <div class="gallery-photo-item" style="background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: ${photo.isLocal ? '2px solid #10b981' : '1px solid #e5e7eb'};">
+                        <div style="position: relative;">
+                            <img src="${photo.imageUrl}" 
+                                style="width: 100%; height: 200px; object-fit: cover; cursor: pointer;" 
+                                onclick="showImageModal('${photo.imageUrl}', '${station.title}', 'Von ${photo.userName} • ${photo.score} Punkte')"
+                                alt="Challenge Foto">
+                            ${photo.isLocal ? '<div style="position: absolute; top: 8px; right: 8px; background: #10b981; color: white; padding: 0.2rem 0.5rem; border-radius: 12px; font-size: 0.7rem; font-weight: bold;">Dein Foto</div>' : ''}
+                            ${index === 0 && photo.score > 0 ? '<div style="position: absolute; top: 8px; left: 8px; background: #f59e0b; color: white; padding: 0.2rem 0.5rem; border-radius: 12px; font-size: 0.7rem; font-weight: bold;">🏆 Bestes</div>' : ''}
+                        </div>
+                        <div style="padding: 1rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                <strong style="color: #1f2937; font-size: 0.9rem;">${photo.userName}</strong>
+                                <span style="background: ${photo.score >= 80 ? '#10b981' : photo.score >= 60 ? '#f59e0b' : '#6b7280'}; color: white; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: bold;">
+                                    ${photo.score} Punkte
+                                </span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <small style="color: #6b7280;">${photo.teamName}</small>
+                                <button class="btn btn-secondary btn-small" onclick="downloadGalleryPhoto('${photo.imageUrl}', '${station.title}', '${photo.userName}', ${photo.score})" 
+                                        style="padding: 0.3rem 0.8rem; font-size: 0.8rem; background: #8b5cf6;">
+                                    💾 Download
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+                
+                modal.innerHTML = `
+                    <div class="admin-popup" style="max-width: 900px; width: 95%; max-height: 90vh; overflow-y: auto;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 2px solid #e5e7eb;">
+                            <div>
+                                <h3 style="color: #1f2937; margin: 0;">📸 ${station.title} - Foto-Galerie</h3>
+                                <p style="color: #6b7280; margin: 0.5rem 0 0 0; font-size: 0.9rem;">Live-synchronisiert mit allen Teilnehmern</p>
+                            </div>
+                            <button onclick="this.closest('.admin-popup-overlay').remove()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #6b7280; padding: 0.5rem;">×</button>
+                        </div>
+                        
+                        <div style="margin-bottom: 1rem; padding: 1rem; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-radius: 8px; border-left: 4px solid #3b82f6;">
+                            <strong style="color: #1e40af;">${stationPhotos.length} Foto${stationPhotos.length !== 1 ? 's' : ''} gefunden</strong>
+                            <p style="margin: 0.5rem 0 0 0; color: #1e40af; font-size: 0.9rem;">
+                                🏆 Sortiert nach Punktzahl • 📱 Klicke auf Fotos für Vollansicht • 🔄 Aktualisiert sich automatisch
+                            </p>
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                            ${photosHtml}
+                        </div>
+                        
+                        <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 2px solid #e5e7eb; text-align: center;">
+                            <button class="btn btn-secondary" onclick="downloadAllStationPhotos(${stationId})" style="margin-right: 1rem; background: #8b5cf6;">
+                                📱 Alle Station-Fotos herunterladen
+                            </button>
+                            <button class="btn btn-secondary" onclick="refreshStationGallery(${stationId})" style="margin-right: 1rem;">
+                                🔄 Galerie aktualisieren
+                            </button>
+                            <button class="btn" onclick="this.closest('.admin-popup-overlay').remove()">
+                                Galerie schließen
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(modal);
+                
+                // Auto-refresh every 30 seconds
+                const refreshInterval = setInterval(() => {
+                    if (document.body.contains(modal)) {
+                        refreshStationGallery(stationId);
+                    } else {
+                        clearInterval(refreshInterval);
+                    }
+                }, 30000);
+                
+            } catch (error) {
+                console.error('Error showing station gallery:', error);
+                showNotification('Fehler beim Laden der Galerie', 'error');
+            }
+        }
+
+        function refreshStationGallery(stationId) {
+            try {
+                // Close current gallery and reopen with fresh data
+                const existingModal = document.querySelector('.admin-popup-overlay');
+                if (existingModal) {
+                    existingModal.remove();
+                }
+                
+                // Small delay to ensure cleanup
+                setTimeout(() => {
+                    showStationGallery(stationId);
+                }, 100);
+                
+            } catch (error) {
+                console.error('Error refreshing station gallery:', error);
+            }
+        }
+
+        function downloadGalleryPhoto(imageUrl, stationTitle, userName, score) {
+            try {
+                const cleanStationTitle = stationTitle.replace(/[^a-zA-Z0-9]/g, '_');
+                const cleanUserName = userName.replace(/[^a-zA-Z0-9]/g, '_');
+                const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '');
+                const fileName = `${cleanStationTitle}_${cleanUserName}_${score}pts_${timestamp}.jpg`;
+                
+                const link = document.createElement('a');
+                link.href = imageUrl;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                showNotification(`💾 Foto heruntergeladen: ${fileName}`, 'success');
+            } catch (error) {
+                console.error('Error downloading gallery photo:', error);
+                showNotification('Download fehlgeschlagen', 'error');
+            }
+        }
+
+        function downloadAllStationPhotos(stationId) {
+            try {
+                const stationPhotos = [];
+                
+                // Collect all photos for this station
+                tourApp.state.uploadedPhotos.forEach(photo => {
+                    if (photo.stationId === stationId) {
+                        stationPhotos.push({
+                            imageUrl: photo.imageUrl,
+                            userName: tourApp.state.userName,
+                            score: photo.score || 0
+                        });
+                    }
+                });
+                
+                // Also collect from chat
+                document.querySelectorAll('.chat-message').forEach(msg => {
+                    const challengePhotoDiv = msg.querySelector(`[data-station-id="${stationId}"]`);
+                    if (challengePhotoDiv) {
+                        const img = msg.querySelector('.chat-image');
+                        const userSpan = msg.querySelector('strong');
+                        const scoreMatch = msg.textContent.match(/(\d+)\s*Punkte/);
+                        
+                        if (img && userSpan) {
+                            const userName = userSpan.textContent.replace(':', '').trim();
+                            // Avoid duplicates
+                            const isDuplicate = stationPhotos.some(p => 
+                                p.userName === userName && p.imageUrl === img.src
+                            );
+                            
+                            if (!isDuplicate) {
+                                stationPhotos.push({
+                                    imageUrl: img.src,
+                                    userName: userName,
+                                    score: scoreMatch ? parseInt(scoreMatch[1]) : 0
+                                });
+                            }
+                        }
+                    }
+                });
+                
+                if (stationPhotos.length === 0) {
+                    showNotification('Keine Fotos zum Herunterladen gefunden!', 'warning');
+                    return;
+                }
+                
+                const station = tourApp.stations.find(s => s.id === stationId);
+                const stationTitle = station ? station.title : `Station_${stationId}`;
+                
+                stationPhotos.forEach((photo, index) => {
+                    setTimeout(() => {
+                        downloadGalleryPhoto(photo.imageUrl, stationTitle, photo.userName, photo.score);
+                    }, index * 300);
+                });
+                
+                showNotification(`📱 Lade ${stationPhotos.length} Fotos von ${stationTitle} herunter...`, 'info');
+                
+            } catch (error) {
+                console.error('Error downloading all station photos:', error);
+                showNotification('Fehler beim Herunterladen', 'error');
+            }
+        }
+
+
         function downloadAllStationPhotos(stationId) {
             try {
                 const stationPhotos = [];
@@ -6293,7 +6542,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                             const contrastAnalysis = analyzeContrastAdvanced(pixels, width, height);
                             const sharpnessAnalysis = analyzeSharpnessAdvanced(imageData, width, height);
                             const compositionAnalysis = analyzeCompositionAdvanced(width, height, pixels);
-                            const colorAnalysis = analyzeColorsAdvanced(pixels, width, height);
+                            const colorAnalysis = analyzeColors(pixels);
                             const objectAnalysis = analyzeObjectsAdvanced(pixels, width, height);
                             const faceAnalysis = analyzeFacesAdvanced(imageData, width, height);
                             const sceneryAnalysis = analyzeSceneryAdvanced(pixels, width, height);
@@ -7423,6 +7672,83 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 isHighRes: width * height > 500000,
                 isMediumRes: width * height > 200000,
                 dimensions: { width, height }
+            };
+        }
+
+        // Enhanced Color Analysis Function
+        function analyzeColorsAdvanced(pixels, width, height) {
+            let colorfulness = 0;
+            let uniqueColors = new Set();
+            let warmColors = 0;
+            let coolColors = 0;
+            let totalPixels = pixels.length / 4;
+            let dominantColors = {};
+            let averageR = 0, averageG = 0, averageB = 0;
+            
+            for (let i = 0; i < pixels.length; i += 4) {
+                const r = pixels[i];
+                const g = pixels[i + 1];
+                const b = pixels[i + 2];
+                
+                averageR += r;
+                averageG += g;
+                averageB += b;
+                
+                // Color diversity (improved)
+                const colorKey = `${Math.floor(r/32)}-${Math.floor(g/32)}-${Math.floor(b/32)}`;
+                uniqueColors.add(colorKey);
+                
+                // Track dominant colors
+                const dominantKey = `${Math.floor(r/64)}-${Math.floor(g/64)}-${Math.floor(b/64)}`;
+                dominantColors[dominantKey] = (dominantColors[dominantKey] || 0) + 1;
+                
+                // Colorfulness calculation (improved)
+                const maxRG = Math.max(r, g);
+                const minRG = Math.min(r, g);
+                const maxGB = Math.max(g, b);
+                const minGB = Math.min(g, b);
+                const maxRB = Math.max(r, b);
+                const minRB = Math.min(r, b);
+                
+                colorfulness += (maxRG - minRG) + (maxGB - minGB) + (maxRB - minRB);
+                
+                // Warm vs cool colors (improved)
+                if ((r > g + 10) && (r > b + 10)) warmColors++;
+                else if ((b > r + 10) && (b > g + 10)) coolColors++;
+            }
+            
+            // Calculate averages
+            averageR /= totalPixels;
+            averageG /= totalPixels;
+            averageB /= totalPixels;
+            
+            const averageColorfulness = colorfulness / totalPixels;
+            const colorDiversity = uniqueColors.size;
+            
+            // Find most dominant color
+            const sortedColors = Object.entries(dominantColors).sort((a, b) => b[1] - a[1]);
+            const dominantColorRatio = sortedColors.length > 0 ? sortedColors[0][1] / totalPixels : 0;
+            
+            // Color harmony analysis
+            const isMonochromatic = colorDiversity < 50;
+            const isHighContrast = averageColorfulness > 80;
+            const hasGoodBalance = Math.abs(warmColors - coolColors) / totalPixels < 0.4;
+            
+            return {
+                colorfulness: averageColorfulness,
+                diversity: colorDiversity,
+                warmCoolRatio: warmColors / Math.max(coolColors, 1),
+                isColorful: averageColorfulness > 40,
+                isDiverse: colorDiversity > 80,
+                hasGoodBalance: hasGoodBalance,
+                isMonochromatic: isMonochromatic,
+                isHighContrast: isHighContrast,
+                dominantColorRatio: dominantColorRatio,
+                averageColor: { r: Math.round(averageR), g: Math.round(averageG), b: Math.round(averageB) },
+                warmColors: warmColors,
+                coolColors: coolColors,
+                totalPixels: totalPixels,
+                qualityScore: Math.min(100, (averageColorfulness * 0.6) + (colorDiversity * 0.4))
             };
         }
 
