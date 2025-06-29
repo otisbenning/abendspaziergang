@@ -2100,13 +2100,21 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                         }
                     });
                     
-                    if (hasChanges && !tourApp.state.isAdmin) {
+                    if (hasChanges) {
                         generateStationsList();
                         updateProgress();
                         if (tourApp.state.map) {
                             updateMapMarkers();
                         }
-                        showNotification('🔄 Stationen wurden aktualisiert!');
+                        // Only show notification for non-admins to avoid spam for admins who make changes
+                        if (!tourApp.state.isAdmin) {
+                            showNotification('🔄 Stationen wurden aktualisiert!');
+                        }
+                        
+                        // For admins, also update the content editor if it's open
+                        if (tourApp.state.isAdmin) {
+                            generateContentEditor();
+                        }
                     }
                 }, (error) => {
                     console.error('Stations sync error:', error);
@@ -4679,7 +4687,10 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 document.getElementById(`edit-subtitle-${stationId}`).value = station.subtitle;
                 document.getElementById(`edit-maintext-${stationId}`).value = station.mainText;
                 document.getElementById(`edit-challenge-${stationId}`).value = station.photoChallenge;
-                document.getElementById(`edit-talkingpoints-${stationId}`).value = station.talkingPoints || '';
+                const talkingPointsField = document.getElementById(`edit-talkingpoints-${stationId}`);
+                if (talkingPointsField && !talkingPointsField.matches(':focus')) {
+                    talkingPointsField.value = station.talkingPoints || '';
+                }
                 document.getElementById(`edit-lat-${stationId}`).value = station.lat;
                 document.getElementById(`edit-lng-${stationId}`).value = station.lng;
                 
@@ -5153,6 +5164,11 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             }
         }
 
+        function formatTextWithLineBreaks(text) {
+            if (!text) return '';
+            return text.replace(/\n/g, '<br>');
+        }
+
         function generateStationsList() {
             try {
                 const container = document.getElementById('stationsList');
@@ -5225,13 +5241,13 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
 
                             <div class="detail-section">
                                 <h4>📖 Geschichte</h4>
-                                <p>${station.mainText}</p>
+                                <p>${formatTextWithLineBreaks(station.mainText)}</p>
                             </div>
                             
                             ${tourApp.state.isAdmin && station.talkingPoints ? `
                             <div class="detail-section" style="background: #fef2f2; border: 2px solid #fca5a5; border-radius: 8px; padding: 1rem; margin: 1rem 0;">
                                 <h4 style="color: #dc2626;">👩‍🏫 Talking-Points (Admin)</h4>
-                                <p style="color: #374151; line-height: 1.6;">${station.talkingPoints}</p>
+                                <p style="color: #374151; line-height: 1.6;">${formatTextWithLineBreaks(station.talkingPoints)}</p>
                                 <small style="color: #6b7280; font-size: 0.8rem;">💡 Diese Informationen sind nur für Admins sichtbar</small>
                             </div>
                             ` : ''}
