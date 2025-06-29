@@ -6499,6 +6499,49 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             }
         }
 
+        // Auto-sync Challenge Photos to Firebase (without chat posting)
+        async function syncChallengePhotoToFirebase(photoData) {
+            try {
+                if (!tourApp.state.isFirebaseConnected || !tourApp.state.tourId) {
+                    console.log('Firebase not connected - photo only stored locally');
+                    return;
+                }
+
+                const challengePhotoData = {
+                    stationId: photoData.stationId,
+                    imageUrl: photoData.imageUrl,
+                    score: photoData.score || 0,
+                    timestamp: photoData.timestamp || Date.now(),
+                    userName: tourApp.state.userName,
+                    teamName: tourApp.state.teamName || 'Unbekanntes Team',
+                    userKey: `${tourApp.state.userName}_${photoData.stationId}`,
+                    syncedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    analysis: photoData.analysis || null,
+                    breakdown: photoData.breakdown || null,
+                    fallbackUsed: photoData.fallbackUsed || false
+                };
+
+                // Save to Firebase in dedicated challengePhotos collection
+                await db.collection('tours').doc(tourApp.state.tourId)
+                    .collection('challengePhotos')
+                    .doc(`${tourApp.state.userName}_${photoData.stationId}`)
+                    .set(challengePhotoData);
+
+                console.log('✅ Challenge photo synced to Firebase');
+                
+                // Refresh gallery if on ranking tab
+                if (tourApp.state.currentTab === 'ranking') {
+                    setTimeout(() => {
+                        loadPhotoGalleryPreview();
+                    }, 1000);
+                }
+                
+            } catch (error) {
+                console.error('Error syncing challenge photo to Firebase:', error);
+                // Photo is still saved locally, just not synced
+            }
+        }
+
         function ratePhoto(stationId, imageUrl) {
             try {
                 const ratingDiv = document.getElementById(`rating-${stationId}`);
@@ -6649,6 +6692,11 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                                 composition: compositionScore,
                                 creativity: creativityScore
                             };
+                            photoData.userName = tourApp.state.userName;
+                            photoData.teamName = tourApp.state.teamName || 'Unbekanntes Team';
+                            
+                            // Auto-sync to Firebase
+                            syncChallengePhotoToFirebase(photoData);
                         }
                         
                         showNotification(`KI-Bewertung: ${finalScore} Punkte! 🤖📸`);
@@ -6730,6 +6778,11 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                         if (photoData) {
                             photoData.score = finalScore;
                             photoData.fallbackUsed = true;
+                            photoData.userName = tourApp.state.userName;
+                            photoData.teamName = tourApp.state.teamName || 'Unbekanntes Team';
+                            
+                            // Auto-sync to Firebase (even for fallback analysis)
+                            syncChallengePhotoToFirebase(photoData);
                         }
                         
                         showNotification(`Bewertung: ${finalScore} Punkte! 📸`);
