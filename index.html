@@ -922,6 +922,13 @@
             justify-content: center;
             z-index: 20000;
             animation: fadeIn 0.5s ease;
+            /* Neue Eigenschaften für besseres Schließverhalten */
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+        }
+        
+        .admin-popup-overlay * {
+            box-sizing: border-box;
         }
 
         .admin-popup {
@@ -4543,6 +4550,9 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
 
         function showAdminPopup(title, message) {
             try {
+                // First close any existing overlays
+                closeAllOverlays();
+                
                 const overlay = document.createElement('div');
                 overlay.className = 'admin-popup-overlay';
                 
@@ -4550,7 +4560,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     <div class="admin-popup">
                         <h3>${title}</h3>
                         <p>${message}</p>
-                        <button class="admin-popup-close" onclick="closeAdminPopup(this.parentElement.parentElement)">
+                        <button class="admin-popup-close" onclick="closeAllOverlays()">
                             Verstanden
                         </button>
                     </div>
@@ -4559,9 +4569,18 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 // Allow closing by clicking background
                 overlay.addEventListener('click', (e) => {
                     if (e.target === overlay) {
-                        overlay.remove();
+                        closeAllOverlays();
                     }
                 });
+                
+                // Add escape key handler
+                const escapeHandler = (e) => {
+                    if (e.key === 'Escape') {
+                        closeAllOverlays();
+                        document.removeEventListener('keydown', escapeHandler);
+                    }
+                };
+                document.addEventListener('keydown', escapeHandler);
                 
                 document.body.appendChild(overlay);
             } catch (error) {
@@ -4571,11 +4590,50 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
 
         function closeAdminPopup(overlay) {
             try {
-                if (overlay && overlay.parentElement) {
-                    overlay.remove();
-                }
+                closeAllOverlays();
             } catch (error) {
                 console.error('Error closing admin popup:', error);
+                closeAllOverlays();
+            }
+        }
+
+        function closeAllOverlays() {
+            try {
+                // Remove all overlay modals - comprehensive cleanup
+                document.querySelectorAll('.admin-popup-overlay').forEach(overlay => {
+                    overlay.remove();
+                });
+                
+                // Also remove any event listeners that might be hanging around
+                document.querySelectorAll('[data-overlay-id]').forEach(element => {
+                    element.remove();
+                });
+                
+                console.log('All overlays closed');
+            } catch (error) {
+                console.error('Error closing all overlays:', error);
+            }
+        }
+
+        // Enhanced close function that always works
+        function closeAnyOverlay(element) {
+            try {
+                // Try to find the overlay from the clicked element
+                let overlay = element;
+                while (overlay && !overlay.classList.contains('admin-popup-overlay')) {
+                    overlay = overlay.parentElement;
+                }
+                
+                if (overlay) {
+                    overlay.remove();
+                } else {
+                    // Fallback: remove all overlays
+                    closeAllOverlays();
+                }
+            } catch (error) {
+                console.error('Error closing overlay:', error);
+                // Ultimate fallback
+                closeAllOverlays();
             }
         }
 
@@ -6087,7 +6145,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                                 <h3 style="color: #1f2937; margin: 0;">${photo.stationTitle}</h3>
                                 <p style="color: #6b7280; margin: 0.5rem 0 0 0;">Challenge-Foto von ${photo.userName}</p>
                             </div>
-                            <button onclick="this.closest('.admin-popup-overlay').remove()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #6b7280;">×</button>
+                            <button onclick="closeAllOverlays()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #6b7280;">×</button>
                         </div>
                         
                         <div style="text-align: center; margin-bottom: 1.5rem;">
@@ -6180,7 +6238,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                                 <h3 style="color: #1f2937; margin: 0;">📸 Challenge-Fotos aller Teams</h3>
                                 <p style="color: #6b7280; margin: 0.5rem 0 0 0; font-size: 0.9rem;">Live-synchronisiert • Sortiert nach Punktzahl</p>
                             </div>
-                            <button onclick="this.closest('.admin-popup-overlay').remove()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #6b7280;">×</button>
+                            <button onclick="closeAllOverlays()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #6b7280;">×</button>
                         </div>
                         
                         <div style="margin-bottom: 1rem; padding: 1rem; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-radius: 8px; border-left: 4px solid #3b82f6;">
@@ -6201,7 +6259,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                             <button onclick="uploadExistingPhotosToFirebase()" style="position: fixed; top: 100px; right: 20px; background: #10b981; color: white; padding: 0.5rem 1rem; border: none; border-radius: 8px; cursor: pointer; z-index: 9999;">
                                 🔄 Sync bestehende Fotos
                             </button>
-                            <button class="btn" onclick="this.closest('.admin-popup-overlay').remove()">
+                            <button class="btn" onclick="closeAllOverlays()">
                                 Galerie schließen
                             </button>
                         </div>
@@ -6434,7 +6492,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     <div class="admin-popup" style="max-width: 800px; width: 95%; max-height: 90vh; overflow-y: auto;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 2px solid #e5e7eb;">
                             <h3 style="color: #1f2937; margin: 0;">📸 ${station.title} - Foto-Galerie</h3>
-                            <button onclick="this.closest('.admin-popup-overlay').remove()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #6b7280;">×</button>
+                            <button onclick="closeAllOverlays()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #6b7280;">×</button>
                         </div>
                         
                         <div style="margin-bottom: 1rem; padding: 1rem; background: #f0f9ff; border-radius: 8px; border-left: 4px solid #3b82f6;">
@@ -6450,7 +6508,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                             <button class="btn btn-secondary" onclick="downloadAllStationPhotos(${stationId})" style="margin-right: 1rem;">
                                 📱 Alle Fotos herunterladen
                             </button>
-                            <button class="btn" onclick="this.closest('.admin-popup-overlay').remove()">
+                            <button class="btn" onclick="closeAllOverlays()">
                                 Galerie schließen
                             </button>
                         </div>
@@ -6587,7 +6645,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                                 <h3 style="color: #1f2937; margin: 0;">📸 ${station.title} - Foto-Galerie</h3>
                                 <p style="color: #6b7280; margin: 0.5rem 0 0 0; font-size: 0.9rem;">Live-synchronisiert mit allen Teilnehmern</p>
                             </div>
-                            <button onclick="this.closest('.admin-popup-overlay').remove()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #6b7280; padding: 0.5rem;">×</button>
+                            <button onclick="closeAllOverlays()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #6b7280; padding: 0.5rem;">×</button>
                         </div>
                         
                         <div style="margin-bottom: 1rem; padding: 1rem; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-radius: 8px; border-left: 4px solid #3b82f6;">
@@ -6608,7 +6666,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                             <button class="btn btn-secondary" onclick="refreshStationGallery(${stationId})" style="margin-right: 1rem;">
                                 🔄 Galerie aktualisieren
                             </button>
-                            <button class="btn" onclick="this.closest('.admin-popup-overlay').remove()">
+                            <button class="btn" onclick="closeAllOverlays()">
                                 Galerie schließen
                             </button>
                         </div>
@@ -12455,16 +12513,10 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
 
        function closeAIModal(modal) {
             try {
-                if (modal && modal.parentElement) {
-                    modal.remove();
-                } else {
-                    // Fallback: Remove all overlay modals
-                    document.querySelectorAll('.admin-popup-overlay').forEach(overlay => {
-                        overlay.remove();
-                    });
-                }
+                closeAllOverlays();
             } catch (error) {
                 console.error('Error closing AI modal:', error);
+                closeAllOverlays();
             }
         }
 
@@ -12662,16 +12714,10 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
 
        function closeMediaModal(modal) {
             try {
-                if (modal && modal.parentElement) {
-                    modal.remove();
-                } else {
-                    // Fallback: Remove all overlay modals
-                    document.querySelectorAll('.admin-popup-overlay').forEach(overlay => {
-                        overlay.remove();
-                    });
-                }
+                closeAllOverlays();
             } catch (error) {
                 console.error('Error closing media modal:', error);
+                closeAllOverlays();
             }
         }
 
@@ -12692,6 +12738,8 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
         window.closeMediaModal = closeMediaModal;
         window.setWelcomeName = setWelcomeName;
         window.closeWelcomeModal = closeWelcomeModal;
+        window.closeAllOverlays = closeAllOverlays;
+        window.closeAnyOverlay = closeAnyOverlay;
 
         async function selectTeam(teamId, teamName, element) {
             try {
