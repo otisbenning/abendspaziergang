@@ -1511,7 +1511,7 @@
             <button class="tab" onclick="window.showTab('stations', this)">📍<br><span style="font-size: 0.6rem;">Stationen</span></button>
             <button class="tab" onclick="window.showTab('ranking', this)">🏆<br><span style="font-size: 0.6rem;">Ranking</span></button>
             <button class="tab" onclick="window.showTab('chat', this)">💬<br><span style="font-size: 0.6rem;">Chat</span></button>
-            <button class="tab" onclick="window.showTab('map', this)">🗺️<br><span style="font-size: 0.6rem;">Karte</span></button>
+            <button class="tab" onclick="window.showTab('map', this); setTimeout(forceMapRefresh, 300);" id="mapTabButton">🗺️<br><span style="font-size: 0.6rem;">Karte</span></button>
             <button class="tab admin hidden" onclick="window.showTab('admin', this)" id="adminTab">⚙️<br><span style="font-size: 0.6rem;">Admin</span></button>
         </div>
     </div>
@@ -1558,10 +1558,20 @@
                     content.style.display = 'none';
                 });
                 
-                const targetTab = document.getElementById(tabName === 'map' ? 'map-content' : tabName);
+                const targetTab = document.getElementById(tabName === 'map' ? 'mapTab' : tabName + 'Tab');
                 if (targetTab) {
                     targetTab.classList.add('active');
                     targetTab.style.display = 'block';
+                    
+                    // Special handling for map tab
+                    if (tabName === 'map') {
+                        setTimeout(() => {
+                            initMap();
+                            if (tourApp.state.map) {
+                                tourApp.state.map.invalidateSize();
+                            }
+                        }, 100);
+                    }
                 }
 
                 // Handle specific tab actions
@@ -2883,14 +2893,14 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 console.log('ActiveUsers before filtering:', Array.from(activeUsers));
                 console.log('Current userName for auto-assign:', tourApp.state.userName);
 
-                // Convert to array and filter out invalid names (but include Tourist_ names)
+                // Convert to array and filter out invalid names (but include ALL Tourist_ names)
                 const userArray = Array.from(activeUsers).filter(name => 
                     name && 
                     name.length > 0 && 
                     name !== 'System' && 
                     name !== '🔊 System' &&
-                    name !== 'Admin' &&
-                    !name.startsWith('Tourist_undefined') // Only exclude undefined tourists
+                    name !== 'Admin'
+                    // Include ALL Tourist_ names to show all participants
                 );
                 
                 if (userArray.length === 0) {
@@ -5132,6 +5142,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
 
                             <div class="photo-challenge">
                                 <h4>📸 KI-Foto-Challenge</h4>
+                                <button class="btn btn-secondary btn-small" onclick="showStationGallery(${station.id})" style="float: right; margin-top: -0.5rem;">🖼️ Galerie anzeigen</button>
                                 <p>${station.photoChallenge}</p>
                                 
                                 <div class="photo-upload-area" onclick="event.stopPropagation(); selectPhoto(${station.id})" id="upload-area-${station.id}">
@@ -5650,6 +5661,178 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 console.error('Error offering photo download:', error);
             }
         }
+
+
+        // Station Gallery System
+        function showStationGallery(stationId) {
+            try {
+                const station = tourApp.stations.find(s => s.id === stationId);
+                if (!station) return;
+                
+                // Get all photos for this station from chat and uploaded photos
+                const stationPhotos = [];
+                
+                // From uploaded photos
+                tourApp.state.uploadedPhotos.forEach(photo => {
+                    if (photo.stationId === stationId) {
+                        stationPhotos.push({
+                            imageUrl: photo.imageUrl,
+                            userName: tourApp.state.userName,
+                            score: photo.score || 0,
+                            timestamp: photo.timestamp || Date.now(),
+                            teamName: tourApp.state.teamName || 'Dein Team'
+                        });
+                    }
+                });
+                
+                // From chat messages (shared photos)
+                const chatMessages = document.querySelectorAll('.chat-message[data-station-id="' + stationId + '"]');
+                chatMessages.forEach(msg => {
+                    const img = msg.querySelector('.chat-image');
+                    const userSpan = msg.querySelector('strong');
+                    const scoreSpan = msg.querySelector('.photo-score');
+                    
+                    if (img && userSpan) {
+                        stationPhotos.push({
+                            imageUrl: img.src,
+                            userName: userSpan.textContent.replace(':', ''),
+                            score: scoreSpan ? parseInt(scoreSpan.textContent) : 0,
+                            timestamp: Date.now(),
+                            teamName: 'Anderes Team'
+                        });
+                    }
+                });
+                
+                if (stationPhotos.length === 0) {
+                    showNotification('Noch keine Fotos für diese Station vorhanden! 📸', 'info');
+                    return;
+                }
+                
+                // Sort by score (highest first)
+                stationPhotos.sort((a, b) => (b.score || 0) - (a.score || 0));
+                
+                // Create gallery modal
+                const modal = document.createElement('div');
+                modal.className = 'admin-popup-overlay';
+                modal.style.zIndex = '20000';
+                
+                const photosHtml = stationPhotos.map((photo, index) => `
+                    <div class="gallery-photo-item" style="background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                        <img src="${photo.imageUrl}" 
+                            style="width: 100%; height: 200px; object-fit: cover; cursor: pointer;" 
+                            onclick="showImageModal('${photo.imageUrl}', '${station.title}', 'Von ${photo.userName} • ${photo.score} Punkte')"
+                            alt="Challenge Foto">
+                        <div style="padding: 1rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                <strong style="color: #1f2937;">${photo.userName}</strong>
+                                <span style="background: #10b981; color: white; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: bold;">
+                                    ${photo.score} Punkte
+                                </span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <small style="color: #6b7280;">${photo.teamName}</small>
+                                <button class="btn btn-secondary btn-small" onclick="downloadGalleryPhoto('${photo.imageUrl}', '${station.title}', '${photo.userName}', ${photo.score})" 
+                                        style="padding: 0.3rem 0.8rem; font-size: 0.8rem;">
+                                    💾 Download
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+                
+                modal.innerHTML = `
+                    <div class="admin-popup" style="max-width: 800px; width: 95%; max-height: 90vh; overflow-y: auto;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 2px solid #e5e7eb;">
+                            <h3 style="color: #1f2937; margin: 0;">📸 ${station.title} - Foto-Galerie</h3>
+                            <button onclick="this.closest('.admin-popup-overlay').remove()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #6b7280;">×</button>
+                        </div>
+                        
+                        <div style="margin-bottom: 1rem; padding: 1rem; background: #f0f9ff; border-radius: 8px; border-left: 4px solid #3b82f6;">
+                            <strong style="color: #1e40af;">${stationPhotos.length} Foto${stationPhotos.length !== 1 ? 's' : ''} gefunden</strong>
+                            <p style="margin: 0.5rem 0 0 0; color: #1e40af; font-size: 0.9rem;">Sortiert nach Punktzahl • Klicke auf Fotos für Vollansicht</p>
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
+                            ${photosHtml}
+                        </div>
+                        
+                        <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 2px solid #e5e7eb; text-align: center;">
+                            <button class="btn btn-secondary" onclick="downloadAllStationPhotos(${stationId})" style="margin-right: 1rem;">
+                                📱 Alle Fotos herunterladen
+                            </button>
+                            <button class="btn" onclick="this.closest('.admin-popup-overlay').remove()">
+                                Galerie schließen
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(modal);
+                
+            } catch (error) {
+                console.error('Error showing station gallery:', error);
+                showNotification('Fehler beim Laden der Galerie', 'error');
+            }
+        }
+
+        function downloadGalleryPhoto(imageUrl, stationTitle, userName, score) {
+            try {
+                const cleanStationTitle = stationTitle.replace(/[^a-zA-Z0-9]/g, '_');
+                const cleanUserName = userName.replace(/[^a-zA-Z0-9]/g, '_');
+                const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '');
+                const fileName = `${cleanStationTitle}_${cleanUserName}_${score}pts_${timestamp}.jpg`;
+                
+                const link = document.createElement('a');
+                link.href = imageUrl;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                showNotification(`💾 Foto heruntergeladen: ${fileName}`, 'success');
+            } catch (error) {
+                console.error('Error downloading gallery photo:', error);
+                showNotification('Download fehlgeschlagen', 'error');
+            }
+        }
+
+        function downloadAllStationPhotos(stationId) {
+            try {
+                const stationPhotos = [];
+                
+                // From uploaded photos
+                tourApp.state.uploadedPhotos.forEach(photo => {
+                    if (photo.stationId === stationId) {
+                        stationPhotos.push({
+                            imageUrl: photo.imageUrl,
+                            userName: tourApp.state.userName,
+                            score: photo.score || 0
+                        });
+                    }
+                });
+                
+                if (stationPhotos.length === 0) {
+                    showNotification('Keine Fotos zum Herunterladen gefunden!', 'warning');
+                    return;
+                }
+                
+                const station = tourApp.stations.find(s => s.id === stationId);
+                const stationTitle = station ? station.title : `Station_${stationId}`;
+                
+                stationPhotos.forEach((photo, index) => {
+                    setTimeout(() => {
+                        downloadGalleryPhoto(photo.imageUrl, stationTitle, photo.userName, photo.score);
+                    }, index * 300);
+                });
+                
+                showNotification(`📱 Lade ${stationPhotos.length} Fotos von ${stationTitle} herunter...`, 'info');
+                
+            } catch (error) {
+                console.error('Error downloading all station photos:', error);
+                showNotification('Fehler beim Herunterladen', 'error');
+            }
+        }
+
 
         // Batch download function for all tour photos
         function downloadAllTourPhotos() {
@@ -8989,6 +9172,30 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             }
         }
 
+        function forceMapRefresh() {
+            try {
+                if (tourApp.state.map) {
+                    setTimeout(() => {
+                        tourApp.state.map.invalidateSize();
+                        
+                        // Recenter on first station or user location
+                        if (tourApp.state.userLocation) {
+                            tourApp.state.map.setView([tourApp.state.userLocation.lat, tourApp.state.userLocation.lng], 15);
+                        } else if (tourApp.stations && tourApp.stations.length > 0) {
+                            tourApp.state.map.setView([tourApp.stations[0].lat, tourApp.stations[0].lng], 15);
+                        }
+                    }, 200);
+                } else {
+                    // Reinitialize map if it doesn't exist
+                    initMap();
+                }
+            } catch (error) {
+                console.error('Error refreshing map:', error);
+                // Fallback: try to recreate map
+                setTimeout(() => initMap(), 500);
+            }
+        }
+
         function loadLeaflet(callback) {
             const script = document.createElement('script');
             script.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js';
@@ -11161,7 +11368,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 showNotification(`Du bist jetzt in ${teamName}! 🎉`);
                 
                 // Auto-load team chat history
-                setTimeout(() => loadTeamChatHistory(), 300);
+                setTimeout(() => loadChatHistory(), 300);
                 
             } catch (error) {
                 console.error('Error selecting team:', error);
