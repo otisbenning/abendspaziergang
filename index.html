@@ -5922,6 +5922,9 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                             <button class="btn btn-secondary" onclick="refreshFullGallery()" style="margin-right: 1rem;">
                                 🔄 Galerie aktualisieren
                             </button>
+                            <button onclick="uploadExistingPhotosToFirebase()" style="position: fixed; top: 100px; right: 20px; background: #10b981; color: white; padding: 0.5rem 1rem; border: none; border-radius: 8px; cursor: pointer; z-index: 9999;">
+                                🔄 Sync bestehende Fotos
+                            </button>
                             <button class="btn" onclick="this.closest('.admin-popup-overlay').remove()">
                                 Galerie schließen
                             </button>
@@ -5933,6 +5936,43 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 
             } catch (error) {
                 console.error('Error opening full photo gallery:', error);
+            }
+        }
+
+        // Upload existing local photos to Firebase
+        async function uploadExistingPhotosToFirebase() {
+            try {
+                if (!tourApp.state.isFirebaseConnected || !tourApp.state.tourId) {
+                    alert('Firebase nicht verbunden!');
+                    return;
+                }
+
+                if (tourApp.state.uploadedPhotos.length === 0) {
+                    alert('Keine lokalen Fotos gefunden!');
+                    return;
+                }
+
+                console.log(`📤 Uploading ${tourApp.state.uploadedPhotos.length} existing photos...`);
+                
+                for (const photo of tourApp.state.uploadedPhotos) {
+                    // Add missing fields
+                    photo.userName = photo.userName || tourApp.state.userName;
+                    photo.teamName = photo.teamName || tourApp.state.teamName || 'Unbekanntes Team';
+                    
+                    await syncChallengePhotoToFirebase(photo);
+                    console.log(`✅ Uploaded photo for station ${photo.stationId}`);
+                }
+                
+                alert(`✅ ${tourApp.state.uploadedPhotos.length} Fotos erfolgreich synchronisiert!`);
+                
+                // Refresh gallery
+                if (tourApp.state.currentTab === 'ranking') {
+                    loadPhotoGalleryPreview();
+                }
+                
+            } catch (error) {
+                console.error('Error uploading existing photos:', error);
+                alert('Fehler beim Hochladen!');
             }
         }
 
