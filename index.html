@@ -6499,6 +6499,312 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             }
         }
 
+        // Basic analysis functions for comprehensive photo rating
+        function analyzeObjectsBasic(pixels, width, height) {
+            let textRegions = 0;
+            let edgeIntensity = 0;
+            let rectangularShapes = 0;
+            let circularShapes = 0;
+            let totalPixels = pixels.length / 4;
+            
+            // Simple object detection based on patterns
+            for (let y = 10; y < height - 10; y += 5) {
+                for (let x = 10; x < width - 10; x += 5) {
+                    const idx = (y * width + x) * 4;
+                    const r = pixels[idx];
+                    const g = pixels[idx + 1];
+                    const b = pixels[idx + 2];
+                    
+                    // Edge detection for objects
+                    const rightIdx = (y * width + (x + 5)) * 4;
+                    const downIdx = ((y + 5) * width + x) * 4;
+                    
+                    if (rightIdx < pixels.length && downIdx < pixels.length) {
+                        const edgeR = Math.abs(r - pixels[rightIdx]);
+                        const edgeG = Math.abs(g - pixels[rightIdx + 1]);
+                        const edgeB = Math.abs(b - pixels[rightIdx + 2]);
+                        
+                        const edgeStrength = (edgeR + edgeG + edgeB) / 3;
+                        if (edgeStrength > 30) {
+                            edgeIntensity++;
+                            
+                            // Pattern recognition
+                            if (edgeStrength > 50 && (r + g + b) / 3 < 100) {
+                                textRegions++;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Estimate object types based on patterns
+            const edgeRatio = edgeIntensity / (totalPixels / 25);
+            const hasBuildings = edgeRatio > 0.15;
+            const hasVehicles = edgeRatio > 0.1 && edgeRatio < 0.3;
+            const hasNature = edgeRatio < 0.1;
+            
+            let dominantType = 'unknown';
+            let totalObjects = 0;
+            
+            if (hasBuildings) {
+                dominantType = 'buildings';
+                totalObjects = Math.floor(edgeIntensity / 50);
+            } else if (hasVehicles) {
+                dominantType = 'vehicles';
+                totalObjects = Math.floor(edgeIntensity / 30);
+            } else if (hasNature) {
+                dominantType = 'nature';
+                totalObjects = Math.floor(edgeIntensity / 20);
+            }
+            
+            return {
+                totalObjects: Math.min(totalObjects, 10),
+                dominantType: dominantType,
+                edgeIntensity: edgeIntensity,
+                textRegions: textRegions,
+                hasBuildings: hasBuildings,
+                hasVehicles: hasVehicles,
+                hasNature: hasNature,
+                confidence: Math.min(1, edgeRatio)
+            };
+        }
+
+        function analyzeSceneryBasic(pixels, width, height) {
+            let greenPixels = 0;
+            let bluePixels = 0;
+            let grayPixels = 0;
+            let brownPixels = 0;
+            let totalPixels = pixels.length / 4;
+            
+            for (let i = 0; i < pixels.length; i += 4) {
+                const r = pixels[i];
+                const g = pixels[i + 1];
+                const b = pixels[i + 2];
+                
+                // Color-based scenery detection
+                if (g > r + 20 && g > b + 20) {
+                    greenPixels++;
+                } else if (b > r + 15 && b > g + 15) {
+                    bluePixels++;
+                } else if (Math.abs(r - g) < 20 && Math.abs(g - b) < 20) {
+                    grayPixels++;
+                } else if (r > 100 && g > 60 && g < 120 && b < 100) {
+                    brownPixels++;
+                }
+            }
+            
+            const greenRatio = greenPixels / totalPixels;
+            const blueRatio = bluePixels / totalPixels;
+            const grayRatio = grayPixels / totalPixels;
+            const brownRatio = brownPixels / totalPixels;
+            
+            let dominantScenery = 'indoor';
+            if (greenRatio > 0.15) {
+                dominantScenery = greenRatio > 0.3 ? 'park' : 'urban';
+            } else if (blueRatio > 0.1) {
+                dominantScenery = 'waterfront';
+            } else if (grayRatio > 0.4) {
+                dominantScenery = 'urban';
+            } else if (brownRatio > 0.1) {
+                dominantScenery = 'historic';
+            }
+            
+            return {
+                dominantScenery: dominantScenery,
+                greenRatio: greenRatio,
+                blueRatio: blueRatio,
+                grayRatio: grayRatio,
+                isOutdoor: greenRatio > 0.05 || blueRatio > 0.05,
+                sceneryScore: Math.max(greenRatio, blueRatio, grayRatio) * 100
+            };
+        }
+
+        function analyzeArchitectureBasic(pixels, width, height) {
+            let verticalLines = 0;
+            let horizontalLines = 0;
+            let corners = 0;
+            let symmetryScore = 0;
+            
+            // Simplified architecture detection
+            for (let y = 20; y < height - 20; y += 10) {
+                for (let x = 20; x < width - 20; x += 10) {
+                    const idx = (y * width + x) * 4;
+                    const centerGray = (pixels[idx] + pixels[idx + 1] + pixels[idx + 2]) / 3;
+                    
+                    // Check for vertical lines
+                    const aboveIdx = ((y - 10) * width + x) * 4;
+                    const belowIdx = ((y + 10) * width + x) * 4;
+                    if (aboveIdx >= 0 && belowIdx < pixels.length) {
+                        const aboveGray = (pixels[aboveIdx] + pixels[aboveIdx + 1] + pixels[aboveIdx + 2]) / 3;
+                        const belowGray = (pixels[belowIdx] + pixels[belowIdx + 1] + pixels[belowIdx + 2]) / 3;
+                        
+                        if (Math.abs(centerGray - aboveGray) > 30 && Math.abs(centerGray - belowGray) > 30) {
+                            verticalLines++;
+                        }
+                    }
+                    
+                    // Check for horizontal lines
+                    const leftIdx = (y * width + (x - 10)) * 4;
+                    const rightIdx = (y * width + (x + 10)) * 4;
+                    if (leftIdx >= 0 && rightIdx < pixels.length) {
+                        const leftGray = (pixels[leftIdx] + pixels[leftIdx + 1] + pixels[leftIdx + 2]) / 3;
+                        const rightGray = (pixels[rightIdx] + pixels[rightIdx + 1] + pixels[rightIdx + 2]) / 3;
+                        
+                        if (Math.abs(centerGray - leftGray) > 30 && Math.abs(centerGray - rightGray) > 30) {
+                            horizontalLines++;
+                        }
+                    }
+                }
+            }
+            
+            const hasArchitecture = verticalLines > 5 || horizontalLines > 5;
+            let dominantStyle = 'modern';
+            
+            if (verticalLines > horizontalLines * 2) {
+                dominantStyle = 'gothic';
+            } else if (horizontalLines > verticalLines * 1.5) {
+                dominantStyle = 'classical';
+            } else if (verticalLines + horizontalLines > 50) {
+                dominantStyle = 'industrial';
+            }
+            
+            return {
+                hasArchitecture: hasArchitecture,
+                dominantStyle: dominantStyle,
+                verticalLines: verticalLines,
+                horizontalLines: horizontalLines,
+                architectureScore: (verticalLines + horizontalLines) * 2,
+                confidence: hasArchitecture ? 0.7 : 0.3
+            };
+        }
+
+        function analyzeLightingBasic(pixels, width, height) {
+            let brightPixels = 0;
+            let darkPixels = 0;
+            let totalBrightness = 0;
+            let totalPixels = pixels.length / 4;
+            
+            for (let i = 0; i < pixels.length; i += 4) {
+                const brightness = (pixels[i] + pixels[i + 1] + pixels[i + 2]) / 3;
+                totalBrightness += brightness;
+                
+                if (brightness > 200) brightPixels++;
+                if (brightness < 50) darkPixels++;
+            }
+            
+            const averageBrightness = totalBrightness / totalPixels;
+            const brightRatio = brightPixels / totalPixels;
+            const darkRatio = darkPixels / totalPixels;
+            
+            let lightingQuality = 'good';
+            if (brightRatio > 0.3 || darkRatio > 0.3) {
+                lightingQuality = 'harsh';
+            } else if (averageBrightness < 80 || averageBrightness > 180) {
+                lightingQuality = 'poor';
+            } else {
+                lightingQuality = 'excellent';
+            }
+            
+            return {
+                averageBrightness: averageBrightness,
+                brightRatio: brightRatio,
+                darkRatio: darkRatio,
+                lightingQuality: lightingQuality,
+                isWellLit: averageBrightness > 80 && averageBrightness < 180,
+                hasGoodContrast: brightRatio < 0.2 && darkRatio < 0.2,
+                lightingScore: lightingQuality === 'excellent' ? 90 : lightingQuality === 'good' ? 70 : 50
+            };
+        }
+
+        // Advanced scoring functions
+        function calculateTechnicalScoreAdvanced(brightness, contrast, sharpness, lighting) {
+            let score = 0;
+            
+            // Brightness score (25%)
+            if (brightness.isOptimal) score += 25;
+            else if (brightness.isGood) score += 20;
+            else score += 10;
+            
+            // Contrast score (25%)
+            if (contrast.isGoodContrast) score += 25;
+            else if (contrast.globalRange > 100) score += 18;
+            else score += 10;
+            
+            // Sharpness score (30%)
+            if (sharpness.isOptimal) score += 30;
+            else if (sharpness.isSharp) score += 22;
+            else if (!sharpness.isBlurry) score += 15;
+            else score += 8;
+            
+            // Lighting score (20%)
+            if (lighting.lightingQuality === 'excellent') score += 20;
+            else if (lighting.lightingQuality === 'good') score += 15;
+            else score += 8;
+            
+            return Math.min(100, Math.max(30, score));
+        }
+
+        function calculateCompositionScoreAdvanced(composition, architecture, width, height) {
+            let score = 0;
+            
+            // Aspect ratio (20%)
+            if (composition.isGoodAspectRatio) score += 20;
+            else if (composition.isLandscape || composition.isPortrait) score += 15;
+            else score += 10;
+            
+            // Resolution (20%)
+            if (composition.isHighRes) score += 20;
+            else if (composition.isMediumRes) score += 15;
+            else score += 10;
+            
+            // Architecture bonus (30%)
+            if (architecture.hasArchitecture) {
+                score += Math.min(30, architecture.architectureScore / 2);
+            } else {
+                score += 15; // Basic composition score
+            }
+            
+            // Symmetry and balance (30%)
+            const symmetryScore = Math.min(30, (architecture.verticalLines + architecture.horizontalLines) / 3);
+            score += symmetryScore || 15;
+            
+            return Math.min(100, Math.max(30, score));
+        }
+
+        function calculateCreativityScoreAdvanced(colors, faces, objects, scenery, stationId) {
+            let score = 0;
+            
+            // Color creativity (30%)
+            if (colors.isColorful && colors.isDiverse) score += 30;
+            else if (colors.isColorful || colors.isDiverse) score += 20;
+            else score += 10;
+            
+            // People creativity (25%)
+            if (faces.estimatedPeopleCount > 1) {
+                score += Math.min(25, faces.estimatedPeopleCount * 8);
+            } else if (faces.likelyHasPeople) {
+                score += 15;
+            } else {
+                score += 10; // Artistic single shot
+            }
+            
+            // Scenery creativity (25%)
+            if (scenery.isOutdoor) {
+                score += Math.min(25, scenery.sceneryScore / 4);
+            } else {
+                score += 12;
+            }
+            
+            // Object diversity (20%)
+            if (objects.totalObjects > 2) {
+                score += Math.min(20, objects.totalObjects * 3);
+            } else {
+                score += 10;
+            }
+            
+            return Math.min(100, Math.max(30, score));
+        }
+
         // Enhanced Photo Analysis Functions
         function analyzePhotoForRating(imageUrl, stationId) {
             return new Promise((resolve, reject) => {
@@ -6543,11 +6849,11 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                             const sharpnessAnalysis = analyzeSharpnessAdvanced(imageData, width, height);
                             const compositionAnalysis = analyzeCompositionAdvanced(width, height, pixels);
                             const colorAnalysis = analyzeColors(pixels);
-                            const objectAnalysis = analyzeObjectsAdvanced(pixels, width, height);
-                            const faceAnalysis = analyzeFacesAdvanced(imageData, width, height);
-                            const sceneryAnalysis = analyzeSceneryAdvanced(pixels, width, height);
-                            const architectureAnalysis = analyzeArchitectureAdvanced(pixels, width, height);
-                            const lightingAnalysis = analyzeLightingAdvanced(pixels, width, height);
+                            const objectAnalysis = analyzeObjectsBasic(pixels, width, height);
+                            const faceAnalysis = analyzeFaces(imageData, width, height);
+                            const sceneryAnalysis = analyzeSceneryBasic(pixels, width, height);
+                            const architectureAnalysis = analyzeArchitectureBasic(pixels, width, height);
+                            const lightingAnalysis = analyzeLightingBasic(pixels, width, height);
                             
                             // Calculate scores based on comprehensive analysis
                             const technicalScore = calculateTechnicalScoreAdvanced(brightnessAnalysis, contrastAnalysis, sharpnessAnalysis, lightingAnalysis);
