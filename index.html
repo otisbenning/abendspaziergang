@@ -5080,15 +5080,15 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 const currentIndex = tourApp.stations.findIndex(s => s.id === stationId);
                 if (currentIndex <= 0) return; // Already at top or not found
                 
+                // Create backup before changes
+                const backup = JSON.parse(JSON.stringify(tourApp.stations));
+                
                 // Swap positions in array
                 [tourApp.stations[currentIndex], tourApp.stations[currentIndex - 1]] = 
                 [tourApp.stations[currentIndex - 1], tourApp.stations[currentIndex]];
                 
-                // Reassign IDs to reflect new order
-                reassignStationIds();
-                
-                // Update Firebase and UI
-                updateAfterReorder();
+                // Update display order without changing IDs
+                updateStationDisplayOrder(backup);
                 
                 showNotification('Station nach oben verschoben! ↑');
                 addSystemMessage(`Admin hat Station-Reihenfolge geändert! 🔄`);
@@ -5103,15 +5103,15 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 const currentIndex = tourApp.stations.findIndex(s => s.id === stationId);
                 if (currentIndex < 0 || currentIndex >= tourApp.stations.length - 1) return; // Already at bottom or not found
                 
+                // Create backup before changes
+                const backup = JSON.parse(JSON.stringify(tourApp.stations));
+                
                 // Swap positions in array
                 [tourApp.stations[currentIndex], tourApp.stations[currentIndex + 1]] = 
                 [tourApp.stations[currentIndex + 1], tourApp.stations[currentIndex]];
                 
-                // Reassign IDs to reflect new order
-                reassignStationIds();
-                
-                // Update Firebase and UI
-                updateAfterReorder();
+                // Update display order without changing IDs
+                updateStationDisplayOrder(backup);
                 
                 showNotification('Station nach unten verschoben! ↓');
                 addSystemMessage(`Admin hat Station-Reihenfolge geändert! 🔄`);
@@ -5121,51 +5121,14 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             }
         }
 
-        function reassignStationIds() {
+        function updateStationDisplayOrder(backup) {
             try {
-                // Reassign IDs starting from 1
-                tourApp.stations.forEach((station, index) => {
-                    station.id = index + 1;
-                });
-                
-                // Update completed stations array to use new IDs
-                if (tourApp.state.completedStations.length > 0) {
-                    // Map old completion status to new IDs based on array position
-                    const wasCompleted = tourApp.state.completedStations.slice();
-                    tourApp.state.completedStations = [];
-                    
-                    tourApp.stations.forEach((station, index) => {
-                        if (wasCompleted.includes(index + 1)) {
-                            tourApp.state.completedStations.push(station.id);
-                        }
-                    });
-                }
-            } catch (error) {
-                console.error('Error reassigning station IDs:', error);
-            }
-        }
-
-        async function updateAfterReorder() {
-            try {
-                // Save all stations to Firebase with new IDs
+                // Update Firebase incrementally (safer approach)
                 if (tourApp.state.isFirebaseConnected && tourApp.state.tourId) {
-                    // Clear all existing stations in Firebase first
-                    const stationsRef = db.collection('tours').doc(tourApp.state.tourId).collection('stations');
-                    const snapshot = await stationsRef.get();
-                    const batch = db.batch();
-                    
-                    snapshot.docs.forEach((doc) => {
-                        batch.delete(doc.ref);
-                    });
-                    await batch.commit();
-                    
-                    // Save all stations with new IDs
-                    for (const station of tourApp.stations) {
-                        await saveToFirebase('stations', station.id.toString(), station);
-                    }
+                    updateFirebaseStationsOrder();
                 }
                 
-                // Update UI
+                // Update UI immediately
                 generateContentEditor();
                 generateStationsList();
                 updateProgress();
@@ -5176,8 +5139,35 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 
                 saveState();
             } catch (error) {
-                console.error('Error updating after reorder:', error);
-                showNotification('Reihenfolge lokal gespeichert, Firebase-Sync fehlgeschlagen', 'warning');
+                console.error('Error updating station display order:', error);
+                // Restore from backup on error
+                tourApp.stations = backup;
+                generateContentEditor();
+                showNotification('Reihenfolge-Änderung fehlgeschlagen - Zustand wiederhergestellt', 'error');
+            }
+        }
+
+        async function updateFirebaseStationsOrder() {
+            try {
+                // Instead of deleting all and recreating, update each station individually
+                // This is much safer and doesn't risk losing all data
+                
+                // Add a display order field to each station
+                const updatePromises = tourApp.stations.map((station, index) => {
+                    const stationWithOrder = {
+                        ...station,
+                        displayOrder: index // Add display order field
+                    };
+                    
+                    return saveToFirebase('stations', station.id.toString(), stationWithOrder);
+                });
+                
+                await Promise.all(updatePromises);
+                console.log('✅ Station order updated in Firebase');
+                
+            } catch (error) {
+                console.error('Error updating Firebase stations order:', error);
+                showNotification('Lokale Änderung gespeichert, Firebase-Sync folgt später', 'warning');
             }
         }
 
@@ -5202,7 +5192,13 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 };
                 
                 tourApp.stations.push(newStation);
-                tourApp.stations.sort((a, b) => a.id - b.id);
+                // Sort by displayOrder if available, otherwise by ID
+                tourApp.stations.sort((a, b) => {
+                    if (a.displayOrder !== undefined && b.displayOrder !== undefined) {
+                        return a.displayOrder - b.displayOrder;
+                    }
+                    return a.id - b.id;
+                });
                 
                 if (tourApp.state.isFirebaseConnected) {
                     saveToFirebase('stations', newId.toString(), newStation);
