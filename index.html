@@ -1511,7 +1511,7 @@
             <button class="tab" onclick="window.showTab('stations', this)">📍<br><span style="font-size: 0.6rem;">Stationen</span></button>
             <button class="tab" onclick="window.showTab('ranking', this)">🏆<br><span style="font-size: 0.6rem;">Ranking</span></button>
             <button class="tab" onclick="window.showTab('chat', this)">💬<br><span style="font-size: 0.6rem;">Chat</span></button>
-            <button class="tab" onclick="window.showTab('map', this); setTimeout(forceMapRefresh, 300);" id="mapTabButton">🗺️<br><span style="font-size: 0.6rem;">Karte</span></button>
+            <button class="tab" onclick="window.showTab('map', this)" id="mapTabButton">
             <button class="tab admin hidden" onclick="window.showTab('admin', this)" id="adminTab">⚙️<br><span style="font-size: 0.6rem;">Admin</span></button>
         </div>
     </div>
@@ -1526,7 +1526,7 @@
 
     <script>
         
-        // Global showTab function - Robuste Version ohne Fallback-Loops
+        // Global showTab function - Korrigierte Version mit richtigen IDs
         function showTab(tabName, tabElement) {
             try {
                 // Initialize tourApp.state if needed
@@ -1552,26 +1552,33 @@
                     tabElement.classList.add('active');
                 }
 
-                // Update content visibility
+                // Update content visibility - korrigierte Version
                 document.querySelectorAll('.tab-content').forEach(content => {
                     content.classList.remove('active');
                     content.style.display = 'none';
                 });
                 
-                const targetTab = document.getElementById(tabName === 'map' ? 'mapTab' : tabName + 'Tab');
+                // Korrekte ID-Zuordnung
+                const targetTab = document.getElementById(tabName === 'map' ? 'map-tab' : tabName);
                 if (targetTab) {
                     targetTab.classList.add('active');
                     targetTab.style.display = 'block';
                     
+                    console.log(`Tab "${tabName}" erfolgreich angezeigt`); // Debug-Log
+                    
                     // Special handling for map tab
                     if (tabName === 'map') {
                         setTimeout(() => {
-                            initMap();
-                            if (tourApp.state.map) {
-                                tourApp.state.map.invalidateSize();
+                            if (typeof initMap === 'function') {
+                                initMap();
                             }
-                        }, 100);
+                            if (window.tourApp && window.tourApp.state && window.tourApp.state.map) {
+                                window.tourApp.state.map.invalidateSize();
+                            }
+                        }, 200);
                     }
+                } else {
+                    console.error(`Tab element mit ID "${tabName === 'map' ? 'map-tab' : tabName}" nicht gefunden!`);
                 }
 
                 // Handle specific tab actions
@@ -1589,16 +1596,6 @@
                     }, 100);
                 }
 
-                if (tabName === 'map' || tabName === 'map-tab') {
-                    setTimeout(() => {
-                        if (window.tourApp.state && window.tourApp.state.map) {
-                            window.tourApp.state.map.invalidateSize();
-                        } else if (typeof initMap === 'function') {
-                            initMap();
-                        }
-                    }, 100);
-                }
-
                 if (tabName === 'ranking') {
                     setTimeout(() => {
                         if (typeof updateRanking === 'function') updateRanking();
@@ -1608,11 +1605,17 @@
                 // Release lock after a short delay
                 setTimeout(() => {
                     window.showTab.isChanging = false;
-                }, 50);
+                }, 100);
                 
             } catch (error) {
                 console.error('Error showing tab:', error);
                 window.showTab.isChanging = false;
+                
+                // Fallback: Force show target tab
+                const fallbackTab = document.getElementById(tabName === 'map' ? 'map-tab' : tabName);
+                if (fallbackTab) {
+                    fallbackTab.style.display = 'block';
+                }
             }
         }
 
