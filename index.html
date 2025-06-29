@@ -1222,6 +1222,22 @@
 
             <!-- Ranking Tab -->
             <div id="ranking" class="tab-content">
+                <!-- Photo Gallery Preview Section -->
+                <div id="photoGalleryPreview" style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-radius: 12px; padding: 1rem; margin-bottom: 1.5rem; border-left: 4px solid #3b82f6;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3 style="color: #1e40af; margin: 0;">📸 Challenge-Fotos aller Teams</h3>
+                        <button class="btn btn-secondary btn-small" onclick="openFullPhotoGallery()" style="background: #3b82f6;">
+                            🖼️ Alle anzeigen
+                        </button>
+                    </div>
+                    <div id="photoPreviewContainer" style="display: flex; gap: 0.5rem; overflow-x: auto; padding-bottom: 0.5rem;">
+                        <!-- Photo previews will be loaded here -->
+                    </div>
+                    <p style="color: #1e40af; font-size: 0.8rem; margin: 0.5rem 0 0 0;">
+                        🔄 Live-synchronisiert • 📱 Klicke auf Fotos für Details
+                    </p>
+                </div>
+
                 <div class="team-ranking">
                     <h3 style="color: #1f2937; margin-bottom: 1rem;">🏆 Live-Ranking</h3>
                     <div id="rankingList">
@@ -1599,6 +1615,7 @@
                 if (tabName === 'ranking') {
                     setTimeout(() => {
                         if (typeof updateRanking === 'function') updateRanking();
+                        loadPhotoGalleryPreview();
                     }, 100);
                 }
                 
@@ -5164,11 +5181,16 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                                     
                                     <!-- Share Challenge Photo Button -->
                                     <div id="share-photo-section-${station.id}" class="hidden" style="margin-top: 1rem; padding-top: 1rem; border-top: 2px solid #e5e7eb;">
-                                        <button class="btn btn-secondary" onclick="shareChallengePhoto(${station.id})" style="background: #059669; margin-top: 0.5rem;">
-                                            📤 Foto im Chat teilen
-                                        </button>
+                                        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                                            <button class="btn btn-secondary" onclick="shareChallengePhoto(${station.id})" style="background: #059669; flex: 1;">
+                                                📤 Im Chat teilen
+                                            </button>
+                                            <button class="btn btn-secondary" onclick="deleteChallengePhoto(${station.id})" style="background: #ef4444; flex: 1;">
+                                                🗑️ Foto löschen
+                                            </button>
+                                        </div>
                                         <p style="font-size: 0.8rem; color: #6b7280; margin-top: 0.5rem;">
-                                            💡 Teile dein Challenge-Foto mit allen Teilnehmern!
+                                            💡 Foto ist automatisch in der Galerie sichtbar • Optional: im Chat teilen
                                         </p>
                                     </div>
                                 </div>
@@ -5665,6 +5687,355 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             }
         }
 
+
+        // Photo Gallery System for Ranking Page
+        function loadPhotoGalleryPreview() {
+            try {
+                const previewContainer = document.getElementById('photoPreviewContainer');
+                if (!previewContainer) return;
+                
+                // Collect all photos from all sources
+                const allPhotos = [];
+                
+                // From local uploaded photos
+                tourApp.state.uploadedPhotos.forEach(photo => {
+                    const station = tourApp.stations.find(s => s.id === photo.stationId);
+                    if (station) {
+                        allPhotos.push({
+                            imageUrl: photo.imageUrl,
+                            userName: tourApp.state.userName,
+                            score: photo.score || 0,
+                            timestamp: photo.timestamp || Date.now(),
+                            teamName: tourApp.state.teamName || 'Dein Team',
+                            stationTitle: station.title,
+                            stationId: photo.stationId,
+                            isLocal: true
+                        });
+                    }
+                });
+                
+                // From chat messages (shared challenge photos)
+                document.querySelectorAll('.chat-message').forEach(msg => {
+                    const challengePhotoDiv = msg.querySelector('[data-station-id]');
+                    if (challengePhotoDiv) {
+                        const stationId = parseInt(challengePhotoDiv.getAttribute('data-station-id'));
+                        const station = tourApp.stations.find(s => s.id === stationId);
+                        const img = msg.querySelector('.chat-image');
+                        const userSpan = msg.querySelector('strong');
+                        const scoreMatch = msg.textContent.match(/(\d+)\s*Punkte/);
+                        const teamMatch = msg.textContent.match(/\((.*?)\)/);
+                        
+                        if (img && userSpan && station) {
+                            const userName = userSpan.textContent.replace(':', '').trim();
+                            // Avoid duplicates
+                            const isDuplicate = allPhotos.some(p => 
+                                p.userName === userName && p.imageUrl === img.src && p.stationId === stationId
+                            );
+                            
+                            if (!isDuplicate) {
+                                allPhotos.push({
+                                    imageUrl: img.src,
+                                    userName: userName,
+                                    score: scoreMatch ? parseInt(scoreMatch[1]) : 0,
+                                    timestamp: Date.now(),
+                                    teamName: teamMatch ? teamMatch[1] : 'Anderes Team',
+                                    stationTitle: station.title,
+                                    stationId: stationId,
+                                    isLocal: false
+                                });
+                            }
+                        }
+                    }
+                });
+                
+                if (allPhotos.length === 0) {
+                    previewContainer.innerHTML = `
+                        <div style="text-align: center; padding: 2rem; color: #6b7280; background: white; border-radius: 8px; width: 100%;">
+                            📸 Noch keine Challenge-Fotos vorhanden!<br>
+                            <small>Mache dein erstes Foto an einer Station</small>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Sort by score (highest first) and limit to latest 20
+                allPhotos.sort((a, b) => (b.score || 0) - (a.score || 0));
+                const previewPhotos = allPhotos.slice(0, 20);
+                
+                const previewHtml = previewPhotos.map((photo, index) => `
+                    <div class="photo-preview-item" onclick="showPhotoDetail(${index})" style="flex-shrink: 0; position: relative; cursor: pointer; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: transform 0.3s; ${photo.isLocal ? 'border: 2px solid #10b981;' : 'border: 1px solid #e5e7eb;'}">
+                        <img src="${photo.imageUrl}" style="width: 80px; height: 80px; object-fit: cover;" alt="Challenge Foto">
+                        <div style="position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(0,0,0,0.8)); color: white; padding: 0.3rem; font-size: 0.7rem; text-align: center;">
+                            <strong>${photo.score}pts</strong><br>
+                            <small>${photo.userName}</small>
+                        </div>
+                        ${photo.isLocal ? '<div style="position: absolute; top: 2px; right: 2px; background: #10b981; color: white; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; font-size: 0.6rem;">✓</div>' : ''}
+                        ${index === 0 ? '<div style="position: absolute; top: 2px; left: 2px; background: #f59e0b; color: white; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; font-size: 0.6rem;">👑</div>' : ''}
+                    </div>
+                `).join('');
+                
+                previewContainer.innerHTML = previewHtml;
+                
+                // Store photos for detail view
+                window.galleryPhotos = allPhotos;
+                
+                // Add hover effects
+                document.querySelectorAll('.photo-preview-item').forEach(item => {
+                    item.addEventListener('mouseenter', () => {
+                        item.style.transform = 'scale(1.05)';
+                    });
+                    item.addEventListener('mouseleave', () => {
+                        item.style.transform = 'scale(1)';
+                    });
+                });
+                
+            } catch (error) {
+                console.error('Error loading photo gallery preview:', error);
+            }
+        }
+
+        function showPhotoDetail(index) {
+            try {
+                if (!window.galleryPhotos || !window.galleryPhotos[index]) return;
+                
+                const photo = window.galleryPhotos[index];
+                
+                const modal = document.createElement('div');
+                modal.className = 'admin-popup-overlay';
+                modal.style.zIndex = '25000';
+                
+                modal.innerHTML = `
+                    <div class="admin-popup" style="max-width: 600px; width: 95%;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 2px solid #e5e7eb;">
+                            <div>
+                                <h3 style="color: #1f2937; margin: 0;">${photo.stationTitle}</h3>
+                                <p style="color: #6b7280; margin: 0.5rem 0 0 0;">Challenge-Foto von ${photo.userName}</p>
+                            </div>
+                            <button onclick="this.closest('.admin-popup-overlay').remove()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #6b7280;">×</button>
+                        </div>
+                        
+                        <div style="text-align: center; margin-bottom: 1.5rem;">
+                            <img src="${photo.imageUrl}" style="max-width: 100%; max-height: 400px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);" alt="Challenge Foto">
+                        </div>
+                        
+                        <div style="background: #f8fafc; border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; text-align: center;">
+                                <div>
+                                    <div style="font-size: 1.5rem; font-weight: bold; color: ${photo.score >= 80 ? '#10b981' : photo.score >= 60 ? '#f59e0b' : '#6b7280'};">${photo.score}</div>
+                                    <small style="color: #6b7280;">KI-Punkte</small>
+                                </div>
+                                <div>
+                                    <div style="font-size: 1.2rem; font-weight: bold; color: #1f2937;">${photo.userName}</div>
+                                    <small style="color: #6b7280;">${photo.teamName}</small>
+                                </div>
+                                <div>
+                                    <div style="font-size: 1.2rem; font-weight: bold; color: #1f2937;">${photo.stationTitle}</div>
+                                    <small style="color: #6b7280;">Station</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div style="text-align: center; display: flex; gap: 1rem; justify-content: center;">
+                            <button class="btn btn-secondary" onclick="downloadGalleryPhoto('${photo.imageUrl}', '${photo.stationTitle}', '${photo.userName}', ${photo.score})" style="background: #8b5cf6;">
+                                💾 Foto herunterladen
+                            </button>
+                            ${photo.isLocal ? `<button class="btn btn-secondary" onclick="deletePhotoFromGallery(${photo.stationId}, '${photo.imageUrl}'); this.closest('.admin-popup-overlay').remove();" style="background: #ef4444;">🗑️ Mein Foto löschen</button>` : ''}
+                            <button class="btn" onclick="this.closest('.admin-popup-overlay').remove();">
+                                Schließen
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(modal);
+                
+            } catch (error) {
+                console.error('Error showing photo detail:', error);
+            }
+        }
+
+        function openFullPhotoGallery() {
+            try {
+                if (!window.galleryPhotos || window.galleryPhotos.length === 0) {
+                    showNotification('Noch keine Challenge-Fotos vorhanden! 📸', 'info');
+                    return;
+                }
+                
+                const modal = document.createElement('div');
+                modal.className = 'admin-popup-overlay';
+                modal.style.zIndex = '20000';
+                
+                const photosHtml = window.galleryPhotos.map((photo, index) => `
+                    <div class="gallery-photo-item" style="background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: ${photo.isLocal ? '2px solid #10b981' : '1px solid #e5e7eb'};">
+                        <div style="position: relative;">
+                            <img src="${photo.imageUrl}" 
+                                style="width: 100%; height: 200px; object-fit: cover; cursor: pointer;" 
+                                onclick="showPhotoDetail(${index})"
+                                alt="Challenge Foto">
+                            ${photo.isLocal ? '<div style="position: absolute; top: 8px; right: 8px; background: #10b981; color: white; padding: 0.2rem 0.5rem; border-radius: 12px; font-size: 0.7rem; font-weight: bold;">Dein Foto</div>' : ''}
+                            ${index === 0 && photo.score > 0 ? '<div style="position: absolute; top: 8px; left: 8px; background: #f59e0b; color: white; padding: 0.2rem 0.5rem; border-radius: 12px; font-size: 0.7rem; font-weight: bold;">🏆 Bestes</div>' : ''}
+                        </div>
+                        <div style="padding: 1rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                <strong style="color: #1f2937; font-size: 0.9rem;">${photo.userName}</strong>
+                                <span style="background: ${photo.score >= 80 ? '#10b981' : photo.score >= 60 ? '#f59e0b' : '#6b7280'}; color: white; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: bold;">
+                                    ${photo.score} Punkte
+                                </span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                <small style="color: #6b7280;">${photo.stationTitle}</small>
+                                <small style="color: #6b7280;">${photo.teamName}</small>
+                            </div>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <button class="btn btn-secondary btn-small" onclick="downloadGalleryPhoto('${photo.imageUrl}', '${photo.stationTitle}', '${photo.userName}', ${photo.score})" 
+                                        style="padding: 0.3rem 0.8rem; font-size: 0.8rem; background: #8b5cf6; flex: 1;">
+                                    💾 Download
+                                </button>
+                                ${photo.isLocal ? `<button class="btn btn-secondary btn-small" onclick="deletePhotoFromGallery(${photo.stationId}, '${photo.imageUrl}'); refreshFullGallery();" style="padding: 0.3rem 0.8rem; font-size: 0.8rem; background: #ef4444;">🗑️</button>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+                
+                modal.innerHTML = `
+                    <div class="admin-popup" style="max-width: 1000px; width: 95%; max-height: 90vh; overflow-y: auto;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 2px solid #e5e7eb;">
+                            <div>
+                                <h3 style="color: #1f2937; margin: 0;">📸 Challenge-Fotos aller Teams</h3>
+                                <p style="color: #6b7280; margin: 0.5rem 0 0 0; font-size: 0.9rem;">Live-synchronisiert • Sortiert nach Punktzahl</p>
+                            </div>
+                            <button onclick="this.closest('.admin-popup-overlay').remove()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #6b7280;">×</button>
+                        </div>
+                        
+                        <div style="margin-bottom: 1rem; padding: 1rem; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-radius: 8px; border-left: 4px solid #3b82f6;">
+                            <strong style="color: #1e40af;">${window.galleryPhotos.length} Challenge-Foto${window.galleryPhotos.length !== 1 ? 's' : ''}</strong>
+                            <p style="margin: 0.5rem 0 0 0; color: #1e40af; font-size: 0.9rem;">
+                                🏆 Beste Fotos zuerst • 📱 Klicke auf Fotos für Vollansicht • 🔄 Automatisch synchronisiert
+                            </p>
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                            ${photosHtml}
+                        </div>
+                        
+                        <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 2px solid #e5e7eb; text-align: center;">
+                            <button class="btn btn-secondary" onclick="refreshFullGallery()" style="margin-right: 1rem;">
+                                🔄 Galerie aktualisieren
+                            </button>
+                            <button class="btn" onclick="this.closest('.admin-popup-overlay').remove()">
+                                Galerie schließen
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(modal);
+                
+            } catch (error) {
+                console.error('Error opening full photo gallery:', error);
+            }
+        }
+
+        function refreshFullGallery() {
+            try {
+                const existingModal = document.querySelector('.admin-popup-overlay');
+                if (existingModal) {
+                    existingModal.remove();
+                }
+                
+                // Reload preview and reopen gallery
+                loadPhotoGalleryPreview();
+                setTimeout(() => {
+                    openFullPhotoGallery();
+                }, 100);
+                
+            } catch (error) {
+                console.error('Error refreshing full gallery:', error);
+            }
+        }
+
+        // Delete Functions
+        function deleteChallengePhoto(stationId) {
+            try {
+                if (!confirm('Möchtest du dein Challenge-Foto wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.')) {
+                    return;
+                }
+                
+                // Remove from local uploaded photos
+                const photoIndex = tourApp.state.uploadedPhotos.findIndex(photo => photo.stationId === stationId);
+                if (photoIndex !== -1) {
+                    tourApp.state.uploadedPhotos.splice(photoIndex, 1);
+                    saveState();
+                    
+                    // Update UI - hide rating section and reset upload area
+                    const ratingDiv = document.getElementById(`rating-${stationId}`);
+                    if (ratingDiv) {
+                        ratingDiv.classList.add('hidden');
+                    }
+                    
+                    const uploadContent = document.getElementById(`upload-content-${stationId}`);
+                    if (uploadContent) {
+                        uploadContent.innerHTML = `
+                            📷 Hier klicken zum Foto machen/auswählen<br>
+                            <small>KI bewertet automatisch Qualität, Komposition & Kreativität</small>
+                        `;
+                    }
+                    
+                    const uploadArea = document.getElementById(`upload-area-${stationId}`);
+                    if (uploadArea) {
+                        uploadArea.classList.remove('has-photo');
+                    }
+                    
+                    // Remove from Firebase if connected
+                    if (tourApp.state.isFirebaseConnected && tourApp.state.tourId) {
+                        const photoRef = db.collection('tours').doc(tourApp.state.tourId).collection('challengePhotos').doc(`${tourApp.state.userName}_${stationId}`);
+                        photoRef.delete().catch(err => console.log('Firebase delete failed:', err));
+                    }
+                    
+                    // Refresh gallery
+                    loadPhotoGalleryPreview();
+                    
+                    showNotification('✅ Challenge-Foto gelöscht!', 'success');
+                } else {
+                    showNotification('Kein Foto zum Löschen gefunden!', 'warning');
+                }
+                
+            } catch (error) {
+                console.error('Error deleting challenge photo:', error);
+                showNotification('Fehler beim Löschen des Fotos', 'error');
+            }
+        }
+
+        function deletePhotoFromGallery(stationId, imageUrl) {
+            try {
+                // Find and remove the photo
+                const photoIndex = tourApp.state.uploadedPhotos.findIndex(photo => 
+                    photo.stationId === stationId && photo.imageUrl === imageUrl
+                );
+                
+                if (photoIndex !== -1) {
+                    tourApp.state.uploadedPhotos.splice(photoIndex, 1);
+                    saveState();
+                    
+                    // Remove from Firebase
+                    if (tourApp.state.isFirebaseConnected && tourApp.state.tourId) {
+                        const photoRef = db.collection('tours').doc(tourApp.state.tourId).collection('challengePhotos').doc(`${tourApp.state.userName}_${stationId}`);
+                        photoRef.delete().catch(err => console.log('Firebase delete failed:', err));
+                    }
+                    
+                    // Refresh gallery
+                    loadPhotoGalleryPreview();
+                    
+                    showNotification('✅ Foto gelöscht!', 'success');
+                } else {
+                    showNotification('Foto nicht gefunden!', 'warning');
+                }
+                
+            } catch (error) {
+                console.error('Error deleting photo from gallery:', error);
+                showNotification('Fehler beim Löschen', 'error');
+            }
+        }
 
         // Station Gallery System
         function showStationGallery(stationId) {
@@ -12002,7 +12373,7 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 
                 showNotification(`Du bist jetzt in ${teamName}! 🎉`);
                 
-                // Auto-load team chat history
+                // Auto-load team chat history  
                 setTimeout(() => loadChatHistory(), 300);
                 
             } catch (error) {
