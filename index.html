@@ -13181,14 +13181,28 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             }
         }
 
+
+
         async function startMegafon() {
             try {
-                // Mikrofon-Zugriff anfordern
+                // Prüfen ob HTTPS läuft
+                if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+                    throw new Error('HTTPS erforderlich für Mikrofon-Zugriff');
+                }
+                
+                // Prüfen ob getUserMedia verfügbar ist
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    throw new Error('Mikrofon-API nicht verfügbar');
+                }
+                
+                // Mikrofon-Zugriff anfordern mit erweiterten Optionen
                 mediaStream = await navigator.mediaDevices.getUserMedia({ 
                     audio: {
                         echoCancellation: true,
                         noiseSuppression: true,
-                        autoGainControl: true
+                        autoGainControl: true,
+                        sampleRate: 44100,
+                        channelCount: 1
                     } 
                 });
                 
@@ -13230,8 +13244,13 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             }
             
             // Alle Peer-Connections schließen
-            peerConnections.forEach(pc => pc.close());
-            peerConnections.clear();
+            localPeerConnections.forEach(conn => conn.pc.close());
+            localPeerConnections.clear();
+
+            if (remotePeerConnection) {
+                remotePeerConnection.close();
+                remotePeerConnection = null;
+            }
             
             // UI zurücksetzen
             document.getElementById('megafonBtn').innerHTML = '<span id="megafonText">📢 Megafon starten</span>';
@@ -13246,6 +13265,221 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             }
             
             showNotification('📢 Megafon gestoppt', 'info');
+        }
+
+        // ========== VOLLSTÄNDIGE WEBRTC-IMPLEMENTIERUNG ==========
+
+        // Globale WebRTC-Variablen
+        let localPeerConnections = new Map(); // Admin: Verbindungen zu allen Teilnehmern
+        let remotePeerConnection = null; // Teilnehmer: Verbindung zum Admin
+        const iceServers = [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' }
+        ];
+
+        async function initWebRTCForAllParticipants() {
+            if (!db || !tourApp.state.tourId || !mediaStream) return;
+            
+            console.log('📡 Initialisiere WebRTC für alle Teilnehmer...');
+            
+            // Signaling über Firebase
+            const signalingRef = db.collection('tours').doc(tourApp.state.tourId).collection('megafon-signaling');
+            
+            // Admin: Angebot für neue Verbindungen erstellen
+            const offer = { 
+                type: 'megafon-start', 
+                adminId: tourApp.state.userName || 'Admin',
+                timestamp: Date.now()
+            };
+            
+            try {
+                await signalingRef.add(offer);
+                console.log('✅ Megafon-Start-Signal gesendet');
+                
+                // Auf Antworten von Teilnehmern hören
+                listenForParticipantResponses();
+                
+            } catch (error) {
+                console.error('❌ Fehler beim Senden des Start-Signals:', error);
+            }
+        }
+
+        function listenForParticipantResponses() {
+            if (!db || !tourApp.state.tourId) return;
+            
+            const signalingRef = db.collection('tours').doc(tourApp.state.tourId).collection('megafon-signaling');
+            
+            signalingRef.onSnapshot(async (snapshot) => {
+                for (const change of snapshot.docChanges()) {
+                    if (change.type === 'added') {
+                        const data = change.doc.data();
+                        
+                        if (tourApp.state.isAdmin && data.type === 'participant-ready') {
+                            // Admin: Neue Verbindung zu Teilnehmer erstellen
+                            await createPeerConnectionToParticipant(data.participantId, change.doc.id);
+                        }
+                        else if (!tourApp.state.isAdmin && data.type === 'offer' && data.targetParticipant === tourApp.state.userName) {
+                            // Teilnehmer: Angebot vom Admin erhalten
+                            await handleOfferFromAdmin(data, change.doc.id);
+                        }
+                        else if (tourApp.state.isAdmin && data.type === 'answer' && data.connectionId) {
+                            // Admin: Antwort von Teilnehmer erhalten
+                            await handleAnswerFromParticipant(data);
+                        }
+                        else if (data.type === 'ice-candidate') {
+                            // ICE-Candidate verarbeiten
+                            await handleIceCandidate(data);
+                        }
+                    }
+                }
+            });
+        }
+
+        async function createPeerConnectionToParticipant(participantId, connectionId) {
+            try {
+                console.log(`📡 Erstelle Verbindung zu Teilnehmer: ${participantId}`);
+                
+                // Neue PeerConnection erstellen
+                const peerConnection = new RTCPeerConnection({ iceServers });
+                localPeerConnections.set(participantId, { pc: peerConnection, connectionId });
+                
+                // Audio-Stream hinzufügen
+                if (mediaStream) {
+                    mediaStream.getTracks().forEach(track => {
+                        peerConnection.addTrack(track, mediaStream);
+                    });
+                }
+                
+                // ICE-Candidates behandeln
+                peerConnection.onicecandidate = async (event) => {
+                    if (event.candidate) {
+                        await sendSignalingMessage({
+                            type: 'ice-candidate',
+                            candidate: event.candidate,
+                            targetParticipant: participantId,
+                            connectionId: connectionId
+                        });
+                    }
+                };
+                
+                // Offer erstellen und senden
+                const offer = await peerConnection.createOffer();
+                await peerConnection.setLocalDescription(offer);
+                
+                await sendSignalingMessage({
+                    type: 'offer',
+                    offer: offer,
+                    targetParticipant: participantId,
+                    connectionId: connectionId
+                });
+                
+                console.log(`✅ Offer gesendet an ${participantId}`);
+                
+            } catch (error) {
+                console.error(`❌ Fehler bei Verbindung zu ${participantId}:`, error);
+            }
+        }
+
+        async function handleOfferFromAdmin(data, connectionId) {
+            try {
+                console.log('📡 Erhalte Offer vom Admin...');
+                
+                // PeerConnection erstellen
+                remotePeerConnection = new RTCPeerConnection({ iceServers });
+                
+                // Audio-Stream empfangen
+                remotePeerConnection.ontrack = (event) => {
+                    console.log('🎵 Audio-Stream empfangen!');
+                    const audio = document.getElementById('megafonAudio');
+                    if (audio && event.streams[0]) {
+                        audio.srcObject = event.streams[0];
+                        audio.play().catch(e => console.log('Audio autoplay blocked:', e));
+                    }
+                };
+                
+                // ICE-Candidates behandeln
+                remotePeerConnection.onicecandidate = async (event) => {
+                    if (event.candidate) {
+                        await sendSignalingMessage({
+                            type: 'ice-candidate',
+                            candidate: event.candidate,
+                            targetParticipant: 'admin',
+                            connectionId: connectionId
+                        });
+                    }
+                };
+                
+                // Offer annehmen und Answer erstellen
+                await remotePeerConnection.setRemoteDescription(data.offer);
+                const answer = await remotePeerConnection.createAnswer();
+                await remotePeerConnection.setLocalDescription(answer);
+                
+                // Answer senden
+                await sendSignalingMessage({
+                    type: 'answer',
+                    answer: answer,
+                    connectionId: connectionId
+                });
+                
+                console.log('✅ Answer gesendet an Admin');
+                
+            } catch (error) {
+                console.error('❌ Fehler beim Verarbeiten des Offers:', error);
+            }
+        }
+
+        async function handleAnswerFromParticipant(data) {
+            try {
+                const connection = Array.from(localPeerConnections.values()).find(
+                    conn => conn.connectionId === data.connectionId
+                );
+                
+                if (connection && connection.pc) {
+                    await connection.pc.setRemoteDescription(data.answer);
+                    console.log('✅ Answer vom Teilnehmer verarbeitet');
+                }
+                
+            } catch (error) {
+                console.error('❌ Fehler beim Verarbeiten der Answer:', error);
+            }
+        }
+
+        async function handleIceCandidate(data) {
+            try {
+                if (tourApp.state.isAdmin && data.targetParticipant === 'admin') {
+                    // Admin empfängt ICE-Candidate von Teilnehmer
+                    const connection = Array.from(localPeerConnections.values()).find(
+                        conn => conn.connectionId === data.connectionId
+                    );
+                    
+                    if (connection && connection.pc) {
+                        await connection.pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+                    }
+                }
+                else if (!tourApp.state.isAdmin && remotePeerConnection) {
+                    // Teilnehmer empfängt ICE-Candidate vom Admin
+                    await remotePeerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+                }
+                
+            } catch (error) {
+                console.error('❌ Fehler beim Verarbeiten des ICE-Candidates:', error);
+            }
+        }
+
+        async function sendSignalingMessage(message) {
+            if (!db || !tourApp.state.tourId) return;
+            
+            const signalingRef = db.collection('tours').doc(tourApp.state.tourId).collection('megafon-signaling');
+            
+            try {
+                await signalingRef.add({
+                    ...message,
+                    timestamp: Date.now(),
+                    from: tourApp.state.userName || 'Anonymous'
+                });
+            } catch (error) {
+                console.error('❌ Fehler beim Senden der Signaling-Nachricht:', error);
+            }
         }
 
         function muteMegafon() {
@@ -13396,11 +13630,16 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
         }
 
         async function handleSignalingMessage(message) {
-            if (tourApp.state.isAdmin) return; // Admin verarbeitet keine Signaling-Messages
+            if (tourApp.state.isAdmin) return;
             
             if (message.type === 'megafon-start') {
-                // Vereinfachtes Audio-Streaming (für Demo)
-                showNotification('📢 Live-Audio vom Admin gestartet!', 'info');
+                // Teilnehmer: Bereitschaft signalisieren
+                showNotification('📢 Verbinde mit Admin-Audio...', 'info');
+                
+                await sendSignalingMessage({
+                    type: 'participant-ready',
+                    participantId: tourApp.state.userName || `User-${Date.now()}`
+                });
             }
         }
 
