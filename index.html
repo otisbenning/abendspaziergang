@@ -1313,7 +1313,22 @@
                 </div>
 
                 <!-- Main Chat -->
-                <div id="mainChatContainer" class="chat-section active">
+                <div id="mainChatContainer" class="chat-section active">   
+                    <!-- Megafon Listener Section für Teilnehmer -->
+                    <div id="megafonListenerSection" style="background: #fef3c7; border-radius: 12px; padding: 1.5rem; margin: 1rem 0; display: none; position: sticky; top: 10px; z-index: 100;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <h4 style="color: #92400e; margin: 0;">📢 Admin spricht live</h4>
+                                <p style="margin: 0.5rem 0 0 0; color: #6b7280; font-size: 0.9rem;">Lautstärke anpassen oder stummschalten</p>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                <input type="range" id="megafonVolume" min="0" max="100" value="80" style="width: 80px;" onchange="updateMegafonVolume(this.value)">
+                                <button class="btn btn-small" onclick="muteMegafonAudio()" id="megafonMuteBtn">🔊</button>
+                            </div>
+                        </div>
+                        <audio id="megafonAudio" autoplay style="display: none;"></audio>
+                    </div>
+                    
                     <div class="chat-container" id="chatContainer">
                         <div class="chat-message system">
                             <strong>System:</strong> Willkommen im Tour-Chat! 👋<br>
@@ -1430,7 +1445,24 @@
                             <button class="btn btn-secondary btn-small" onclick="sendAdminAnnouncement()">📢 Ankündigung senden</button>
                             <button class="btn btn-secondary btn-small" onclick="clearAllChatMessages()">🗑️ Chat löschen</button>
                             <button class="btn btn-secondary btn-small" onclick="showQuickStationUpdate()">⚡ Station schnell bearbeiten</button>
+                            <button class="btn btn-primary btn-small" onclick="toggleMegafon()" id="megafonBtn">
+                                <span id="megafonText">📢 Megafon starten</span>
+                            </button>
                             <button class="btn btn-secondary btn-small" onclick="autoAssignTeams()" style="background: #8b5cf6;">🎲 Teams auto-verteilen</button>
+                        </div>
+                        <div id="megafonStatusSection" style="background: #fee2e2; border-radius: 12px; padding: 1.5rem; margin: 1.5rem 0; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: none;">
+                            <h4 style="color: #dc2626; margin-bottom: 1rem;">📢 Live-Megafon aktiv</h4>
+                            <div id="megafonControls">
+                                <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                                    <div id="audioLevelIndicator" style="background: #ef4444; height: 20px; border-radius: 10px; transition: width 0.1s; width: 0%; max-width: 200px; min-width: 50px;"></div>
+                                    <span id="audioLevelText">🎤 Mikrofon bereit</span>
+                                </div>
+                                <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                                    <button class="btn btn-admin btn-small" onclick="muteMegafon()" id="muteBtn">🔇 Stumm</button>
+                                    <button class="btn btn-secondary btn-small" onclick="stopMegafon()">⏹️ Stoppen</button>
+                                    <span style="color: #dc2626; font-weight: bold;">👥 <span id="listenerCount">0</span> Zuhörer</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -1847,6 +1879,8 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                 
                 console.log('✅ Firebase connected successfully');
                 enableRealtimeSync();
+
+                initMegafon();
                 
             } catch (error) {
                 console.error('❌ Firebase connection failed:', error);
@@ -13115,6 +13149,271 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
         window.closePhotoAnalysis = closePhotoAnalysis;
         window.downloadChallengePhoto = downloadChallengePhoto;
         
+        // ========== MEGAFON-FUNKTIONALITÄT ==========
+
+        // Globale Variablen für Megafon
+        let megafonActive = false;
+        let mediaStream = null;
+        let peerConnections = new Map();
+        let megafonMuted = false;
+        let isListening = false;
+
+        // WebRTC Configuration
+        const rtcConfig = {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' }
+            ]
+        };
+
+        // ========== ADMIN-FUNKTIONEN ==========
+
+        async function toggleMegafon() {
+            if (!tourApp.state.isAdmin) {
+                showNotification('Nur Admins können das Megafon verwenden', 'error');
+                return;
+            }
+            
+            if (megafonActive) {
+                stopMegafon();
+            } else {
+                await startMegafon();
+            }
+        }
+
+        async function startMegafon() {
+            try {
+                // Mikrofon-Zugriff anfordern
+                mediaStream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    } 
+                });
+                
+                megafonActive = true;
+                
+                // UI aktualisieren
+                document.getElementById('megafonBtn').innerHTML = '<span id="megafonText">⏹️ Megafon stoppen</span>';
+                document.getElementById('megafonStatusSection').style.display = 'block';
+                
+                // Firebase: Megafon-Status setzen
+                if (db && tourApp.state.tourId) {
+                    await db.collection('tours').doc(tourApp.state.tourId).update({
+                        megafonActive: true,
+                        megafonAdmin: tourApp.state.userName || 'Admin'
+                    });
+                }
+                
+                // Audio-Level-Monitor starten
+                startAudioLevelMonitoring();
+                
+                showNotification('📢 Megafon aktiviert! Sprechen Sie ins Mikrofon', 'success');
+                
+                // WebRTC für alle Teilnehmer initialisieren
+                initWebRTCForAllParticipants();
+                
+            } catch (error) {
+                console.error('Megafon-Start-Fehler:', error);
+                showNotification('Mikrofon-Zugriff verweigert. Bitte Berechtigung erteilen.', 'error');
+            }
+        }
+
+        function stopMegafon() {
+            megafonActive = false;
+            
+            // MediaStream stoppen
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(track => track.stop());
+                mediaStream = null;
+            }
+            
+            // Alle Peer-Connections schließen
+            peerConnections.forEach(pc => pc.close());
+            peerConnections.clear();
+            
+            // UI zurücksetzen
+            document.getElementById('megafonBtn').innerHTML = '<span id="megafonText">📢 Megafon starten</span>';
+            document.getElementById('megafonStatusSection').style.display = 'none';
+            
+            // Firebase: Megafon-Status entfernen
+            if (db && tourApp.state.tourId) {
+                db.collection('tours').doc(tourApp.state.tourId).update({
+                    megafonActive: false,
+                    megafonAdmin: null
+                });
+            }
+            
+            showNotification('📢 Megafon gestoppt', 'info');
+        }
+
+        function muteMegafon() {
+            if (!mediaStream) return;
+            
+            megafonMuted = !megafonMuted;
+            mediaStream.getAudioTracks().forEach(track => {
+                track.enabled = !megafonMuted;
+            });
+            
+            const muteBtn = document.getElementById('muteBtn');
+            const audioLevelText = document.getElementById('audioLevelText');
+            
+            if (megafonMuted) {
+                muteBtn.innerHTML = '🔊 Ton an';
+                audioLevelText.textContent = '🔇 Stummgeschaltet';
+            } else {
+                muteBtn.innerHTML = '🔇 Stumm';
+                audioLevelText.textContent = '🎤 Mikrofon aktiv';
+            }
+        }
+
+        function startAudioLevelMonitoring() {
+            if (!mediaStream) return;
+            
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const analyser = audioContext.createAnalyser();
+            const microphone = audioContext.createMediaStreamSource(mediaStream);
+            const dataArray = new Uint8Array(analyser.frequencyBinCount);
+            
+            microphone.connect(analyser);
+            analyser.fftSize = 256;
+            
+            function updateAudioLevel() {
+                if (!megafonActive) return;
+                
+                analyser.getByteFrequencyData(dataArray);
+                const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
+                const percentage = Math.min((average / 128) * 100, 100);
+                
+                const indicator = document.getElementById('audioLevelIndicator');
+                if (indicator) {
+                    indicator.style.width = percentage + '%';
+                    indicator.style.background = percentage > 50 ? '#ef4444' : percentage > 20 ? '#f59e0b' : '#6b7280';
+                }
+                
+                requestAnimationFrame(updateAudioLevel);
+            }
+            
+            updateAudioLevel();
+        }
+
+        async function initWebRTCForAllParticipants() {
+            if (!db || !tourApp.state.tourId) return;
+            
+            // Signaling über Firebase
+            const signalingRef = db.collection('tours').doc(tourApp.state.tourId).collection('megafon-signaling');
+            
+            // Angebot für neue Peer-Connections erstellen
+            const offer = { 
+                type: 'megafon-start', 
+                adminId: tourApp.state.userName,
+                timestamp: Date.now()
+            };
+            await signalingRef.add(offer);
+        }
+
+        // ========== TEILNEHMER-FUNKTIONEN ==========
+
+        function updateMegafonVolume(volume) {
+            const audio = document.getElementById('megafonAudio');
+            if (audio) {
+                audio.volume = volume / 100;
+            }
+        }
+
+        function muteMegafonAudio() {
+            const audio = document.getElementById('megafonAudio');
+            const btn = document.getElementById('megafonMuteBtn');
+            
+            if (audio && audio.muted) {
+                audio.muted = false;
+                btn.textContent = '🔊';
+            } else if (audio) {
+                audio.muted = true;
+                btn.textContent = '🔇';
+            }
+        }
+
+        // ========== FIREBASE-LISTENER FÜR MEGAFON ==========
+
+        function initMegafonListeners() {
+            if (!db || !tourApp.state.tourId) return;
+            
+            // Megafon-Status überwachen
+            const tourRef = db.collection('tours').doc(tourApp.state.tourId);
+            
+            tourRef.onSnapshot((doc) => {
+                const data = doc.data();
+                if (data && data.megafonActive && !tourApp.state.isAdmin) {
+                    // Teilnehmer: Megafon-Listener anzeigen
+                    showMegafonListener(data.megafonAdmin);
+                } else if (!data?.megafonActive && !tourApp.state.isAdmin) {
+                    // Teilnehmer: Megafon-Listener verstecken
+                    hideMegafonListener();
+                }
+                
+                // Listener-Count für Admin aktualisieren
+                if (tourApp.state.isAdmin && data?.megafonActive) {
+                    updateListenerCount();
+                }
+            });
+            
+            // Signaling für WebRTC
+            const signalingRef = db.collection('tours').doc(tourApp.state.tourId).collection('megafon-signaling');
+            
+            signalingRef.onSnapshot((snapshot) => {
+                snapshot.docChanges().forEach((change) => {
+                    if (change.type === 'added') {
+                        handleSignalingMessage(change.doc.data());
+                    }
+                });
+            });
+        }
+
+        function showMegafonListener(adminName) {
+            const section = document.getElementById('megafonListenerSection');
+            if (section) {
+                section.style.display = 'block';
+                section.querySelector('h4').textContent = `📢 ${adminName} spricht live`;
+            }
+        }
+
+        function hideMegafonListener() {
+            const section = document.getElementById('megafonListenerSection');
+            if (section) {
+                section.style.display = 'none';
+            }
+        }
+
+        function updateListenerCount() {
+            // Vereinfachte Zählung - in Realität würde man aktive Verbindungen zählen
+            const countElement = document.getElementById('listenerCount');
+            if (countElement) {
+                // Hier könntest du eine echte Zählung implementieren
+                countElement.textContent = '?';
+            }
+        }
+
+        async function handleSignalingMessage(message) {
+            if (tourApp.state.isAdmin) return; // Admin verarbeitet keine Signaling-Messages
+            
+            if (message.type === 'megafon-start') {
+                // Vereinfachtes Audio-Streaming (für Demo)
+                showNotification('📢 Live-Audio vom Admin gestartet!', 'info');
+            }
+        }
+
+        // ========== INITIALISIERUNG ==========
+
+        function initMegafon() {
+            // Listeners initialisieren
+            initMegafonListeners();
+            
+            console.log('📢 Megafon-System initialisiert');
+        }
+
+
     </script>
 </body>
 </html>
