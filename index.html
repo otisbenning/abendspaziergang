@@ -13678,11 +13678,19 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             
             tourRef.onSnapshot((doc) => {
                 const data = doc.data();
+                console.log('🔍 Megafon Status Update:', {
+                    megafonActive: data?.megafonActive,
+                    isAdmin: tourApp.state.isAdmin,
+                    megafonAdmin: data?.megafonAdmin
+                });
+                
                 if (data && data.megafonActive && !tourApp.state.isAdmin) {
                     // Teilnehmer: Megafon-Listener anzeigen
+                    console.log('👁️ Zeige Megafon-Listener für:', data.megafonAdmin);
                     showMegafonListener(data.megafonAdmin);
                 } else if (!data?.megafonActive && !tourApp.state.isAdmin) {
                     // Teilnehmer: Megafon-Listener verstecken
+                    console.log('👁️ Verstecke Megafon-Listener');
                     hideMegafonListener();
                 }
                 
@@ -13708,7 +13716,10 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             const section = document.getElementById('megafonListenerSection');
             if (section) {
                 section.style.display = 'block';
-                section.querySelector('h4').textContent = `📢 ${adminName} spricht live`;
+                const titleElement = document.getElementById('megafonListenerTitle');
+                if (titleElement) {
+                    titleElement.textContent = `📢 ${adminName} spricht live`;
+                }
             }
         }
 
@@ -13732,7 +13743,9 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             if (tourApp.state.isAdmin) return;
             
             if (message.type === 'megafon-start') {
-                // Nur anzeigen, dass Admin live ist - kein automatischer Beitritt
+                // Megafon-Listener-Section anzeigen
+                showMegafonListener(message.adminId || 'Admin');
+                // Benachrichtigung anzeigen
                 showNotification('📢 Admin ist jetzt live! Klicken Sie auf "Zuhören"', 'info');
             }
         }
