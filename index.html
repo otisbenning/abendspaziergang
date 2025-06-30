@@ -1318,15 +1318,24 @@
                     <div id="megafonListenerSection" style="background: #fef3c7; border-radius: 12px; padding: 1.5rem; margin: 1rem 0; display: none; position: sticky; top: 10px; z-index: 100;">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <div>
-                                <h4 style="color: #92400e; margin: 0;">📢 Admin spricht live</h4>
-                                <p style="margin: 0.5rem 0 0 0; color: #6b7280; font-size: 0.9rem;">Lautstärke anpassen oder stummschalten</p>
+                                <h4 style="color: #92400e; margin: 0;" id="megafonListenerTitle">📢 Admin spricht live</h4>
+                                <p style="margin: 0.5rem 0 0 0; color: #6b7280; font-size: 0.9rem;" id="megafonListenerSubtext">Klicken Sie auf "Zuhören" um das Live-Audio zu hören</p>
                             </div>
                             <div style="display: flex; align-items: center; gap: 1rem;">
-                                <input type="range" id="megafonVolume" min="0" max="100" value="80" style="width: 80px;" onchange="updateMegafonVolume(this.value)">
-                                <button class="btn btn-small" onclick="muteMegafonAudio()" id="megafonMuteBtn">🔊</button>
+                                <!-- Zuhören-Button (Initial sichtbar) -->
+                                <button class="btn btn-primary btn-small" onclick="joinMegafonAsListener()" id="joinMegafonBtn" style="background: #059669;">
+                                    🎧 Zuhören
+                                </button>
+                                
+                                <!-- Audio-Kontrollen (Initial versteckt) -->
+                                <div id="megafonAudioControls" style="display: none; align-items: center; gap: 1rem;">
+                                    <input type="range" id="megafonVolume" min="0" max="100" value="80" style="width: 80px;" onchange="updateMegafonVolume(this.value)">
+                                    <button class="btn btn-small" onclick="muteMegafonAudio()" id="megafonMuteBtn">🔊</button>
+                                    <button class="btn btn-secondary btn-small" onclick="leaveMegafonAsListener()" id="leaveMegafonBtn">❌ Verlassen</button>
+                                </div>
                             </div>
                         </div>
-                        <audio id="megafonAudio" autoplay style="display: none;"></audio>
+                        <audio id="megafonAudio" style="display: none;"></audio>
                     </div>
                     
                     <div class="chat-container" id="chatContainer">
@@ -13393,7 +13402,31 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
                     const audio = document.getElementById('megafonAudio');
                     if (audio && event.streams[0]) {
                         audio.srcObject = event.streams[0];
-                        audio.play().catch(e => console.log('Audio autoplay blocked:', e));
+                        audio.play().then(() => {
+                            // UI-Update: Erfolgreich verbunden
+                            document.getElementById('megafonListenerSubtext').textContent = 'Live-Audio läuft - Lautstärke anpassen oder stummschalten';
+                            showNotification('🎵 Live-Audio gestartet!', 'success');
+                        }).catch(e => {
+                            console.log('Audio autoplay blocked:', e);
+                            document.getElementById('megafonListenerSubtext').textContent = 'Audio blockiert - bitte manuell starten';
+                            showNotification('Audio wurde blockiert - bitte Button drücken', 'warning');
+                        });
+                    }
+                };
+
+                // Verbindungsstatus überwachen
+                remotePeerConnection.onconnectionstatechange = () => {
+                    console.log('WebRTC Verbindungsstatus:', remotePeerConnection.connectionState);
+                    
+                    switch (remotePeerConnection.connectionState) {
+                        case 'connected':
+                            document.getElementById('megafonListenerSubtext').textContent = 'Live-Audio verbunden';
+                            break;
+                        case 'disconnected':
+                        case 'failed':
+                            document.getElementById('megafonListenerSubtext').textContent = 'Verbindung unterbrochen';
+                            showNotification('Audio-Verbindung unterbrochen', 'error');
+                            break;
                     }
                 };
                 
@@ -13464,6 +13497,72 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             } catch (error) {
                 console.error('❌ Fehler beim Verarbeiten des ICE-Candidates:', error);
             }
+        }
+
+        // ========== TEILNEHMER-KONTROLLFUNKTIONEN ==========
+
+        let isListeningToMegafon = false;
+
+        async function joinMegafonAsListener() {
+            if (tourApp.state.isAdmin) return;
+            
+            try {
+                document.getElementById('joinMegafonBtn').innerHTML = '⏳ Verbinde...';
+                document.getElementById('joinMegafonBtn').disabled = true;
+                
+                // Bereitschaft zum Admin signalisieren
+                await sendSignalingMessage({
+                    type: 'participant-ready',
+                    participantId: tourApp.state.userName || `User-${Date.now()}`
+                });
+                
+                isListeningToMegafon = true;
+                
+                // UI umschalten
+                setTimeout(() => {
+                    document.getElementById('joinMegafonBtn').style.display = 'none';
+                    document.getElementById('megafonAudioControls').style.display = 'flex';
+                    document.getElementById('megafonListenerTitle').textContent = '🎧 Sie hören live zu';
+                    document.getElementById('megafonListenerSubtext').textContent = 'Verbindung wird hergestellt...';
+                }, 500);
+                
+                showNotification('🎧 Verbinde mit Live-Audio...', 'info');
+                
+            } catch (error) {
+                console.error('❌ Fehler beim Beitreten:', error);
+                document.getElementById('joinMegafonBtn').innerHTML = '🎧 Zuhören';
+                document.getElementById('joinMegafonBtn').disabled = false;
+                showNotification('Fehler beim Verbinden', 'error');
+            }
+        }
+
+        function leaveMegafonAsListener() {
+            if (tourApp.state.isAdmin) return;
+            
+            // WebRTC-Verbindung schließen
+            if (remotePeerConnection) {
+                remotePeerConnection.close();
+                remotePeerConnection = null;
+            }
+            
+            // Audio stoppen
+            const audio = document.getElementById('megafonAudio');
+            if (audio) {
+                audio.srcObject = null;
+                audio.pause();
+            }
+            
+            isListeningToMegafon = false;
+            
+            // UI zurücksetzen
+            document.getElementById('joinMegafonBtn').style.display = 'inline-block';
+            document.getElementById('megafonAudioControls').style.display = 'none';
+            document.getElementById('joinMegafonBtn').innerHTML = '🎧 Zuhören';
+            document.getElementById('joinMegafonBtn').disabled = false;
+            document.getElementById('megafonListenerTitle').textContent = '📢 Admin spricht live';
+            document.getElementById('megafonListenerSubtext').textContent = 'Klicken Sie auf "Zuhören" um das Live-Audio zu hören';
+            
+            showNotification('🔇 Audio-Verbindung getrennt', 'info');
         }
 
         async function sendSignalingMessage(message) {
@@ -13633,13 +13732,8 @@ Die Zunftordnungen vom Fischmarkt dienten als Vorbild für ganz Europa. Handwerk
             if (tourApp.state.isAdmin) return;
             
             if (message.type === 'megafon-start') {
-                // Teilnehmer: Bereitschaft signalisieren
-                showNotification('📢 Verbinde mit Admin-Audio...', 'info');
-                
-                await sendSignalingMessage({
-                    type: 'participant-ready',
-                    participantId: tourApp.state.userName || `User-${Date.now()}`
-                });
+                // Nur anzeigen, dass Admin live ist - kein automatischer Beitritt
+                showNotification('📢 Admin ist jetzt live! Klicken Sie auf "Zuhören"', 'info');
             }
         }
 
